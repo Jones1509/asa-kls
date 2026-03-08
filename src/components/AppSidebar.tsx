@@ -64,7 +64,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
   return (
     <aside className="flex h-full w-[272px] flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className="flex h-[72px] items-center gap-3.5 px-6">
+      <div className="flex h-[72px] items-center gap-3.5 px-6 flex-shrink-0">
         <div>
           <span className="font-heading text-2xl font-extrabold italic tracking-tight text-primary">ASA</span>
           <p className="text-[9px] font-semibold text-primary/60 tracking-[0.18em] uppercase leading-none">Kontrolsystem</p>
@@ -72,7 +72,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4">
+      <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 scrollbar-thin">
         {Object.entries(sections).map(([section, sectionLinks]) => (
           <div key={section} className="mb-5">
             <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/30">{section}</p>
@@ -109,8 +109,8 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
         ))}
       </nav>
 
-      {/* User profile */}
-      <div className="border-t border-sidebar-border px-3 py-3">
+      {/* User profile - fixed at bottom */}
+      <div className="border-t border-sidebar-border px-3 py-3 flex-shrink-0 bg-sidebar">
         <NavLink
           to="/profile"
           onClick={onNavigate}
@@ -119,7 +119,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
             isActive ? "bg-sidebar-primary/10" : "hover:bg-sidebar-accent"
           )}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-primary text-xs font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-primary text-xs font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] flex-shrink-0">
             {profile?.full_name?.charAt(0)?.toUpperCase() || (role === "admin" ? "A" : "M")}
           </div>
           <div className="flex-1 min-w-0">
@@ -131,7 +131,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
             </p>
           </div>
           {onSignOut && (
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-2 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-destructive transition-colors">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-2 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-destructive transition-colors flex-shrink-0">
               <LogOut size={15} />
             </button>
           )}
