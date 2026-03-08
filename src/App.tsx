@@ -14,6 +14,8 @@ import VerificationPage from "./pages/VerificationPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import ChatPage from "./pages/ChatPage";
+import InvoicesPage from "./pages/InvoicesPage";
+import FieldReportsPage from "./pages/FieldReportsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +33,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/cases" element={<CasesPage />} />
+              <Route path="/invoices" element={<InvoicesPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/time-tracking" element={<TimeTrackingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
@@ -38,6 +41,7 @@ const App = () => (
               <Route path="/documentation" element={<DocumentationPage />} />
               <Route path="/employees" element={<EmployeesPage />} />
               <Route path="/chat" element={<ChatPage />} />
+              <Route path="/field-reports" element={<FieldReportsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
