@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, MapPin, Trash2, Edit } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, Search, MapPin, Trash2, Edit, Users, ChevronDown, X, UserPlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,20 +18,48 @@ const statusColors: Record<string, string> = {
   Planlagt: "bg-warning/10 text-warning border border-warning/20",
 };
 
+const statusOptions = ["Aktiv", "Planlagt", "Afsluttet"];
+
 export default function CasesPage() {
   const { role, user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alle");
-  const [form, setForm] = useState({ case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" });
+  const emptyForm = { case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" };
+  const [form, setForm] = useState(emptyForm);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [assignCaseId, setAssignCaseId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
-  const { data: cases } = useQuery({
+  const { data: cases, isLoading } = useQuery({
     queryKey: ["cases"],
     queryFn: async () => {
       const { data } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
       return data || [];
     },
+  });
+
+  const { data: assignments } = useQuery({
+    queryKey: ["case_assignments_all"],
+    queryFn: async () => {
+      const { data } = await supabase.from("case_assignments").select("*, profiles!case_assignments_user_id_fkey(full_name, email)");
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  const { data: employees } = useQuery({
+    queryKey: ["employees_list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, full_name, email").order("full_name");
+      return data || [];
+    },
+    enabled: role === "admin",
   });
 
   const createCase = useMutation({
@@ -47,8 +75,31 @@ export default function CasesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       setOpen(false);
-      setForm({ case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" });
+      setForm(emptyForm);
       toast.success("Sag oprettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const updateCase = useMutation({
+    mutationFn: async () => {
+      if (!editForm) return;
+      const { error } = await supabase.from("cases").update({
+        case_number: editForm.case_number,
+        customer: editForm.customer,
+        address: editForm.address,
+        description: editForm.description,
+        start_date: editForm.start_date || null,
+        end_date: editForm.end_date || null,
+        status: editForm.status,
+      }).eq("id", editForm.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      setEditOpen(false);
+      setEditForm(null);
+      toast.success("Sag opdateret");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -60,7 +111,37 @@ export default function CasesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
+      setDeleteConfirm(null);
       toast.success("Sag slettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const assignEmployee = useMutation({
+    mutationFn: async () => {
+      if (!assignCaseId || !selectedUserId) return;
+      const { error } = await supabase.from("case_assignments").insert({
+        case_id: assignCaseId,
+        user_id: selectedUserId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["case_assignments_all"] });
+      setSelectedUserId("");
+      toast.success("Medarbejder tilknyttet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeAssignment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("case_assignments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["case_assignments_all"] });
+      toast.success("Tilknytning fjernet");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -81,6 +162,29 @@ export default function CasesPage() {
     Afsluttet: cases?.filter((c) => c.status === "Afsluttet").length || 0,
   };
 
+  const getCaseAssignments = (caseId: string) => assignments?.filter(a => a.case_id === caseId) || [];
+
+  const CaseFormFields = ({ f, setF }: { f: any; setF: (v: any) => void }) => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label><Input value={f.case_number} onChange={(e) => setF({ ...f, case_number: e.target.value })} placeholder="2026-025" className="mt-1.5 rounded-xl" required /></div>
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
+          <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
+            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={f.customer} onChange={(e) => setF({ ...f, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1.5 rounded-xl" required /></div>
+      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label><Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1.5 rounded-xl" required /></div>
+      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={f.description || ""} onChange={(e) => setF({ ...f, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label><Input type="date" value={f.start_date || ""} onChange={(e) => setF({ ...f, start_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label><Input type="date" value={f.end_date || ""} onChange={(e) => setF({ ...f, end_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <PageHeader title="Sager" description={`${counts.alle} sager i alt · ${counts.Aktiv} aktive`}>
@@ -89,18 +193,11 @@ export default function CasesPage() {
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny sag</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md rounded-2xl">
+            <DialogContent className="max-w-lg rounded-2xl">
               <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret ny sag</DialogTitle></DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); createCase.mutate(); }} className="space-y-4">
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label><Input value={form.case_number} onChange={(e) => setForm({ ...form, case_number: e.target.value })} placeholder="2026-025" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label><Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-                </div>
-                <div className="flex justify-end gap-2 pt-3">
+              <form onSubmit={(e) => { e.preventDefault(); createCase.mutate(); }}>
+                <CaseFormFields f={form} setF={setForm} />
+                <div className="flex justify-end gap-2 pt-5">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
                   <Button type="submit" disabled={createCase.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createCase.isPending ? "Opretter..." : "Opret sag"}</Button>
                 </div>
@@ -122,9 +219,7 @@ export default function CasesPage() {
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                statusFilter === s
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                statusFilter === s ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {s === "alle" ? "Alle" : s} ({counts[s]})
@@ -133,46 +228,196 @@ export default function CasesPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsnr.</th>
-                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kunde</th>
-                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Adresse</th>
-                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Periode</th>
-                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                {role === "admin" && <th className="px-6 py-3.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground w-16"></th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {(filtered || []).map((c, i) => (
-                <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-muted/20 transition-colors group">
-                  <td className="px-6 py-4 font-semibold text-card-foreground">{c.case_number}</td>
-                  <td className="px-6 py-4 text-card-foreground">{c.customer}</td>
-                  <td className="px-6 py-4 text-muted-foreground hidden md:table-cell"><span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-muted-foreground/50" /> {c.address}</span></td>
-                  <td className="px-6 py-4 text-muted-foreground hidden lg:table-cell">{c.start_date || "–"} → {c.end_date || "–"}</td>
-                  <td className="px-6 py-4"><span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[c.status] || ""}`}>{c.status}</span></td>
-                  {role === "admin" && (
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => { if (confirm("Er du sikker på du vil slette denne sag?")) deleteCase.mutate(c.id); }}
-                        className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  )}
-                </motion.tr>
-              ))}
-              {filtered?.length === 0 && (
-                <tr><td colSpan={role === "admin" ? 6 : 5} className="px-6 py-12 text-center text-sm text-muted-foreground">Ingen sager fundet</td></tr>
-              )}
-            </tbody>
-          </table>
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="rounded-2xl border border-border bg-card p-5 animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="h-5 w-24 rounded bg-muted" />
+                <div className="h-4 w-40 rounded bg-muted" />
+                <div className="h-4 w-32 rounded bg-muted hidden md:block" />
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {/* Cases list */}
+      {!isLoading && (
+        <div className="space-y-3">
+          {(filtered || []).map((c, i) => {
+            const isExpanded = expandedId === c.id;
+            const caseAssignments = getCaseAssignments(c.id);
+            return (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="rounded-2xl border border-border bg-card shadow-card hover:shadow-elevated transition-all overflow-hidden"
+              >
+                <div
+                  className="flex items-center justify-between p-5 cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : c.id)}
+                >
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <span className="text-sm font-bold text-card-foreground whitespace-nowrap">{c.case_number}</span>
+                    <span className="text-sm text-card-foreground truncate">{c.customer}</span>
+                    <span className="text-xs text-muted-foreground hidden md:flex items-center gap-1.5 truncate">
+                      <MapPin size={12} className="text-muted-foreground/50 flex-shrink-0" /> {c.address}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                    {role === "admin" && caseAssignments.length > 0 && (
+                      <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        <Users size={10} /> {caseAssignments.length}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[c.status] || ""}`}>{c.status}</span>
+                    <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 border-t border-border pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Adresse</p>
+                            <p className="text-sm text-card-foreground flex items-center gap-1.5"><MapPin size={13} className="text-muted-foreground/50" /> {c.address}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Periode</p>
+                            <p className="text-sm text-card-foreground">{c.start_date || "–"} → {c.end_date || "–"}</p>
+                          </div>
+                        </div>
+                        {c.description && (
+                          <div className="mb-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Beskrivelse</p>
+                            <p className="text-sm text-card-foreground leading-relaxed">{c.description}</p>
+                          </div>
+                        )}
+
+                        {/* Assigned employees (admin only) */}
+                        {role === "admin" && (
+                          <div className="mb-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-2">Tilknyttede medarbejdere</p>
+                            <div className="flex flex-wrap gap-2">
+                              {caseAssignments.map((a: any) => (
+                                <span key={a.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                                  {(a.profiles as any)?.full_name || "Ukendt"}
+                                  <button onClick={(e) => { e.stopPropagation(); removeAssignment.mutate(a.id); }} className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setAssignCaseId(c.id); setAssignOpen(true); }}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                              >
+                                <UserPlus size={12} /> Tilføj
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {role === "admin" && (
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="rounded-xl gap-1.5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditForm({ ...c });
+                                setEditOpen(true);
+                              }}
+                            >
+                              <Edit size={13} /> Rediger
+                            </Button>
+                            {deleteConfirm === c.id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-destructive font-medium">Er du sikker?</span>
+                                <Button size="sm" variant="destructive" className="rounded-xl h-8" onClick={(e) => { e.stopPropagation(); deleteCase.mutate(c.id); }}>Ja, slet</Button>
+                                <Button size="sm" variant="outline" className="rounded-xl h-8" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(null); }}>Nej</Button>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="rounded-xl gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => { e.stopPropagation(); setDeleteConfirm(c.id); }}
+                              >
+                                <Trash2 size={13} /> Slet
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+          {filtered?.length === 0 && (
+            <div className="text-center py-16">
+              <Search size={32} className="mx-auto text-muted-foreground/20 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Ingen sager fundet</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Prøv at justere dine filtre</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditForm(null); }}>
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Rediger sag</DialogTitle></DialogHeader>
+          {editForm && (
+            <form onSubmit={(e) => { e.preventDefault(); updateCase.mutate(); }}>
+              <CaseFormFields f={editForm} setF={setEditForm} />
+              <div className="flex justify-end gap-2 pt-5">
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="rounded-xl">Annuller</Button>
+                <Button type="submit" disabled={updateCase.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{updateCase.isPending ? "Gemmer..." : "Gem ændringer"}</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign employee dialog */}
+      <Dialog open={assignOpen} onOpenChange={(v) => { setAssignOpen(v); if (!v) { setAssignCaseId(null); setSelectedUserId(""); } }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Tilknyt medarbejder</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
+            >
+              <option value="">Vælg medarbejder...</option>
+              {employees?.filter(e => !getCaseAssignments(assignCaseId || "").some((a: any) => a.user_id === e.user_id)).map(e => (
+                <option key={e.user_id} value={e.user_id}>{e.full_name}</option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAssignOpen(false)} className="rounded-xl">Annuller</Button>
+              <Button disabled={!selectedUserId || assignEmployee.isPending} onClick={() => assignEmployee.mutate()} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                {assignEmployee.isPending ? "Tilknytter..." : "Tilknyt"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

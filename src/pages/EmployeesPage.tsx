@@ -1,24 +1,20 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MapPin, Mail, Phone, Shield, UserPlus, MoreHorizontal, Briefcase } from "lucide-react";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 
 export default function EmployeesPage() {
   const { role } = useAuth();
+  const [search, setSearch] = useState("");
 
-  // Only admin can access this page
   if (role !== "admin") return <Navigate to="/" replace />;
 
-  const { data: profiles } = useQuery({
+  const { data: profiles, isLoading } = useQuery({
     queryKey: ["profiles_with_roles"],
     queryFn: async () => {
       const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
@@ -35,6 +31,12 @@ export default function EmployeesPage() {
     },
   });
 
+  const filtered = profiles?.filter(p =>
+    p.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    p.email.toLowerCase().includes(search.toLowerCase()) ||
+    (p.role_label || "").toLowerCase().includes(search.toLowerCase())
+  );
+
   const activeCount = profiles?.length || 0;
   const adminCount = profiles?.filter((p) => p.isAdmin).length || 0;
 
@@ -42,8 +44,20 @@ export default function EmployeesPage() {
     <div>
       <PageHeader title="Medarbejdere" description={`${activeCount} medarbejdere · ${adminCount} administratorer`} />
 
+      <div className="mb-5">
+        <div className="relative max-w-sm">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Søg medarbejdere..." className="pl-10 rounded-xl h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {(profiles || []).map((e, i) => (
+        {isLoading && [1, 2, 3].map(i => (
+          <div key={i} className="rounded-2xl border border-border bg-card p-5 animate-pulse">
+            <div className="flex items-start gap-3.5"><div className="h-12 w-12 rounded-2xl bg-muted" /><div className="space-y-2 flex-1"><div className="h-4 w-32 rounded bg-muted" /><div className="h-3 w-24 rounded bg-muted" /></div></div>
+          </div>
+        ))}
+        {(filtered || []).map((e, i) => (
           <motion.div key={e.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all hover:-translate-y-0.5">
             <div className="flex items-start gap-3.5">
@@ -60,8 +74,8 @@ export default function EmployeesPage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{e.role_label || "Medarbejder"}</p>
-                
-                <div className="mt-2 space-y-1">
+
+                <div className="mt-2.5 space-y-1">
                   <p className="text-xs text-muted-foreground/70 flex items-center gap-1.5">
                     <Mail size={11} className="text-muted-foreground/40" /> {e.email}
                   </p>
@@ -75,7 +89,7 @@ export default function EmployeesPage() {
                 {e.assignments.length > 0 && (
                   <div className="mt-3 space-y-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">Tilknyttede sager</p>
-                    {e.assignments.slice(0, 2).map((a: any, j: number) => (
+                    {e.assignments.slice(0, 3).map((a: any, j: number) => (
                       <div key={j} className="rounded-xl bg-muted/50 px-3 py-2 border border-border/50">
                         <p className="text-xs font-semibold text-card-foreground flex items-center gap-1.5">
                           <Briefcase size={11} className="text-primary" /> Sag {a.cases?.case_number}
@@ -85,8 +99,8 @@ export default function EmployeesPage() {
                         </p>
                       </div>
                     ))}
-                    {e.assignments.length > 2 && (
-                      <p className="text-[11px] text-muted-foreground/50 pl-1">+{e.assignments.length - 2} mere</p>
+                    {e.assignments.length > 3 && (
+                      <p className="text-[11px] text-muted-foreground/50 pl-1">+{e.assignments.length - 3} mere</p>
                     )}
                   </div>
                 )}
@@ -94,13 +108,12 @@ export default function EmployeesPage() {
             </div>
           </motion.div>
         ))}
-        {(!profiles || profiles.length === 0) && (
+        {!isLoading && (!filtered || filtered.length === 0) && (
           <div className="col-span-full text-center py-16">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mx-auto mb-4">
               <UserPlus size={24} className="text-muted-foreground/30" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Ingen medarbejdere endnu</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Opret en bruger for at starte</p>
+            <p className="text-sm font-medium text-muted-foreground">Ingen medarbejdere fundet</p>
           </div>
         )}
       </div>
