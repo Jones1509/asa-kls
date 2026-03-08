@@ -1,64 +1,59 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-
-const mockEmployees = [
-  { id: 1, name: "Martin Sørensen", email: "martin@asakls.dk", role: "Tekniker", currentCase: "2026-014", location: "Aarhusvej 12", status: "På arbejde" },
-  { id: 2, name: "Anne Larsen", email: "anne@asakls.dk", role: "Inspektør", currentCase: "2026-018", location: "Kongensgade 45", status: "På arbejde" },
-  { id: 3, name: "Peter Hansen", email: "peter@asakls.dk", role: "Tekniker", currentCase: "2026-011", location: "Industrivej 8", status: "På arbejde" },
-  { id: 4, name: "Lise Pedersen", email: "lise@asakls.dk", role: "Inspektør", currentCase: null, location: null, status: "Fri" },
-  { id: 5, name: "Thomas Nielsen", email: "thomas@asakls.dk", role: "Tekniker", currentCase: null, location: null, status: "Syg" },
-];
-
-const statusColors: Record<string, string> = {
-  "På arbejde": "bg-success/10 text-success",
-  Fri: "bg-muted text-muted-foreground",
-  Syg: "bg-warning/10 text-warning",
-};
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function EmployeesPage() {
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles_with_roles"],
+    queryFn: async () => {
+      const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
+      if (!profs) return [];
+      // Get assignments for each user
+      const { data: assignments } = await supabase.from("case_assignments").select("user_id, cases(case_number, address)");
+      return profs.map((p) => ({
+        ...p,
+        assignments: assignments?.filter((a) => a.user_id === p.user_id) || [],
+      }));
+    },
+  });
+
   return (
     <div>
-      <PageHeader title="Medarbejdere" description="Oversigt over alle medarbejdere">
-        <Button size="sm" className="gap-2">
-          <Plus size={16} /> Ny medarbejder
-        </Button>
-      </PageHeader>
+      <PageHeader title="Medarbejdere" description="Oversigt over alle medarbejdere" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {mockEmployees.map((e, i) => (
-          <motion.div
-            key={e.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-            className="rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-shadow"
-          >
+        {(profiles || []).map((e, i) => (
+          <motion.div key={e.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            className="rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-shadow">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {e.name.split(" ").map(n => n[0]).join("")}
+                {e.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-card-foreground">{e.name}</p>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${statusColors[e.status]}`}>
-                    {e.status}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{e.role} · {e.email}</p>
-                {e.currentCase && (
-                  <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
-                    <p className="text-xs font-medium text-card-foreground">Sag {e.currentCase}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin size={11} /> {e.location}
-                    </p>
+                <p className="font-medium text-card-foreground">{e.full_name || "Unavngivet"}</p>
+                <p className="text-xs text-muted-foreground">{e.role_label || "Medarbejder"} · {e.email}</p>
+                {e.assignments.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    {e.assignments.slice(0, 2).map((a: any, j: number) => (
+                      <div key={j} className="rounded-lg bg-muted/50 px-3 py-2">
+                        <p className="text-xs font-medium text-card-foreground">Sag {a.cases?.case_number}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin size={11} /> {a.cases?.address || "–"}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
           </motion.div>
         ))}
+        {(!profiles || profiles.length === 0) && (
+          <p className="col-span-full text-center py-8 text-sm text-muted-foreground">Ingen medarbejdere endnu – opret en bruger for at starte</p>
+        )}
       </div>
     </div>
   );
