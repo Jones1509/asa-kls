@@ -1,14 +1,33 @@
-import { useState } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Outlet, Navigate, Link } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
-import { Menu, X, LogOut, Bell } from "lucide-react";
+import { Menu, X, LogOut, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { session, role, profile, loading, signOut } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Notification counts
+  const { data: notifData } = useQuery({
+    queryKey: ["notifications_count"],
+    queryFn: async () => {
+      const [{ count: unreadReports }, { count: newReports }] = await Promise.all([
+        supabase.from("field_reports").select("*", { count: "exact", head: true }).eq("is_read", false),
+        supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "Ny"),
+      ]);
+      return { unreadFieldReports: unreadReports || 0, newReports: newReports || 0 };
+    },
+    enabled: role === "admin",
+    refetchInterval: 30000,
+  });
+
+  const totalNotifs = (notifData?.unreadFieldReports || 0) + (notifData?.newReports || 0);
 
   if (loading) {
     return (
@@ -74,10 +93,75 @@ export function AppLayout() {
             </div>
             <span className="font-heading font-bold text-foreground lg:hidden">ASA KLS</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground">
-              <Bell size={17} />
-            </Button>
+          <div className="flex items-center gap-1.5">
+            {/* Notifications */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground relative"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell size={17} />
+                {totalNotifs > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground animate-pulse">
+                    {totalNotifs > 9 ? "9+" : totalNotifs}
+                  </span>
+                )}
+              </Button>
+
+              <AnimatePresence>
+                {showNotifications && role === "admin" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-border bg-card shadow-elevated z-50 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="text-sm font-heading font-bold text-card-foreground">Notifikationer</p>
+                    </div>
+                    <div className="divide-y divide-border max-h-64 overflow-y-auto">
+                      {(notifData?.unreadFieldReports || 0) > 0 && (
+                        <Link to="/field-reports" onClick={() => setShowNotifications(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-warning/10 flex-shrink-0">
+                            <Bell size={14} className="text-warning" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-card-foreground">{notifData?.unreadFieldReports} ulæste feltrapporter</p>
+                            <p className="text-[10px] text-muted-foreground">Kræver din opmærksomhed</p>
+                          </div>
+                        </Link>
+                      )}
+                      {(notifData?.newReports || 0) > 0 && (
+                        <Link to="/reports" onClick={() => setShowNotifications(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
+                            <Bell size={14} className="text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-card-foreground">{notifData?.newReports} nye rapporter</p>
+                            <p className="text-[10px] text-muted-foreground">Afventer gennemgang</p>
+                          </div>
+                        </Link>
+                      )}
+                      {totalNotifs === 0 && (
+                        <div className="px-4 py-6 text-center">
+                          <p className="text-xs text-muted-foreground">Ingen nye notifikationer</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Profile link */}
+            <Link to="/profile">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground">
+                <User size={17} />
+              </Button>
+            </Link>
+
             <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive lg:hidden">
               <LogOut size={17} />
             </Button>

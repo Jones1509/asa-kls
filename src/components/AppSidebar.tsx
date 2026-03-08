@@ -12,6 +12,8 @@ import {
   LogOut,
   Receipt,
   Radio,
+  User,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -109,7 +111,14 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
 
       {/* User profile */}
       <div className="border-t border-sidebar-border px-3 py-3">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-sidebar-accent transition-colors">
+        <NavLink
+          to="/profile"
+          onClick={onNavigate}
+          className={({ isActive }) => cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
+            isActive ? "bg-sidebar-primary/10" : "hover:bg-sidebar-accent"
+          )}
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-primary text-xs font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
             {profile?.full_name?.charAt(0)?.toUpperCase() || (role === "admin" ? "A" : "M")}
           </div>
@@ -122,11 +131,11 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
             </p>
           </div>
           {onSignOut && (
-            <button onClick={onSignOut} className="rounded-lg p-2 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-destructive transition-colors">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-2 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-destructive transition-colors">
               <LogOut size={15} />
             </button>
           )}
-        </div>
+        </NavLink>
       </div>
     </aside>
   );
