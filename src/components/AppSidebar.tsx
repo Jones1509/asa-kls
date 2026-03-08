@@ -10,7 +10,8 @@ import {
   MessageSquare,
   Users,
   LogOut,
-  ChevronRight,
+  Receipt,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -25,13 +26,15 @@ interface AppSidebarProps {
 const adminLinks = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
   { to: "/cases", icon: Briefcase, label: "Sager", section: "Oversigt" },
+  { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Oversigt" },
   { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
-  { to: "/reports", icon: FileText, label: "Rapporter", section: "Dokumenter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "Dokumenter" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "Dokumenter" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "Kommunikation" },
   { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
-  { to: "/chat", icon: MessageSquare, label: "Chat", section: "Administration" },
+  { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
 ];
 
 const employeeLinks = [
@@ -39,9 +42,10 @@ const employeeLinks = [
   { to: "/cases", icon: Briefcase, label: "Mine sager", section: "Oversigt" },
   { to: "/schedule", icon: Calendar, label: "Min plan", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timer", section: "Planlægning" },
-  { to: "/reports", icon: FileText, label: "Rapporter", section: "Dokumenter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "Dokumenter" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "Dokumenter" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
 ];
 
