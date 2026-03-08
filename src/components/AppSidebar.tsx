@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Briefcase,
@@ -9,14 +9,16 @@ import {
   FolderOpen,
   MessageSquare,
   Users,
-  Settings,
   Shield,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppSidebarProps {
   role: "admin" | "employee";
+  profile?: { full_name: string; email: string } | null;
   onNavigate?: () => void;
+  onSignOut?: () => void;
 }
 
 const adminLinks = [
@@ -42,27 +44,21 @@ const employeeLinks = [
   { to: "/chat", icon: MessageSquare, label: "Chat" },
 ];
 
-export function AppSidebar({ role, onNavigate }: AppSidebarProps) {
+export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarProps) {
   const links = role === "admin" ? adminLinks : employeeLinks;
 
   return (
     <aside className="flex h-full w-[260px] flex-col bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
       <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
           <Shield size={18} className="text-sidebar-primary-foreground" />
         </div>
         <div>
-          <span className="font-heading text-lg font-bold text-sidebar-accent-foreground">
-            ASA KLS
-          </span>
-          <p className="text-[11px] text-sidebar-foreground/60 leading-none">
-            Kontrolsystem
-          </p>
+          <span className="font-heading text-lg font-bold text-sidebar-accent-foreground">ASA KLS</span>
+          <p className="text-[11px] text-sidebar-foreground/60 leading-none">Kontrolsystem</p>
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {links.map((link) => (
           <NavLink
@@ -85,20 +81,24 @@ export function AppSidebar({ role, onNavigate }: AppSidebarProps) {
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="border-t border-sidebar-border px-3 py-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
-            {role === "admin" ? "A" : "M"}
+            {profile?.full_name?.charAt(0) || (role === "admin" ? "A" : "M")}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-sidebar-accent-foreground truncate">
-              {role === "admin" ? "Administrator" : "Medarbejder"}
+              {profile?.full_name || (role === "admin" ? "Administrator" : "Medarbejder")}
             </p>
-            <p className="text-xs text-sidebar-foreground/50">
-              {role === "admin" ? "admin@asakls.dk" : "bruger@asakls.dk"}
+            <p className="text-xs text-sidebar-foreground/50 truncate">
+              {profile?.email || ""}
             </p>
           </div>
+          {onSignOut && (
+            <button onClick={onSignOut} className="rounded-md p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+              <LogOut size={14} />
+            </button>
+          )}
         </div>
       </div>
     </aside>

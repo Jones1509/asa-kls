@@ -1,16 +1,16 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Search, MapPin, X } from "lucide-react";
 import { motion } from "framer-motion";
-
-const mockCases = [
-  { id: "2026-014", customer: "Dansk Bygge A/S", address: "Aarhusvej 12, 8000 Aarhus", status: "Aktiv", employees: 3, start: "2026-02-01", end: "2026-04-15" },
-  { id: "2026-018", customer: "NCC Danmark", address: "Kongensgade 45, 5000 Odense", status: "Aktiv", employees: 2, start: "2026-02-15", end: "2026-05-01" },
-  { id: "2026-011", customer: "MT Højgaard", address: "Industrivej 8, 2650 Hvidovre", status: "Aktiv", employees: 4, start: "2026-01-10", end: "2026-03-30" },
-  { id: "2026-008", customer: "Per Aarsleff", address: "Havnevej 22, 6700 Esbjerg", status: "Afsluttet", employees: 2, start: "2025-11-01", end: "2026-01-15" },
-  { id: "2026-021", customer: "Enemærke & Petersen", address: "Strandvej 110, 2900 Hellerup", status: "Planlagt", employees: 0, start: "2026-04-01", end: "2026-06-30" },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   Aktiv: "bg-success/10 text-success",
@@ -19,18 +19,79 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CasesPage() {
+  const { role, user } = useAuth();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" });
+
+  const { data: cases, isLoading } = useQuery({
+    queryKey: ["cases"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const createCase = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("cases").insert({
+        ...form,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        created_by: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      setOpen(false);
+      setForm({ case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" });
+      toast.success("Sag oprettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const filtered = cases?.filter(
+    (c) =>
+      c.case_number.toLowerCase().includes(search.toLowerCase()) ||
+      c.customer.toLowerCase().includes(search.toLowerCase()) ||
+      c.address.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div>
       <PageHeader title="Sager" description="Oversigt over alle sager">
-        <Button size="sm" className="gap-2">
-          <Plus size={16} /> Ny sag
-        </Button>
+        {role === "admin" && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2"><Plus size={16} /> Ny sag</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Opret ny sag</DialogTitle></DialogHeader>
+              <form onSubmit={(e) => { e.preventDefault(); createCase.mutate(); }} className="space-y-3">
+                <div><Label className="text-xs">Sagsnummer</Label><Input value={form.case_number} onChange={(e) => setForm({ ...form, case_number: e.target.value })} placeholder="2026-025" className="mt-1" required /></div>
+                <div><Label className="text-xs">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1" required /></div>
+                <div><Label className="text-xs">Adresse</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1" required /></div>
+                <div><Label className="text-xs">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1" /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Startdato</Label><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1" /></div>
+                  <div><Label className="text-xs">Slutdato</Label><Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1" /></div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuller</Button>
+                  <Button type="submit" disabled={createCase.isPending}>{createCase.isPending ? "Opretter..." : "Opret sag"}</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </PageHeader>
 
       <div className="mb-4">
         <div className="relative max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Søg sager..." className="pl-9" />
+          <Input placeholder="Søg sager..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -47,29 +108,18 @@ export default function CasesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {mockCases.map((c, i) => (
-                <motion.tr
-                  key={c.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="hover:bg-muted/30 transition-colors cursor-pointer"
-                >
-                  <td className="px-5 py-3.5 font-medium text-card-foreground">{c.id}</td>
+              {(filtered || []).map((c, i) => (
+                <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-card-foreground">{c.case_number}</td>
                   <td className="px-5 py-3.5 text-card-foreground">{c.customer}</td>
-                  <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell">
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin size={13} /> {c.address}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell">{c.start} → {c.end}</td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[c.status]}`}>
-                      {c.status}
-                    </span>
-                  </td>
+                  <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell"><span className="inline-flex items-center gap-1"><MapPin size={13} /> {c.address}</span></td>
+                  <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell">{c.start_date || "–"} → {c.end_date || "–"}</td>
+                  <td className="px-5 py-3.5"><span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[c.status] || ""}`}>{c.status}</span></td>
                 </motion.tr>
               ))}
+              {filtered?.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Ingen sager fundet</td></tr>
+              )}
             </tbody>
           </table>
         </div>
