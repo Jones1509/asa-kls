@@ -29,7 +29,7 @@ export default function SchedulePage() {
     queryFn: async () => {
       const startDate = format(days[0], "yyyy-MM-dd");
       const endDate = format(days[4], "yyyy-MM-dd");
-      let query = supabase.from("schedules").select("*, cases(case_number, address), profiles!schedules_user_id_fkey(full_name)").gte("date", startDate).lte("date", endDate);
+      let query = supabase.from("schedules").select("*, cases(case_number, address), profiles!schedules_user_id_profiles_fkey(full_name)").gte("date", startDate).lte("date", endDate);
       if (role !== "admin") query = query.eq("user_id", user!.id);
       const { data } = await query;
       return data || [];
