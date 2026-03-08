@@ -20,6 +20,110 @@ const statusColors: Record<string, string> = {
 
 const statusOptions = ["Aktiv", "Planlagt", "Afsluttet"];
 
+// NOTE: This component must live at module-scope so React doesn't treat it as a new
+// component type on every keystroke (which can cause a full re-mount + focus loss).
+function CaseFormFields({
+  f,
+  setF,
+}: {
+  f: any;
+  setF: (v: any) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Sagsnummer
+          </Label>
+          <Input
+            value={f.case_number}
+            onChange={(e) => setF({ ...f, case_number: e.target.value })}
+            placeholder="2026-025"
+            className="mt-1.5 rounded-xl"
+            required
+          />
+        </div>
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Status
+          </Label>
+          <select
+            value={f.status}
+            onChange={(e) => setF({ ...f, status: e.target.value })}
+            className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
+          >
+            {statusOptions.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Kunde
+        </Label>
+        <Input
+          value={f.customer}
+          onChange={(e) => setF({ ...f, customer: e.target.value })}
+          placeholder="Dansk Bygge A/S"
+          className="mt-1.5 rounded-xl"
+          required
+        />
+      </div>
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Adresse
+        </Label>
+        <Input
+          value={f.address}
+          onChange={(e) => setF({ ...f, address: e.target.value })}
+          placeholder="Aarhusvej 12, 8000 Aarhus"
+          className="mt-1.5 rounded-xl"
+          required
+        />
+      </div>
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Beskrivelse
+        </Label>
+        <Textarea
+          value={f.description || ""}
+          onChange={(e) => setF({ ...f, description: e.target.value })}
+          className="mt-1.5 rounded-xl"
+          rows={3}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Startdato
+          </Label>
+          <Input
+            type="date"
+            value={f.start_date || ""}
+            onChange={(e) => setF({ ...f, start_date: e.target.value })}
+            className="mt-1.5 rounded-xl"
+          />
+        </div>
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Slutdato
+          </Label>
+          <Input
+            type="date"
+            value={f.end_date || ""}
+            onChange={(e) => setF({ ...f, end_date: e.target.value })}
+            className="mt-1.5 rounded-xl"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CasesPage() {
   const { role, user } = useAuth();
   const queryClient = useQueryClient();
@@ -30,7 +134,15 @@ export default function CasesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("alle");
-  const emptyForm = { case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" };
+  const emptyForm = {
+    case_number: "",
+    customer: "",
+    address: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    status: "Aktiv",
+  };
   const [form, setForm] = useState(emptyForm);
   const [editForm, setEditForm] = useState<any>(null);
   const [assignCaseId, setAssignCaseId] = useState<string | null>(null);
@@ -39,7 +151,10 @@ export default function CasesPage() {
   const { data: cases, isLoading } = useQuery({
     queryKey: ["cases"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("cases")
+        .select("*")
+        .order("created_at", { ascending: false });
       return data || [];
     },
   });
@@ -47,7 +162,9 @@ export default function CasesPage() {
   const { data: assignments } = useQuery({
     queryKey: ["case_assignments_all"],
     queryFn: async () => {
-      const { data } = await supabase.from("case_assignments").select("*, profiles!case_assignments_user_id_fkey(full_name, email)");
+      const { data } = await supabase
+        .from("case_assignments")
+        .select("*, profiles!case_assignments_user_id_fkey(full_name, email)");
       return data || [];
     },
     enabled: role === "admin",
@@ -56,7 +173,10 @@ export default function CasesPage() {
   const { data: employees } = useQuery({
     queryKey: ["employees_list"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name, email").order("full_name");
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .order("full_name");
       return data || [];
     },
     enabled: role === "admin",
@@ -84,15 +204,18 @@ export default function CasesPage() {
   const updateCase = useMutation({
     mutationFn: async () => {
       if (!editForm) return;
-      const { error } = await supabase.from("cases").update({
-        case_number: editForm.case_number,
-        customer: editForm.customer,
-        address: editForm.address,
-        description: editForm.description,
-        start_date: editForm.start_date || null,
-        end_date: editForm.end_date || null,
-        status: editForm.status,
-      }).eq("id", editForm.id);
+      const { error } = await supabase
+        .from("cases")
+        .update({
+          case_number: editForm.case_number,
+          customer: editForm.customer,
+          address: editForm.address,
+          description: editForm.description,
+          start_date: editForm.start_date || null,
+          end_date: editForm.end_date || null,
+          status: editForm.status,
+        })
+        .eq("id", editForm.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -136,7 +259,10 @@ export default function CasesPage() {
 
   const removeAssignment = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("case_assignments").delete().eq("id", id);
+      const { error } = await supabase
+        .from("case_assignments")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -162,28 +288,8 @@ export default function CasesPage() {
     Afsluttet: cases?.filter((c) => c.status === "Afsluttet").length || 0,
   };
 
-  const getCaseAssignments = (caseId: string) => assignments?.filter(a => a.case_id === caseId) || [];
-
-  const CaseFormFields = ({ f, setF }: { f: any; setF: (v: any) => void }) => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label><Input value={f.case_number} onChange={(e) => setF({ ...f, case_number: e.target.value })} placeholder="2026-025" className="mt-1.5 rounded-xl" required /></div>
-        <div>
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
-          <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
-            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
-      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={f.customer} onChange={(e) => setF({ ...f, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1.5 rounded-xl" required /></div>
-      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label><Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1.5 rounded-xl" required /></div>
-      <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={f.description || ""} onChange={(e) => setF({ ...f, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label><Input type="date" value={f.start_date || ""} onChange={(e) => setF({ ...f, start_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-        <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label><Input type="date" value={f.end_date || ""} onChange={(e) => setF({ ...f, end_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-      </div>
-    </div>
-  );
+  const getCaseAssignments = (caseId: string) =>
+    assignments?.filter((a) => a.case_id === caseId) || [];
 
   return (
     <div>
