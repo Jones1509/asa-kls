@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,10 @@ export function AppLayout() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-xl border-[3px] border-primary/20 border-t-primary" />
+          <p className="text-xs font-medium text-muted-foreground">Indlæser...</p>
+        </div>
       </div>
     );
   }
@@ -24,10 +27,12 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <AppSidebar role={userRole} profile={profile} onSignOut={signOut} />
       </div>
 
+      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -35,7 +40,7 @@ export function AppLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.div
@@ -51,20 +56,32 @@ export function AppLayout() {
         )}
       </AnimatePresence>
 
+      {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between gap-3 border-b border-border bg-card px-4 lg:hidden">
+        {/* Top bar */}
+        <header className="flex h-16 items-center justify-between gap-3 border-b border-border bg-card/80 backdrop-blur-xl px-4 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="rounded-xl p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden"
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <span className="font-heading font-bold text-foreground">ASA KLS</span>
+            <div className="hidden lg:block">
+              <p className="text-sm font-medium text-muted-foreground">
+                {new Date().toLocaleDateString("da-DK", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
+            <span className="font-heading font-bold text-foreground lg:hidden">ASA KLS</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
-            <LogOut size={16} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground">
+              <Bell size={17} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive lg:hidden">
+              <LogOut size={17} />
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

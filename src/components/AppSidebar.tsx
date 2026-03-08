@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Briefcase,
@@ -9,10 +9,11 @@ import {
   FolderOpen,
   MessageSquare,
   Users,
-  Shield,
   LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface AppSidebarProps {
   role: "admin" | "employee";
@@ -22,81 +23,106 @@ interface AppSidebarProps {
 }
 
 const adminLinks = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/cases", icon: Briefcase, label: "Sager" },
-  { to: "/schedule", icon: Calendar, label: "Kalender" },
-  { to: "/time-tracking", icon: Clock, label: "Timeregistrering" },
-  { to: "/reports", icon: FileText, label: "Rapporter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation" },
-  { to: "/employees", icon: Users, label: "Medarbejdere" },
-  { to: "/chat", icon: MessageSquare, label: "Chat" },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
+  { to: "/cases", icon: Briefcase, label: "Sager", section: "Oversigt" },
+  { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
+  { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "Dokumenter" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "Dokumenter" },
+  { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
+  { to: "/chat", icon: MessageSquare, label: "Chat", section: "Administration" },
 ];
 
 const employeeLinks = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/cases", icon: Briefcase, label: "Mine sager" },
-  { to: "/schedule", icon: Calendar, label: "Min plan" },
-  { to: "/time-tracking", icon: Clock, label: "Timer" },
-  { to: "/reports", icon: FileText, label: "Rapporter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation" },
-  { to: "/chat", icon: MessageSquare, label: "Chat" },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
+  { to: "/cases", icon: Briefcase, label: "Mine sager", section: "Oversigt" },
+  { to: "/schedule", icon: Calendar, label: "Min plan", section: "Planlægning" },
+  { to: "/time-tracking", icon: Clock, label: "Timer", section: "Planlægning" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "Dokumenter" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "Dokumenter" },
+  { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
 ];
 
 export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarProps) {
   const links = role === "admin" ? adminLinks : employeeLinks;
+  const location = useLocation();
+
+  const sections = links.reduce((acc, link) => {
+    if (!acc[link.section]) acc[link.section] = [];
+    acc[link.section].push(link);
+    return acc;
+  }, {} as Record<string, typeof links>);
 
   return (
-    <aside className="flex h-full w-[260px] flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Shield size={18} className="text-sidebar-primary-foreground" />
+    <aside className="flex h-full w-[272px] flex-col bg-sidebar text-sidebar-foreground">
+      {/* Logo */}
+      <div className="flex h-[72px] items-center gap-3.5 px-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-[0_4px_12px_hsl(215_80%_56%/0.3)]">
+          <span className="text-sm font-extrabold text-white tracking-tight">A</span>
         </div>
         <div>
-          <span className="font-heading text-lg font-bold text-sidebar-accent-foreground">ASA KLS</span>
-          <p className="text-[11px] text-sidebar-foreground/60 leading-none">Kontrolsystem</p>
+          <span className="font-heading text-[17px] font-extrabold text-sidebar-accent-foreground tracking-tight">ASA KLS</span>
+          <p className="text-[10px] font-medium text-sidebar-foreground/40 tracking-[0.12em] uppercase leading-none mt-0.5">Kontrolsystem</p>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {links.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            end={link.to === "/"}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              )
-            }
-          >
-            <link.icon size={18} />
-            {link.label}
-          </NavLink>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4">
+        {Object.entries(sections).map(([section, sectionLinks]) => (
+          <div key={section} className="mb-5">
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-sidebar-foreground/30">{section}</p>
+            <div className="space-y-0.5">
+              {sectionLinks.map((link) => {
+                const isActive = link.to === "/" ? location.pathname === "/" : location.pathname.startsWith(link.to);
+                return (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === "/"}
+                    onClick={onNavigate}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-sidebar-primary/10 text-sidebar-primary"
+                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-sidebar-primary"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <link.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
+                    {link.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </nav>
 
+      {/* User profile */}
       <div className="border-t border-sidebar-border px-3 py-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
-            {profile?.full_name?.charAt(0) || (role === "admin" ? "A" : "M")}
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-sidebar-accent transition-colors">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-primary text-xs font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+            {profile?.full_name?.charAt(0)?.toUpperCase() || (role === "admin" ? "A" : "M")}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-accent-foreground truncate">
+            <p className="text-[13px] font-semibold text-sidebar-accent-foreground truncate">
               {profile?.full_name || (role === "admin" ? "Administrator" : "Medarbejder")}
             </p>
-            <p className="text-xs text-sidebar-foreground/50 truncate">
-              {profile?.email || ""}
+            <p className="text-[11px] text-sidebar-foreground/40 truncate">
+              {role === "admin" ? "Administrator" : "Medarbejder"}
             </p>
           </div>
           {onSignOut && (
-            <button onClick={onSignOut} className="rounded-md p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-              <LogOut size={14} />
+            <button onClick={onSignOut} className="rounded-lg p-2 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-destructive transition-colors">
+              <LogOut size={15} />
             </button>
           )}
         </div>
