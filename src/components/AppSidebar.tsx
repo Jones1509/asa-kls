@@ -59,12 +59,9 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
     <aside className="flex h-full w-[272px] flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="flex h-[72px] items-center gap-3.5 px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-[0_4px_12px_hsl(215_80%_56%/0.3)]">
-          <span className="text-sm font-extrabold text-white tracking-tight">A</span>
-        </div>
         <div>
-          <span className="font-heading text-[17px] font-extrabold text-sidebar-accent-foreground tracking-tight">ASA KLS</span>
-          <p className="text-[10px] font-medium text-sidebar-foreground/40 tracking-[0.12em] uppercase leading-none mt-0.5">Kontrolsystem</p>
+          <span className="font-heading text-2xl font-extrabold italic tracking-tight text-primary">ASA</span>
+          <p className="text-[9px] font-semibold text-primary/60 tracking-[0.18em] uppercase leading-none">Kontrolsystem</p>
         </div>
       </div>
 
