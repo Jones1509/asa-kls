@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, FileText, Eye, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,9 +19,10 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ReportsPage() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ case_id: "", title: "", description: "", observations: "", recommendations: "" });
 
   const { data: cases } = useQuery({
@@ -35,9 +36,24 @@ export default function ReportsPage() {
   const { data: reports } = useQuery({
     queryKey: ["reports"],
     queryFn: async () => {
-      const { data } = await supabase.from("reports").select("*, cases(case_number)").order("created_at", { ascending: false });
+      let query = supabase.from("reports").select("*, cases(case_number)").order("created_at", { ascending: false });
+      if (role !== "admin") query = query.eq("user_id", user!.id);
+      const { data } = await query;
       return data || [];
     },
+    enabled: !!user,
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("reports").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Status opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const createReport = useMutation({
@@ -63,7 +79,7 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <PageHeader title="Rapporter" description="Opret og gennemgå rapporter">
+      <PageHeader title="Rapporter" description={`${reports?.length || 0} rapporter`}>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny rapport</Button>
@@ -92,19 +108,68 @@ export default function ReportsPage() {
       </PageHeader>
 
       <div className="space-y-3">
-        {(reports || []).map((r, i) => (
-          <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-            className="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all hover:-translate-y-0.5">
-            <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10"><FileText size={18} className="text-primary" /></div>
-              <div>
-                <p className="text-sm font-semibold text-card-foreground">{r.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Sag {(r.cases as any)?.case_number || "–"} · {r.created_at?.split("T")[0]}</p>
+        {(reports || []).map((r, i) => {
+          const isExpanded = expanded === r.id;
+          return (
+            <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              className="rounded-2xl border border-border bg-card shadow-card hover:shadow-elevated transition-all overflow-hidden">
+              <div
+                className="flex items-center justify-between p-5 cursor-pointer"
+                onClick={() => setExpanded(isExpanded ? null : r.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10"><FileText size={18} className="text-primary" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-card-foreground">{r.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Sag {(r.cases as any)?.case_number || "–"} · {r.created_at?.split("T")[0]}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[r.status] || ""}`}>{r.status}</span>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                </div>
               </div>
-            </div>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[r.status] || ""}`}>{r.status}</span>
-          </motion.div>
-        ))}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-5 pb-5 space-y-3 border-t border-border pt-4">
+                      {r.description && (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Beskrivelse</p>
+                          <p className="text-sm text-card-foreground">{r.description}</p>
+                        </div>
+                      )}
+                      {r.observations && (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Observationer</p>
+                          <p className="text-sm text-card-foreground">{r.observations}</p>
+                        </div>
+                      )}
+                      {r.recommendations && (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Anbefalinger</p>
+                          <p className="text-sm text-card-foreground">{r.recommendations}</p>
+                        </div>
+                      )}
+                      {role === "admin" && r.status === "Ny" && (
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" className="rounded-xl" onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ id: r.id, status: "Godkendt" }); }}>Godkend</Button>
+                          <Button size="sm" variant="outline" className="rounded-xl text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ id: r.id, status: "Afvist" }); }}>Afvis</Button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
         {(!reports || reports.length === 0) && (
           <div className="text-center py-12">
             <FileText size={32} className="mx-auto text-muted-foreground/20 mb-3" />

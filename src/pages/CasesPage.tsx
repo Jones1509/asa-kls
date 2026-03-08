@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, MapPin } from "lucide-react";
+import { Plus, Search, MapPin, Trash2, Edit } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ export default function CasesPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("alle");
   const [form, setForm] = useState({ case_number: "", customer: "", address: "", description: "", start_date: "", end_date: "", status: "Aktiv" });
 
   const { data: cases } = useQuery({
@@ -52,16 +53,37 @@ export default function CasesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = cases?.filter(
-    (c) =>
+  const deleteCase = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cases").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      toast.success("Sag slettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const filtered = cases?.filter((c) => {
+    const matchSearch =
       c.case_number.toLowerCase().includes(search.toLowerCase()) ||
       c.customer.toLowerCase().includes(search.toLowerCase()) ||
-      c.address.toLowerCase().includes(search.toLowerCase())
-  );
+      c.address.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "alle" || c.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const counts = {
+    alle: cases?.length || 0,
+    Aktiv: cases?.filter((c) => c.status === "Aktiv").length || 0,
+    Planlagt: cases?.filter((c) => c.status === "Planlagt").length || 0,
+    Afsluttet: cases?.filter((c) => c.status === "Afsluttet").length || 0,
+  };
 
   return (
     <div>
-      <PageHeader title="Sager" description="Oversigt over alle sager">
+      <PageHeader title="Sager" description={`${counts.alle} sager i alt · ${counts.Aktiv} aktive`}>
         {role === "admin" && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -70,13 +92,13 @@ export default function CasesPage() {
             <DialogContent className="max-w-md rounded-2xl">
               <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret ny sag</DialogTitle></DialogHeader>
               <form onSubmit={(e) => { e.preventDefault(); createCase.mutate(); }} className="space-y-4">
-                <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label><Input value={form.case_number} onChange={(e) => setForm({ ...form, case_number: e.target.value })} placeholder="2026-025" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label><Input value={form.case_number} onChange={(e) => setForm({ ...form, case_number: e.target.value })} placeholder="2026-025" className="mt-1.5 rounded-xl" required /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} placeholder="Dansk Bygge A/S" className="mt-1.5 rounded-xl" required /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Aarhusvej 12, 8000 Aarhus" className="mt-1.5 rounded-xl" required /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-                  <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label><Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label><Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label><Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
                 </div>
                 <div className="flex justify-end gap-2 pt-3">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
@@ -88,10 +110,26 @@ export default function CasesPage() {
         )}
       </PageHeader>
 
-      <div className="mb-5">
-        <div className="relative max-w-sm">
+      {/* Filters */}
+      <div className="mb-5 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Søg sager..." className="pl-10 rounded-xl h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+          {(["alle", "Aktiv", "Planlagt", "Afsluttet"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                statusFilter === s
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s === "alle" ? "Alle" : s} ({counts[s]})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -105,20 +143,31 @@ export default function CasesPage() {
                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Adresse</th>
                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Periode</th>
                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                {role === "admin" && <th className="px-6 py-3.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground w-16"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {(filtered || []).map((c, i) => (
-                <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-muted/20 transition-colors">
+                <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-muted/20 transition-colors group">
                   <td className="px-6 py-4 font-semibold text-card-foreground">{c.case_number}</td>
                   <td className="px-6 py-4 text-card-foreground">{c.customer}</td>
                   <td className="px-6 py-4 text-muted-foreground hidden md:table-cell"><span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-muted-foreground/50" /> {c.address}</span></td>
                   <td className="px-6 py-4 text-muted-foreground hidden lg:table-cell">{c.start_date || "–"} → {c.end_date || "–"}</td>
                   <td className="px-6 py-4"><span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[c.status] || ""}`}>{c.status}</span></td>
+                  {role === "admin" && (
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => { if (confirm("Er du sikker på du vil slette denne sag?")) deleteCase.mutate(c.id); }}
+                        className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </motion.tr>
               ))}
               {filtered?.length === 0 && (
-                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">Ingen sager fundet</td></tr>
+                <tr><td colSpan={role === "admin" ? 6 : 5} className="px-6 py-12 text-center text-sm text-muted-foreground">Ingen sager fundet</td></tr>
               )}
             </tbody>
           </table>
