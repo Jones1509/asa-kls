@@ -1,17 +1,24 @@
 import { PageHeader } from "@/components/PageHeader";
-import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, MapPin, Clock, Plus, CalendarDays } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, getISOWeek, isToday } from "date-fns";
 import { da } from "date-fns/locale";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function SchedulePage() {
   const { user, role } = useAuth();
+  const queryClient = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ case_id: "", user_id: "", date: "", start_time: "08:00", end_time: "16:00", notes: "" });
 
   const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
   const weekNum = getISOWeek(weekStart);
@@ -21,12 +28,51 @@ export default function SchedulePage() {
     queryFn: async () => {
       const startDate = format(days[0], "yyyy-MM-dd");
       const endDate = format(days[4], "yyyy-MM-dd");
-      let query = supabase.from("schedules").select("*, cases(case_number, address)").gte("date", startDate).lte("date", endDate);
+      let query = supabase.from("schedules").select("*, cases(case_number, address), profiles!schedules_user_id_fkey(full_name)").gte("date", startDate).lte("date", endDate);
       if (role !== "admin") query = query.eq("user_id", user!.id);
       const { data } = await query;
       return data || [];
     },
     enabled: !!user,
+  });
+
+  const { data: cases } = useQuery({
+    queryKey: ["cases_active_schedule"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cases").select("id, case_number").eq("status", "Aktiv");
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  const { data: employees } = useQuery({
+    queryKey: ["employees_schedule"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, full_name").order("full_name");
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  const createSchedule = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("schedules").insert({
+        user_id: form.user_id,
+        case_id: form.case_id || null,
+        date: form.date,
+        start_time: form.start_time,
+        end_time: form.end_time,
+        notes: form.notes || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      setOpen(false);
+      setForm({ case_id: "", user_id: "", date: "", start_time: "08:00", end_time: "16:00", notes: "" });
+      toast.success("Opgave planlagt");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const getScheduleForDay = (date: Date) => {
@@ -37,12 +83,50 @@ export default function SchedulePage() {
   return (
     <div>
       <PageHeader title="Kalender" description="Ugeplan og arbejdsplanlægning">
-        <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => setWeekStart(subWeeks(weekStart, 1))}><ChevronLeft size={16} /></Button>
-          <span className="text-sm font-semibold text-foreground min-w-[180px] text-center px-2">
-            Uge {weekNum} · {format(weekStart, "MMMM yyyy", { locale: da })}
-          </span>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => setWeekStart(addWeeks(weekStart, 1))}><ChevronRight size={16} /></Button>
+        <div className="flex items-center gap-2">
+          {role === "admin" && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Planlæg</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md rounded-2xl">
+                <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Planlæg opgave</DialogTitle></DialogHeader>
+                <form onSubmit={(e) => { e.preventDefault(); createSchedule.mutate(); }} className="space-y-4">
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Medarbejder</Label>
+                    <select value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
+                      <option value="">Vælg medarbejder...</option>
+                      {employees?.map((e) => <option key={e.user_id} value={e.user_id}>{e.full_name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag (valgfrit)</Label>
+                    <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
+                      <option value="">Ingen sag</option>
+                      {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number}</option>)}
+                    </select>
+                  </div>
+                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Start</Label><Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+                    <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slut</Label><Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+                  </div>
+                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Note</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Valgfrit" className="mt-1.5 rounded-xl" /></div>
+                  <div className="flex justify-end gap-2 pt-3">
+                    <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
+                    <Button type="submit" disabled={createSchedule.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createSchedule.isPending ? "Planlægger..." : "Gem"}</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1">
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => setWeekStart(subWeeks(weekStart, 1))}><ChevronLeft size={16} /></Button>
+            <span className="text-sm font-semibold text-foreground min-w-[180px] text-center px-2">
+              Uge {weekNum} · {format(weekStart, "MMMM yyyy", { locale: da })}
+            </span>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => setWeekStart(addWeeks(weekStart, 1))}><ChevronRight size={16} /></Button>
+          </div>
         </div>
       </PageHeader>
 
@@ -59,7 +143,7 @@ export default function SchedulePage() {
               key={day.toISOString()}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, type: "spring", stiffness: 300, damping: 24 }}
+              transition={{ delay: i * 0.06 }}
               className={`rounded-2xl border p-4 transition-all ${
                 today ? "border-primary/30 bg-primary/5 ring-1 ring-primary/10" :
                 hasSchedule ? "border-border bg-card shadow-card" : "border-border/50 bg-card/50"
@@ -78,6 +162,9 @@ export default function SchedulePage() {
                     <p className="text-sm font-semibold text-card-foreground">
                       Sag {(s.cases as any)?.case_number || "–"}
                     </p>
+                    {role === "admin" && (s as any).profiles?.full_name && (
+                      <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
+                    )}
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <MapPin size={12} className="text-muted-foreground/50" /> {(s.cases as any)?.address || "–"}
                     </p>
@@ -87,6 +174,7 @@ export default function SchedulePage() {
                         {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
                       </div>
                     )}
+                    {s.notes && <p className="text-[11px] text-muted-foreground/60 italic">{s.notes}</p>}
                   </div>
                 ))
               ) : (

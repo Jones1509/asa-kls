@@ -1,6 +1,6 @@
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
-import { Briefcase, Clock, FileText, Users, ArrowRight, TrendingUp } from "lucide-react";
+import { Briefcase, Clock, FileText, Users, ArrowRight, CalendarDays, ClipboardCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +17,7 @@ const item = {
 };
 
 export default function AdminDashboard() {
-  const { role, profile } = useAuth();
+  const { role, profile, user } = useAuth();
 
   const { data: cases } = useQuery({
     queryKey: ["cases"],
@@ -33,14 +33,18 @@ export default function AdminDashboard() {
       const { data } = await supabase.from("profiles").select("*");
       return data || [];
     },
+    enabled: role === "admin",
   });
 
   const { data: reports } = useQuery({
     queryKey: ["reports"],
     queryFn: async () => {
-      const { data } = await supabase.from("reports").select("*, profiles!reports_user_id_fkey(full_name)").order("created_at", { ascending: false }).limit(5);
+      let query = supabase.from("reports").select("*, cases(case_number)").order("created_at", { ascending: false }).limit(5);
+      if (role !== "admin") query = query.eq("user_id", user!.id);
+      const { data } = await query;
       return data || [];
     },
+    enabled: !!user,
   });
 
   const { data: timeEntries } = useQuery({
@@ -48,9 +52,24 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const { data } = await supabase.from("time_entries").select("hours").gte("date", weekAgo.toISOString().split("T")[0]);
+      let query = supabase.from("time_entries").select("hours").gte("date", weekAgo.toISOString().split("T")[0]);
+      if (role !== "admin") query = query.eq("user_id", user!.id);
+      const { data } = await query;
       return data || [];
     },
+    enabled: !!user,
+  });
+
+  const { data: todaySchedules } = useQuery({
+    queryKey: ["schedules_today", user?.id],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      let query = supabase.from("schedules").select("*, cases(case_number, address)").eq("date", today);
+      if (role !== "admin") query = query.eq("user_id", user!.id);
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!user,
   });
 
   const activeCases = cases?.filter((c) => c.status === "Aktiv").length || 0;
@@ -58,11 +77,18 @@ export default function AdminDashboard() {
   const newReports = reports?.filter((r) => r.status === "Ny").length || 0;
   const firstName = profile?.full_name?.split(" ")[0] || "Admin";
 
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Godmorgen";
+    if (h < 18) return "God eftermiddag";
+    return "Godaften";
+  };
+
   return (
     <motion.div variants={container} initial="hidden" animate="show">
       <PageHeader
-        title={`Godmorgen, ${firstName} 👋`}
-        description={role === "admin" ? "Her er din oversigt for i dag" : "Din personlige oversigt"}
+        title={`${greeting()}, ${firstName} 👋`}
+        description={role === "admin" ? "Her er din oversigt over systemet" : "Din personlige oversigt"}
       />
 
       {/* Stats */}
@@ -70,9 +96,11 @@ export default function AdminDashboard() {
         <motion.div variants={item}>
           <StatCard title="Aktive sager" value={activeCases} icon={<Briefcase size={22} />} trend="up" trendValue="Aktive lige nu" />
         </motion.div>
-        <motion.div variants={item}>
-          <StatCard title="Medarbejdere" value={profiles?.length || 0} icon={<Users size={22} />} description="Registrerede" />
-        </motion.div>
+        {role === "admin" && (
+          <motion.div variants={item}>
+            <StatCard title="Medarbejdere" value={profiles?.length || 0} icon={<Users size={22} />} description="Registrerede" />
+          </motion.div>
+        )}
         <motion.div variants={item}>
           <StatCard title="Timer denne uge" value={`${totalHours}t`} icon={<Clock size={22} />} trend="neutral" trendValue="Denne uge" />
         </motion.div>
@@ -80,6 +108,31 @@ export default function AdminDashboard() {
           <StatCard title="Nye rapporter" value={newReports} icon={<FileText size={22} />} trend={newReports > 0 ? "up" : "neutral"} trendValue={newReports > 0 ? "Afventer gennemgang" : "Ingen nye"} />
         </motion.div>
       </motion.div>
+
+      {/* Today's schedule */}
+      {(todaySchedules?.length || 0) > 0 && (
+        <motion.div variants={item} className="rounded-2xl border border-primary/20 bg-primary/5 p-5 mb-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15">
+              <CalendarDays size={15} className="text-primary" />
+            </div>
+            <h3 className="font-heading font-bold text-foreground text-[15px]">I dag</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {todaySchedules?.map((s) => (
+              <div key={s.id} className="rounded-xl bg-card border border-border p-3">
+                <p className="text-sm font-semibold text-card-foreground">Sag {(s.cases as any)?.case_number || "–"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{(s.cases as any)?.address || "–"}</p>
+                {s.start_time && s.end_time && (
+                  <p className="text-xs font-semibold text-primary mt-2">
+                    {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Content cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -98,10 +151,10 @@ export default function AdminDashboard() {
           </div>
           <div className="divide-y divide-border">
             {(reports || []).slice(0, 5).map((r) => (
-              <div key={r.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/30 transition-colors">
+              <div key={r.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/20 transition-colors">
                 <div>
                   <p className="text-sm font-medium text-card-foreground">{r.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{r.created_at?.split("T")[0]}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Sag {(r.cases as any)?.case_number || "–"} · {r.created_at?.split("T")[0]}</p>
                 </div>
                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                   r.status === "Ny" ? "bg-primary/10 text-primary" : r.status === "Godkendt" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
@@ -112,7 +165,7 @@ export default function AdminDashboard() {
             ))}
             {(!reports || reports.length === 0) && (
               <div className="px-6 py-8 text-center">
-                <FileText size={24} className="mx-auto text-muted-foreground/30 mb-2" />
+                <FileText size={24} className="mx-auto text-muted-foreground/20 mb-2" />
                 <p className="text-sm text-muted-foreground">Ingen rapporter endnu</p>
               </div>
             )}
@@ -133,23 +186,21 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <div className="divide-y divide-border">
-            {(cases || []).slice(0, 5).map((c) => (
-              <div key={c.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/30 transition-colors">
+            {(cases || []).filter(c => c.status === "Aktiv").slice(0, 5).map((c) => (
+              <div key={c.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/20 transition-colors">
                 <div>
                   <p className="text-sm font-medium text-card-foreground">{c.case_number} – {c.customer}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{c.address}</p>
                 </div>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  c.status === "Aktiv" ? "bg-success/10 text-success" : c.status === "Planlagt" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
-                }`}>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-success/10 text-success border border-success/20">
                   {c.status}
                 </span>
               </div>
             ))}
-            {(!cases || cases.length === 0) && (
+            {(!cases || cases.filter(c => c.status === "Aktiv").length === 0) && (
               <div className="px-6 py-8 text-center">
-                <Briefcase size={24} className="mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">Ingen sager endnu</p>
+                <Briefcase size={24} className="mx-auto text-muted-foreground/20 mb-2" />
+                <p className="text-sm text-muted-foreground">Ingen aktive sager</p>
               </div>
             )}
           </div>
