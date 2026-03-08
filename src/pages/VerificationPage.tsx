@@ -110,7 +110,7 @@ export default function VerificationPage() {
 
       <div className="space-y-4">
         {(forms || []).map((f, i) => {
-          const items = (Array.isArray(f.items) ? f.items : []) as CheckItem[];
+          const items = (Array.isArray(f.items) ? f.items : []) as unknown as CheckItem[];
           return (
             <motion.div key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="rounded-xl border border-border bg-card p-5 shadow-card">
