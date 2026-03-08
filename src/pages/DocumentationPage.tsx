@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FolderOpen, AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
+import { Plus, FolderOpen, AlertTriangle, AlertCircle, Info, Search, ImagePlus, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -28,6 +28,9 @@ export default function DocumentationPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("alle");
   const [form, setForm] = useState({ case_id: "", type: "Fejl", title: "", description: "" });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -45,14 +48,35 @@ export default function DocumentationPage() {
     },
   });
 
+  const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles(prev => [...prev, ...files]);
+    files.forEach(f => setImagePreviews(prev => [...prev, URL.createObjectURL(f)]));
+  };
+
+  const removeImage = (idx: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const createDoc = useMutation({
     mutationFn: async () => {
+      let image_urls: string[] = [];
+      for (const file of imageFiles) {
+        const path = `documentation/${user!.id}/${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from("uploads").upload(path, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+        image_urls.push(data.publicUrl);
+      }
+
       const { error } = await supabase.from("documentation").insert({
         user_id: user!.id,
         case_id: form.case_id,
         type: form.type,
         title: form.title,
         description: form.description || null,
+        image_urls: image_urls.length > 0 ? image_urls : null,
       });
       if (error) throw error;
     },
@@ -60,6 +84,8 @@ export default function DocumentationPage() {
       queryClient.invalidateQueries({ queryKey: ["documentation"] });
       setOpen(false);
       setForm({ case_id: "", type: "Fejl", title: "", description: "" });
+      setImageFiles([]);
+      setImagePreviews([]);
       toast.success("Dokumentation oprettet");
     },
     onError: (e: any) => toast.error(e.message),
@@ -79,12 +105,12 @@ export default function DocumentationPage() {
 
   return (
     <div>
-      <PageHeader title="Dokumentation" description={`${counts.alle} dokumenter`}>
+      <PageHeader title="Dokumentation" description={`${counts.alle} dokumenter · Opbevares i 5 år`}>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny dokumentation</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md rounded-2xl">
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
             <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret dokumentation</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); createDoc.mutate(); }} className="space-y-4">
               <div>
@@ -96,12 +122,38 @@ export default function DocumentationPage() {
               </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
-                  {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  {typeOptions.map(t => {
+                    const cfg = typeConfig[t];
+                    return (
+                      <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${form.type === t ? cfg.color : "bg-muted/50 text-muted-foreground"}`}>
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" rows={4} /></div>
+              
+              {/* Image upload */}
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Billeder (valgfrit)</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {imagePreviews.map((src, i) => (
+                    <div key={i} className="relative h-16 w-16 rounded-xl overflow-hidden border border-border">
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 rounded-full bg-black/60 p-0.5 text-white"><X size={10} /></button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => fileRef.current?.click()} className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                    <ImagePlus size={18} />
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
                 <Button type="submit" disabled={createDoc.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createDoc.isPending ? "Opretter..." : "Gem"}</Button>
@@ -141,19 +193,32 @@ export default function DocumentationPage() {
           const TypeIcon = config.icon;
           return (
             <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all hover:-translate-y-0.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl flex-shrink-0 ${config.bg}`}>
-                    <TypeIcon size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-card-foreground">{d.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Sag {(d.cases as any)?.case_number || "–"} · {d.created_at?.split("T")[0]}</p>
-                    {d.description && <p className="text-xs text-muted-foreground/60 mt-1.5 line-clamp-2 leading-relaxed">{d.description}</p>}
-                  </div>
+              className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all">
+              <div className="flex items-start gap-4">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl flex-shrink-0 ${config.bg}`}>
+                  <TypeIcon size={18} />
                 </div>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold flex-shrink-0 ml-3 ${config.color}`}>{d.type}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">{d.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Sag {(d.cases as any)?.case_number || "–"} · {d.created_at?.split("T")[0]}</p>
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold flex-shrink-0 ml-3 ${config.color}`}>{d.type}</span>
+                  </div>
+                  {d.description && <p className="text-xs text-muted-foreground/70 mt-2 leading-relaxed">{d.description}</p>}
+                  
+                  {/* Images */}
+                  {d.image_urls && (d.image_urls as string[]).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {(d.image_urls as string[]).map((url, j) => (
+                        <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-16 w-16 rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           );
