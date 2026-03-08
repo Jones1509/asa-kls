@@ -13,7 +13,7 @@ const container = {
 };
 const item = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  show: { opacity: 1, y: 0 },
 };
 
 export default function AdminDashboard() {
