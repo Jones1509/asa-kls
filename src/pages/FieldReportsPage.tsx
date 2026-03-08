@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Radio, Search, AlertTriangle, CheckCircle2, Circle, MessageCircle, Send } from "lucide-react";
+import { Plus, Radio, Search, CheckCircle2, MessageCircle, Send, ImagePlus, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -24,9 +24,13 @@ export default function FieldReportsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("alle");
   const [replyId, setReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [form, setForm] = useState({ case_id: "", priority: "Normal", subject: "", message: "" });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -47,7 +51,6 @@ export default function FieldReportsPage() {
     },
   });
 
-  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel("field_reports_realtime")
@@ -58,14 +61,35 @@ export default function FieldReportsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
+  const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles(prev => [...prev, ...files]);
+    files.forEach(f => setImagePreviews(prev => [...prev, URL.createObjectURL(f)]));
+  };
+
+  const removeImage = (idx: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const createReport = useMutation({
     mutationFn: async () => {
+      let image_urls: string[] = [];
+      for (const file of imageFiles) {
+        const path = `field-reports/${user!.id}/${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from("uploads").upload(path, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+        image_urls.push(data.publicUrl);
+      }
+
       const { error } = await supabase.from("field_reports").insert({
         user_id: user!.id,
         case_id: form.case_id || null,
         priority: form.priority,
         subject: form.subject,
         message: form.message,
+        image_urls: image_urls.length > 0 ? image_urls : null,
       });
       if (error) throw error;
     },
@@ -73,6 +97,8 @@ export default function FieldReportsPage() {
       queryClient.invalidateQueries({ queryKey: ["field_reports"] });
       setOpen(false);
       setForm({ case_id: "", priority: "Normal", subject: "", message: "" });
+      setImageFiles([]);
+      setImagePreviews([]);
       toast.success("Feltrapport sendt til ledelsen");
     },
     onError: (e: any) => toast.error(e.message),
@@ -105,10 +131,11 @@ export default function FieldReportsPage() {
 
   const priorities = ["Lav", "Normal", "Høj", "Kritisk"];
   const unreadCount = reports?.filter(r => !r.is_read).length || 0;
-  const filtered = reports?.filter(r =>
-    r.subject.toLowerCase().includes(search.toLowerCase()) ||
-    r.message.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = reports?.filter(r => {
+    const matchSearch = r.subject.toLowerCase().includes(search.toLowerCase()) || r.message.toLowerCase().includes(search.toLowerCase());
+    const matchPriority = priorityFilter === "alle" || r.priority === priorityFilter;
+    return matchSearch && matchPriority;
+  });
 
   return (
     <div>
@@ -122,7 +149,7 @@ export default function FieldReportsPage() {
             <form onSubmit={(e) => { e.preventDefault(); createReport.mutate(); }} className="space-y-4">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Prioritet</Label>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex gap-2 flex-wrap">
                   {priorities.map(p => (
                     <button key={p} type="button" onClick={() => setForm({ ...form, priority: p })}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${form.priority === p ? priorityConfig[p].color : "bg-muted/50 text-muted-foreground"}`}>
@@ -141,6 +168,26 @@ export default function FieldReportsPage() {
               </div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Emne</Label><Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Kort beskrivelse..." className="mt-1.5 rounded-xl" required /></div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Besked</Label><Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Beskriv hvad du har observeret i felten..." className="mt-1.5 rounded-xl" rows={5} required /></div>
+              
+              {/* Image upload */}
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Billeder (valgfrit)</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {imagePreviews.map((src, i) => (
+                    <div key={i} className="relative h-16 w-16 rounded-xl overflow-hidden border border-border">
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 rounded-full bg-black/60 p-0.5 text-white">
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => fileRef.current?.click()} className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                    <ImagePlus size={18} />
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
                 <Button type="submit" disabled={createReport.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createReport.isPending ? "Sender..." : "Send rapport"}</Button>
@@ -150,11 +197,19 @@ export default function FieldReportsPage() {
         </Dialog>
       </PageHeader>
 
-      {/* Search */}
-      <div className="mb-5">
-        <div className="relative max-w-sm">
+      {/* Filters */}
+      <div className="mb-5 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Søg i feltrapporter..." className="pl-10 rounded-xl h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 overflow-x-auto">
+          {["alle", ...priorities].map(p => (
+            <button key={p} onClick={() => setPriorityFilter(p)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${priorityFilter === p ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              {p === "alle" ? "Alle" : p}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -188,7 +243,17 @@ export default function FieldReportsPage() {
                     </p>
                     <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{r.message}</p>
 
-                    {/* Admin response */}
+                    {/* Images */}
+                    {r.image_urls && (r.image_urls as string[]).length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {(r.image_urls as string[]).map((url, j) => (
+                          <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-20 w-20 rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
+                            <img src={url} alt="" className="h-full w-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
                     {r.admin_response && (
                       <div className="mt-3 rounded-xl bg-primary/5 border border-primary/10 p-3">
                         <p className="text-[11px] font-semibold text-primary mb-1">Svar fra ledelsen</p>
@@ -197,7 +262,6 @@ export default function FieldReportsPage() {
                       </div>
                     )}
 
-                    {/* Reply form for admins */}
                     {role === "admin" && replyId === r.id && (
                       <div className="mt-3 flex gap-2">
                         <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Skriv svar..." className="rounded-xl text-sm flex-1" rows={2} />
