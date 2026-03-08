@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, MoreVertical, UserX, Clock } from "lucide-react";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,12 +9,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function EmployeesPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("alle");
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState("");
 
   if (role !== "admin") return <Navigate to="/" replace />;
 
@@ -50,6 +53,26 @@ export default function EmployeesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
       toast.success("Rolle opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete related data first, then profile. Auth user remains but has no profile.
+      await Promise.all([
+        supabase.from("time_entries").delete().eq("user_id", userId),
+        supabase.from("schedules").delete().eq("user_id", userId),
+        supabase.from("user_roles").delete().eq("user_id", userId),
+        supabase.from("case_assignments").delete().eq("user_id", userId),
+      ]);
+      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+      setDeleteUserId(null);
+      toast.success("Medarbejder slettet fra systemet");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -117,14 +140,6 @@ export default function EmployeesPage() {
                       </span>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 rounded-lg text-[11px] text-muted-foreground hover:text-foreground"
-                    onClick={() => toggleRole.mutate({ userId: e.user_id, makeAdmin: !e.isAdmin })}
-                  >
-                    {e.isAdmin ? "Fjern admin" : "Gør til admin"}
-                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{e.role_label || "Medarbejder"}</p>
 
@@ -160,6 +175,28 @@ export default function EmployeesPage() {
                     )}
                   </div>
                 )}
+
+                {/* Admin actions */}
+                <div className="mt-4 pt-3 border-t border-border/50 flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-lg text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => toggleRole.mutate({ userId: e.user_id, makeAdmin: !e.isAdmin })}
+                  >
+                    {e.isAdmin ? "Fjern admin" : "Gør til admin"}
+                  </Button>
+                  {e.user_id !== user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 rounded-lg text-[11px] text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => { setDeleteUserId(e.user_id); setDeleteUserName(e.full_name); }}
+                    >
+                      <Trash2 size={11} className="mr-1" /> Slet bruger
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -173,6 +210,26 @@ export default function EmployeesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete user confirmation dialog */}
+      <Dialog open={!!deleteUserId} onOpenChange={(o) => !o && setDeleteUserId(null)}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading font-bold text-lg flex items-center gap-2">
+              <AlertTriangle size={18} className="text-destructive" /> Slet medarbejder
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Er du sikker på at du vil slette <strong className="text-card-foreground">{deleteUserName}</strong> fra systemet? Alle timer, vagtplaner og rolletildelinger slettes permanent.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <Button variant="outline" className="rounded-xl" onClick={() => setDeleteUserId(null)}>Annuller</Button>
+            <Button variant="destructive" className="rounded-xl" onClick={() => deleteUserId && deleteUser.mutate(deleteUserId)} disabled={deleteUser.isPending}>
+              {deleteUser.isPending ? "Sletter..." : "Slet permanent"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
