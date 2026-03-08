@@ -150,6 +150,109 @@ export type Database = {
           },
         ]
       }
+      field_reports: {
+        Row: {
+          admin_response: string | null
+          case_id: string | null
+          created_at: string
+          id: string
+          image_urls: string[] | null
+          is_read: boolean
+          message: string
+          priority: string
+          responded_at: string | null
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          case_id?: string | null
+          created_at?: string
+          id?: string
+          image_urls?: string[] | null
+          is_read?: boolean
+          message: string
+          priority?: string
+          responded_at?: string | null
+          subject: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          case_id?: string | null
+          created_at?: string
+          id?: string
+          image_urls?: string[] | null
+          is_read?: boolean
+          message?: string
+          priority?: string
+          responded_at?: string | null
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_reports_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          case_id: string
+          created_at: string
+          created_by: string
+          customer: string
+          description: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          paid_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          case_id: string
+          created_at?: string
+          created_by: string
+          customer: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          paid_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          case_id?: string
+          created_at?: string
+          created_by?: string
+          customer?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          paid_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -388,6 +491,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_records: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
