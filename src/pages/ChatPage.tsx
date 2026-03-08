@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -55,7 +55,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <PageHeader title="Chat" description="Intern kommunikation" />
 
-      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card shadow-card p-4 mb-4 space-y-3">
+      <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card shadow-card p-5 mb-4 space-y-3">
         {(messages || []).map((m, i) => {
           const isSelf = m.user_id === user?.id;
           return (
@@ -66,14 +66,14 @@ export default function ChatPage() {
               transition={{ delay: Math.min(i * 0.02, 0.5) }}
               className={`flex ${isSelf ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+              <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                 isSelf
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-card-foreground rounded-bl-md"
+                  ? "gradient-primary text-white rounded-br-lg shadow-[0_2px_8px_hsl(215_80%_56%/0.3)]"
+                  : "bg-muted text-card-foreground rounded-bl-lg"
               }`}>
-                {!isSelf && <p className="text-xs font-medium mb-0.5 opacity-70">{(m.profiles as any)?.full_name || "Ukendt"}</p>}
-                <p className="text-sm">{m.message}</p>
-                <p className={`text-[10px] mt-1 ${isSelf ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                {!isSelf && <p className="text-[11px] font-semibold mb-1 opacity-60">{(m.profiles as any)?.full_name || "Ukendt"}</p>}
+                <p className="text-sm leading-relaxed">{m.message}</p>
+                <p className={`text-[10px] mt-1.5 ${isSelf ? "text-white/50" : "text-muted-foreground/60"}`}>
                   {new Date(m.created_at).toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
@@ -81,7 +81,12 @@ export default function ChatPage() {
           );
         })}
         {(!messages || messages.length === 0) && (
-          <p className="text-center text-sm text-muted-foreground py-8">Ingen beskeder endnu – start samtalen!</p>
+          <div className="flex flex-col items-center justify-center h-full gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <MessageSquare size={24} className="text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground">Ingen beskeder endnu – start samtalen!</p>
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -91,10 +96,10 @@ export default function ChatPage() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Skriv en besked..."
-          className="flex-1"
+          className="flex-1 rounded-xl h-12"
         />
-        <Button type="submit" size="icon" disabled={sendMessage.isPending || !message.trim()}>
-          <Send size={16} />
+        <Button type="submit" size="icon" className="h-12 w-12 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]" disabled={sendMessage.isPending || !message.trim()}>
+          <Send size={17} />
         </Button>
       </form>
     </div>
