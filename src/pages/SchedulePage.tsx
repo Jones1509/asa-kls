@@ -617,7 +617,7 @@ export default function SchedulePage() {
                   const now = new Date();
                   const h = now.getHours();
                   const m = now.getMinutes();
-                  if (h < START_HOUR || h > 21) return null;
+                  if (h > 23) return null;
                   const top = ((h - START_HOUR) + m / 60) * HOUR_HEIGHT;
                   return (
                     <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${top}px` }}>
