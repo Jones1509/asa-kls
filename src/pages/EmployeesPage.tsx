@@ -26,8 +26,6 @@ export default function EmployeesPage() {
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
 
-  if (role !== "admin") return <Navigate to="/" replace />;
-
   useEffect(() => {
     if (editEmployee) {
       setEditForm({
