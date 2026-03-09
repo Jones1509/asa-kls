@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  startOfWeek, endOfWeek, addDays, addWeeks, subWeeks,
-  format, isSameDay, isToday
+  startOfWeek, addDays, addWeeks, subWeeks,
+  format, isSameDay, isToday, getISOWeek
 } from "date-fns";
 import { da } from "date-fns/locale";
-import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface TimeEntry {
   id: string;
@@ -28,6 +28,10 @@ interface WeeklyTimesheetProps {
   profileMap: Record<string, string>;
   isAdmin: boolean;
 }
+
+const START_HOUR = 6;
+const END_HOUR = 20;
+const HOUR_HEIGHT = 40; // compact
 
 export function WeeklyTimesheet({
   entries, currentWeekStart, onWeekChange,
@@ -55,97 +59,195 @@ export function WeeklyTimesheet({
     }, 0);
   }, [weekDays, entriesByDate]);
 
-  const weekLabel = `${format(weekDays[0], "d. MMM", { locale: da })} – ${format(weekDays[6], "d. MMM yyyy", { locale: da })}`;
+  const weekNum = getISOWeek(currentWeekStart);
+
+  const getPosition = (startTime: string, endTime: string) => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const clampedSh = Math.max(sh + sm / 60, START_HOUR);
+    const clampedEh = Math.min(eh + em / 60, END_HOUR);
+    const top = (clampedSh - START_HOUR) * HOUR_HEIGHT;
+    const height = Math.max((clampedEh - clampedSh) * HOUR_HEIGHT, 20);
+    return { top, height };
+  };
+
+  const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+  const gridHeight = hours.length * HOUR_HEIGHT;
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8" onClick={() => onWeekChange(subWeeks(currentWeekStart, 1))}>
-          <ChevronLeft size={16} />
-        </Button>
-        <div className="text-center">
-          <h3 className="font-heading font-bold text-card-foreground text-[15px]">{weekLabel}</h3>
-          <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-            Total: <span className="text-primary font-bold">{Math.round(weekTotal * 10) / 10}t</span>
-          </p>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+          <Button variant="ghost" size="icon" className="rounded-full h-7 w-7" onClick={() => onWeekChange(subWeeks(currentWeekStart, 1))}>
+            <ChevronLeft size={14} />
+          </Button>
+          <span className="px-3 text-sm font-medium text-foreground whitespace-nowrap">
+            Uge {weekNum} · {format(currentWeekStart, "MMM yyyy", { locale: da })}
+          </span>
+          <Button variant="ghost" size="icon" className="rounded-full h-7 w-7" onClick={() => onWeekChange(addWeeks(currentWeekStart, 1))}>
+            <ChevronRight size={14} />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8" onClick={() => onWeekChange(addWeeks(currentWeekStart, 1))}>
-          <ChevronRight size={16} />
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="rounded-full text-xs h-7" onClick={() => onWeekChange(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
+            I dag
+          </Button>
+          <span className="text-sm font-bold text-primary tabular-nums">{Math.round(weekTotal * 10) / 10}t</span>
+        </div>
       </div>
 
-      {/* Week grid */}
-      <div className="grid grid-cols-7 divide-x divide-border">
+      {/* Day headers */}
+      <div className="grid grid-cols-[40px_repeat(7,1fr)] border-b border-border">
+        <div className="border-r border-border/50" />
+        {weekDays.map((day) => {
+          const today = isToday(day);
+          const dateStr = format(day, "yyyy-MM-dd");
+          const selected = selectedDate && isSameDay(day, selectedDate);
+          const dayEntries = entriesByDate[dateStr] || [];
+          const dayTotal = dayEntries.reduce((s, e) => s + Number(e.hours), 0);
+
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onSelectDate(day)}
+              className={cn(
+                "px-1 py-2 text-center border-r last:border-r-0 border-border/50 transition-colors",
+                today && "bg-primary/5",
+                selected && "bg-primary/10"
+              )}
+            >
+              <div className="flex flex-col items-center gap-0.5">
+                <span className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  today ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {format(day, "EEE", { locale: da }).toUpperCase()}
+                </span>
+                <span className={cn(
+                  "flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold",
+                  today ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground"
+                )}>
+                  {format(day, "d")}
+                </span>
+                {dayTotal > 0 && (
+                  <span className={cn(
+                    "text-[9px] font-bold rounded-full px-1.5 py-0.5",
+                    dayTotal >= 8 ? "bg-success/15 text-success" : dayTotal >= 4 ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"
+                  )}>
+                    {Math.round(dayTotal * 10) / 10}t
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Time grid - compact scrollable */}
+      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: `${Math.min(gridHeight, 360)}px` }}>
+        {/* Time labels */}
+        <div className="border-r border-border/50 relative" style={{ height: `${gridHeight}px` }}>
+          {hours.map((hour) => (
+            <div key={hour} className="relative" style={{ height: `${HOUR_HEIGHT}px` }}>
+              <span className="absolute -top-1.5 right-1.5 text-[9px] font-medium text-muted-foreground/50 tabular-nums">
+                {String(hour).padStart(2, "0")}:00
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Day columns */}
         {weekDays.map((day) => {
           const dateStr = format(day, "yyyy-MM-dd");
           const dayEntries = entriesByDate[dateStr] || [];
-          const dayTotal = dayEntries.reduce((s, e) => s + Number(e.hours), 0);
           const today = isToday(day);
           const selected = selectedDate && isSameDay(day, selectedDate);
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
-          return (
-            <button
-              key={dateStr}
-              onClick={() => onSelectDate(day)}
-              className={`
-                flex flex-col min-h-[140px] p-2 transition-all text-left
-                hover:bg-muted/30
-                ${isWeekend ? "bg-muted/10" : ""}
-                ${selected ? "ring-2 ring-inset ring-primary bg-primary/5" : ""}
-              `}
-            >
-              {/* Day header */}
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-[11px] font-semibold uppercase tracking-wider ${isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`}>
-                  {format(day, "EEE", { locale: da })}
-                </span>
-                <span className={`
-                  text-xs font-bold leading-none
-                  ${today
-                    ? "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center"
-                    : "text-card-foreground"
-                  }
-                `}>
-                  {format(day, "d")}
-                </span>
-              </div>
+          // Check if any entry is 7+ hours for lunch break
+          const hasLunchBreak = dayEntries.some((e) => {
+            const [sh, sm] = (e.start_time || "").split(":").map(Number);
+            const [eh, em] = (e.end_time || "").split(":").map(Number);
+            return ((eh + em / 60) - (sh + sm / 60)) >= 7;
+          });
 
-              {/* Entries */}
-              <div className="flex-1 space-y-1">
-                {dayEntries.slice(0, 3).map((entry) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="rounded-lg bg-primary/8 border border-primary/15 px-1.5 py-1"
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "border-r last:border-r-0 border-border/50 relative",
+                today && "bg-primary/[0.02]",
+                selected && "bg-primary/[0.04]",
+                isWeekend && !today && !selected && "bg-muted/10"
+              )}
+              style={{ height: `${gridHeight}px` }}
+            >
+              {/* Hour grid lines */}
+              {hours.map((hour) => (
+                <div key={hour} className="border-b border-border/15" style={{ height: `${HOUR_HEIGHT}px` }} />
+              ))}
+
+              {/* Lunch break indicator */}
+              {hasLunchBreak && (() => {
+                const { top, height } = getPosition("12:00", "12:30");
+                return (
+                  <div
+                    className="absolute left-0.5 right-0.5 rounded bg-warning/15 border border-warning/20 flex items-center justify-center z-20 pointer-events-none"
+                    style={{ top: `${top}px`, height: `${height}px` }}
                   >
-                    <p className="text-[10px] font-bold text-primary truncate">
+                    <span className="text-[8px] font-bold text-warning">🍽</span>
+                  </div>
+                );
+              })()}
+
+              {/* Time entry blocks */}
+              {dayEntries.map((entry) => {
+                if (!entry.start_time || !entry.end_time) return null;
+                const { top, height } = getPosition(entry.start_time.slice(0, 5), entry.end_time.slice(0, 5));
+                const hasBreak = entry.notes?.includes("pause fratrukket");
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="absolute left-0.5 right-0.5 rounded-md bg-gradient-to-br from-primary/15 to-primary/8 border border-primary/20 px-1 py-0.5 overflow-hidden z-10"
+                    style={{ top: `${top}px`, height: `${height}px`, minHeight: '20px' }}
+                  >
+                    <p className="text-[9px] font-bold text-foreground truncate">
                       {(entry.cases as any)?.case_number || "–"}
                     </p>
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {entry.start_time?.slice(0, 5)}–{entry.end_time?.slice(0, 5)}
-                    </p>
-                  </motion.div>
-                ))}
-                {dayEntries.length > 3 && (
-                  <p className="text-[10px] text-muted-foreground text-center">+{dayEntries.length - 3} mere</p>
-                )}
-              </div>
+                    {height > 28 && (
+                      <div className="flex items-center gap-0.5">
+                        <Clock size={7} className="text-primary shrink-0" />
+                        <span className="text-[8px] font-semibold text-primary tabular-nums">
+                          {entry.start_time.slice(0, 5)}–{entry.end_time.slice(0, 5)}
+                        </span>
+                      </div>
+                    )}
+                    {height > 45 && (
+                      <span className="text-[8px] font-bold text-primary/70 tabular-nums">{entry.hours}t</span>
+                    )}
+                  </div>
+                );
+              })}
 
-              {/* Day total */}
-              {dayTotal > 0 && (
-                <div className="mt-1.5 pt-1.5 border-t border-border/50">
-                  <span className={`
-                    text-[11px] font-bold tabular-nums
-                    ${dayTotal >= 8 ? "text-primary" : dayTotal >= 4 ? "text-primary/70" : "text-muted-foreground"}
-                  `}>
-                    {Math.round(dayTotal * 10) / 10}t
-                  </span>
-                </div>
-              )}
-            </button>
+              {/* Current time indicator */}
+              {today && (() => {
+                const now = new Date();
+                const h = now.getHours();
+                const m = now.getMinutes();
+                if (h < START_HOUR || h >= END_HOUR) return null;
+                const top = ((h + m / 60) - START_HOUR) * HOUR_HEIGHT;
+                return (
+                  <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${top}px` }}>
+                    <div className="flex items-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-destructive -ml-0.5" />
+                      <div className="flex-1 h-[1.5px] bg-destructive/70" />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           );
         })}
       </div>
