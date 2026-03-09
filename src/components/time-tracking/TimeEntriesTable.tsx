@@ -61,7 +61,7 @@ export function TimeEntriesTable({
 
   const saveEdit = () => {
     if (!editId) return;
-    onUpdate(editId, { start_time: editData.start_time, end_time: editData.end_time, notes: editData.notes || null });
+    onUpdate(editId, { start_time: editData.start_time, end_time: editData.end_time, notes: editData.notes || null, lunch_break: editData.lunch_break });
     setEditId(null);
   };
 
