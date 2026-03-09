@@ -437,7 +437,6 @@ export default function SchedulePage() {
             const daySchedules = getScheduleForDay(day);
             const dateStr = format(day, "yyyy-MM-dd");
             const today = isToday(day);
-            const today = isToday(day);
             const isWeekend = i >= 5;
 
             const START_HOUR = 0;
