@@ -35,7 +35,7 @@ export function TimeEntriesTable({
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editData, setEditData] = useState({ start_time: "", end_time: "", notes: "" });
+  const [editData, setEditData] = useState({ start_time: "", end_time: "", notes: "", lunch_break: true });
 
   const filtered = useMemo(() => {
     const list = selectedDate
