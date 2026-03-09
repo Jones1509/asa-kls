@@ -267,6 +267,7 @@ export default function TimeTrackingPage() {
         entries={filteredEntries}
         profileMap={profileMap || {}}
         isAdmin={isAdmin}
+        currentUserId={user?.id}
         selectedDate={selectedDate}
         onDelete={(id) => deleteEntry.mutate(id)}
         onUpdate={(id, data) => updateEntry.mutate({ id, data })}

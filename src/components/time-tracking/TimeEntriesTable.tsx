@@ -22,6 +22,7 @@ interface TimeEntriesTableProps {
   entries: Entry[];
   profileMap: Record<string, string>;
   isAdmin: boolean;
+  currentUserId?: string;
   selectedDate: Date | null;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
@@ -30,7 +31,7 @@ interface TimeEntriesTableProps {
 }
 
 export function TimeEntriesTable({
-  entries, profileMap, isAdmin, selectedDate,
+  entries, profileMap, isAdmin, currentUserId, selectedDate,
   onDelete, onUpdate, isDeleting, isUpdating
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -108,7 +109,7 @@ export function TimeEntriesTable({
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tid</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Frokost</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Note</th>
-              {isAdmin && <th className="px-4 py-3 w-16"></th>}
+              <th className="px-4 py-3 w-16"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -193,7 +194,7 @@ export function TimeEntriesTable({
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
                         {e.notes || "–"}
                       </td>
-                      {isAdmin && (
+                      {(isAdmin || e.user_id === currentUserId) ? (
                         <td className="px-4 py-3">
                           {deleteConfirm === e.id ? (
                             <div className="flex items-center gap-1">
@@ -207,6 +208,8 @@ export function TimeEntriesTable({
                             </div>
                           )}
                         </td>
+                      ) : (
+                        <td className="px-4 py-3" />
                       )}
                     </>
                   )}
