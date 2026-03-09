@@ -82,6 +82,23 @@ export default function SchedulePage() {
     enabled: role === "admin",
   });
 
+  const filteredEmployees = useMemo(() => {
+    const q = employeeSearch.trim().toLowerCase();
+    if (!q || !employees) return employees || [];
+    return employees.filter((e: any) => e.full_name.toLowerCase().includes(q));
+  }, [employees, employeeSearch]);
+
+  const toggleEmployee = (uid: string) => {
+    setSelectedEmployeeIds((prev) =>
+      prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]
+    );
+  };
+
+  const clearEmployeeFilter = () => {
+    setSelectedEmployeeIds([]);
+    setEmployeeSearch("");
+  };
+
   const updateSchedule = useMutation({
     mutationFn: async (entry: any) => {
       const { error } = await supabase
