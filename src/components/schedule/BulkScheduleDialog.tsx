@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 
 const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7];
@@ -291,30 +292,18 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                 </div>
               </div>
 
-              {/* Times */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Starttid
-                  </Label>
-                  <Input
-                    type="time"
-                    value={form.startTime}
-                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Sluttid
-                  </Label>
-                  <Input
-                    type="time"
-                    value={form.endTime}
-                    onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
+              {/* Times - custom pickers */}
+              <div className="grid grid-cols-2 gap-4">
+                <TimePicker
+                  label="Starttid"
+                  value={form.startTime}
+                  onChange={(v) => setForm({ ...form, startTime: v })}
+                />
+                <TimePicker
+                  label="Sluttid"
+                  value={form.endTime}
+                  onChange={(v) => setForm({ ...form, endTime: v })}
+                />
               </div>
 
               {/* Notes */}

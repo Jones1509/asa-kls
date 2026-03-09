@@ -1,22 +1,21 @@
 import { PageHeader } from "@/components/PageHeader";
 import { BulkScheduleDialog } from "@/components/schedule/BulkScheduleDialog";
+import { EditScheduleDialog } from "@/components/schedule/EditScheduleDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion } from "framer-motion";
-import { CalendarX, ChevronLeft, ChevronRight, Clock, History, MapPin, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Clock, History, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
@@ -527,135 +526,16 @@ export default function SchedulePage() {
         />
       )}
 
-      {/* Edit dialog */}
-      <Dialog
+      {/* Edit dialog - new modern component */}
+      <EditScheduleDialog
         open={editOpen}
-        onOpenChange={(v) => {
-          setEditOpen(v);
-          if (!v) setEditEntry(null);
-        }}
-      >
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-heading font-bold text-lg">Rediger opgave</DialogTitle>
-          </DialogHeader>
-          {editEntry && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                updateSchedule.mutate(editEntry);
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Medarbejder
-                </Label>
-                <select
-                  value={editEntry.user_id}
-                  onChange={(e) => setEditEntry({ ...editEntry, user_id: e.target.value })}
-                  className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
-                  required
-                >
-                  <option value="">Vælg medarbejder...</option>
-                  {employees?.map((emp: any) => (
-                    <option key={emp.user_id} value={emp.user_id}>
-                      {emp.full_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Sag (valgfrit)
-                </Label>
-                <select
-                  value={editEntry.case_id}
-                  onChange={(e) => setEditEntry({ ...editEntry, case_id: e.target.value })}
-                  className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
-                >
-                  <option value="">Ingen sag</option>
-                  {cases?.map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.case_number}
-                      {c.customer ? ` – ${c.customer}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Dato
-                </Label>
-                <Input
-                  type="date"
-                  value={editEntry.date}
-                  onChange={(e) => setEditEntry({ ...editEntry, date: e.target.value })}
-                  className="mt-1.5 rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Start
-                  </Label>
-                  <Input
-                    type="time"
-                    value={editEntry.start_time}
-                    onChange={(e) => setEditEntry({ ...editEntry, start_time: e.target.value })}
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Slut
-                  </Label>
-                  <Input
-                    type="time"
-                    value={editEntry.end_time}
-                    onChange={(e) => setEditEntry({ ...editEntry, end_time: e.target.value })}
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Note
-                </Label>
-                <Input
-                  value={editEntry.notes}
-                  onChange={(e) => setEditEntry({ ...editEntry, notes: e.target.value })}
-                  placeholder="Valgfrit"
-                  className="mt-1.5 rounded-xl"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditOpen(false)}
-                  className="rounded-xl"
-                >
-                  Annuller
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateSchedule.isPending}
-                  className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"
-                >
-                  {updateSchedule.isPending ? "Gemmer..." : "Gem ændringer"}
-                </Button>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+        onOpenChange={(v) => { setEditOpen(v); if (!v) setEditEntry(null); }}
+        entry={editEntry}
+        employees={(employees as any) || []}
+        cases={(cases as any) || []}
+        onSave={(entry) => updateSchedule.mutate(entry)}
+        isSaving={updateSchedule.isPending}
+      />
     </div>
   );
 }
