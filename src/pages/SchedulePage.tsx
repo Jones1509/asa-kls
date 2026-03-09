@@ -94,6 +94,38 @@ export default function SchedulePage() {
     enabled: !!user && viewUserIds.length > 0,
   });
 
+  // Fetch time entries for the visible week to show hours
+  const { data: timeEntries } = useQuery({
+    queryKey: ["time_entries_schedule", weekStart.toISOString(), viewUserIds],
+    queryFn: async () => {
+      const startDate = format(days[0], "yyyy-MM-dd");
+      const endDate = format(days[6], "yyyy-MM-dd");
+      let query = supabase
+        .from("time_entries")
+        .select("id, date, hours, user_id, start_time, end_time, cases(case_number)")
+        .gte("date", startDate)
+        .lte("date", endDate);
+      if (role !== "admin") {
+        query = query.eq("user_id", user!.id);
+      } else if (viewUserIds.length > 0) {
+        query = query.in("user_id", viewUserIds);
+      }
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const timeEntriesByDate = useMemo(() => {
+    const map: Record<string, { total: number; entries: any[] }> = {};
+    timeEntries?.forEach((e: any) => {
+      if (!map[e.date]) map[e.date] = { total: 0, entries: [] };
+      map[e.date].total += Number(e.hours);
+      map[e.date].entries.push(e);
+    });
+    return map;
+  }, [timeEntries]);
+
   const { data: cases } = useQuery({
     queryKey: ["cases_schedule"],
     queryFn: async () => {
