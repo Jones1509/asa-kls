@@ -35,6 +35,8 @@ export default function EmployeesPage() {
   const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [editCropOpen, setEditCropOpen] = useState(false);
+  const [editCropSrc, setEditCropSrc] = useState<string | null>(null);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
