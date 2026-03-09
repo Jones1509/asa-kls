@@ -96,23 +96,34 @@ export default function TimeTrackingPage() {
     return { thisWeek: Math.round(thisWeek * 10) / 10, lastWeek: Math.round(lastWeek * 10) / 10, today: Math.round(todayH * 10) / 10 };
   }, [filteredEntries]);
 
+  const calcHoursWithBreak = (startTime: string, endTime: string) => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const rawHours = (eh + em / 60) - (sh + sm / 60);
+    if (rawHours <= 0) throw new Error("Sluttid skal være efter starttid");
+    // Lovpligtig pause: 30 min fratrækkes ved 7+ timer
+    const breakDeducted = rawHours >= 7 ? 0.5 : 0;
+    const netHours = rawHours - breakDeducted;
+    return { rawHours: Math.round(rawHours * 100) / 100, netHours: Math.round(netHours * 100) / 100, breakDeducted };
+  };
+
   const createEntry = useMutation({
     mutationFn: async () => {
-      const [sh, sm] = form.start_time.split(":").map(Number);
-      const [eh, em] = form.end_time.split(":").map(Number);
-      const hours = (eh + em / 60) - (sh + sm / 60);
-      if (hours <= 0) throw new Error("Sluttid skal være efter starttid");
+      const { netHours, breakDeducted } = calcHoursWithBreak(form.start_time, form.end_time);
       const targetUserId = isAdmin && form.user_id ? form.user_id : user!.id;
+      const noteWithBreak = breakDeducted > 0
+        ? `${form.notes || ""}${form.notes ? " | " : ""}30 min pause fratrukket`.trim()
+        : form.notes || null;
       const { error } = await supabase.from("time_entries").insert({
         user_id: targetUserId, case_id: form.case_id, date: form.date,
         start_time: form.start_time, end_time: form.end_time,
-        hours: Math.round(hours * 100) / 100, notes: form.notes || null,
+        hours: netHours, notes: noteWithBreak,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, __, ctx) => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
-      toast.success("Timer registreret");
+      toast.success("Timer registreret (30 min pause fratrukket ved 7+ timer)");
       setForm({ ...form, notes: "", user_id: "" });
     },
     onError: (e: any) => toast.error(e.message),
