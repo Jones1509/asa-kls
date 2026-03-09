@@ -106,7 +106,7 @@ export function TimeEntriesTable({
               {isAdmin && <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Medarbejder</th>}
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sag</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tid</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Timer</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Frokost</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Note</th>
               {isAdmin && <th className="px-4 py-3 w-16"></th>}
             </tr>
@@ -182,9 +182,13 @@ export function TimeEntriesTable({
                         {e.start_time?.slice(0, 5)} – {e.end_time?.slice(0, 5)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary tabular-nums">
-                          {e.hours}t
-                        </span>
+                        {e.notes?.includes("pause fratrukket") ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 border border-warning/25 px-2 py-0.5 text-[11px] font-medium text-warning">
+                            <Coffee size={10} /> 30 min
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">Ingen</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
                         {e.notes || "–"}
