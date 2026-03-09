@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AvatarCropDialog } from "@/components/profile/AvatarCropDialog";
 import { User, Mail, Phone, Shield, Save, Camera, Briefcase, Clock, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +17,13 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", role_label: "" });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  const handleCropOpenChange = (open: boolean) => {
+    setCropOpen(open);
+    if (!open) setCropSrc(null);
+  };
 
   // Load profile data
   const { data: fullProfile } = useQuery({
@@ -67,12 +75,15 @@ export default function ProfilePage() {
         avatar_url = urlData.publicUrl;
       }
 
-      const { error } = await supabase.from("profiles").update({
-        full_name: form.full_name,
-        phone: form.phone || null,
-        role_label: form.role_label || null,
-        avatar_url,
-      }).eq("user_id", user!.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: form.full_name,
+          phone: form.phone || null,
+          role_label: form.role_label || null,
+          avatar_url,
+        })
+        .eq("user_id", user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -84,10 +95,16 @@ export default function ProfilePage() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropSrc(String(reader.result));
+      setCropOpen(true);
+      // allow re-selecting the same file
+      e.target.value = "";
+    };
+    reader.readAsDataURL(file);
   };
 
   const initials = form.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
