@@ -93,8 +93,8 @@ export function TimeEntriesTable({
             )}
           </div>
         </div>
-        {selectedDate && (
-          <Button variant="ghost" size="sm" className="text-xs rounded-lg h-7" onClick={() => {}}>
+        {selectedDate && onClearDate && (
+          <Button variant="ghost" size="sm" className="text-xs rounded-lg h-7" onClick={onClearDate}>
             Vis alle
           </Button>
         )}
