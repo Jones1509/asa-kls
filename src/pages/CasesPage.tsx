@@ -298,6 +298,12 @@ export default function CasesPage() {
   const getCaseAssignments = (caseId: string) =>
     assignments?.filter((a) => a.case_id === caseId) || [];
 
+  const employeeByUserId = useMemo(() => {
+    const m = new Map<string, any>();
+    (employees || []).forEach((e: any) => m.set(e.user_id, e));
+    return m;
+  }, [employees]);
+
   return (
     <div>
       <PageHeader title="Sager" description={`${counts.alle} sager i alt · ${counts.Aktiv} aktive`}>
