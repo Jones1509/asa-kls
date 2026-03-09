@@ -165,12 +165,10 @@ export function WeeklyTimesheet({
           const selected = selectedDate && isSameDay(day, selectedDate);
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
-          // Check if any entry is 7+ hours for lunch break
-          const hasLunchBreak = dayEntries.some((e) => {
-            const [sh, sm] = (e.start_time || "").split(":").map(Number);
-            const [eh, em] = (e.end_time || "").split(":").map(Number);
-            return ((eh + em / 60) - (sh + sm / 60)) >= 7;
-          });
+          // Check if any entry has lunch break based on notes
+          const hasLunchBreak = dayEntries.some((e) => 
+            e.notes?.includes("pause fratrukket")
+          );
 
           return (
             <div
