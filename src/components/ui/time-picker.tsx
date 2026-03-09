@@ -1,5 +1,3 @@
-import { useState, useRef, useEffect } from "react";
-import { Clock, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimePickerProps {
@@ -9,67 +7,44 @@ interface TimePickerProps {
 }
 
 export function TimePicker({ value, onChange, label }: TimePickerProps) {
-  const [h, m] = (value || "08:00").split(":");
-  const hour = parseInt(h) || 0;
-  const min = parseInt(m) || 0;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let raw = e.target.value.replace(/[^0-9]/g, "");
+    if (raw.length > 4) raw = raw.slice(0, 4);
+    
+    if (raw.length <= 2) {
+      onChange(raw);
+    } else {
+      const h = raw.slice(0, 2);
+      const m = raw.slice(2, 4);
+      onChange(`${h}:${m}`);
+    }
+  };
 
-  const incrementHour = () => onChange(`${String((hour + 1) % 24).padStart(2, "0")}:${String(min).padStart(2, "0")}`);
-  const decrementHour = () => onChange(`${String((hour - 1 + 24) % 24).padStart(2, "0")}:${String(min).padStart(2, "0")}`);
-  const incrementMin = () => onChange(`${String(hour).padStart(2, "0")}:${String((min + 15) % 60).padStart(2, "0")}`);
-  const decrementMin = () => onChange(`${String(hour).padStart(2, "0")}:${String((min - 15 + 60) % 60).padStart(2, "0")}`);
+  const handleBlur = () => {
+    const clean = (value || "").replace(/[^0-9]/g, "");
+    let h = parseInt(clean.slice(0, 2)) || 0;
+    let m = parseInt(clean.slice(2, 4)) || 0;
+    if (h > 23) h = 23;
+    if (m > 59) m = 59;
+    onChange(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  };
 
   return (
-    <div>
+    <div className="flex-1">
       {label && (
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {label}
         </p>
       )}
-      <div className="flex items-center gap-1 bg-muted/30 border border-border rounded-xl p-2">
-        {/* Hour */}
-        <div className="flex flex-col items-center">
-          <button
-            type="button"
-            onClick={incrementHour}
-            className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ChevronUp size={16} />
-          </button>
-          <span className="text-2xl font-bold tabular-nums text-foreground w-10 text-center">
-            {String(hour).padStart(2, "0")}
-          </span>
-          <button
-            type="button"
-            onClick={decrementHour}
-            className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ChevronDown size={16} />
-          </button>
-        </div>
-
-        <span className="text-2xl font-bold text-muted-foreground">:</span>
-
-        {/* Minute */}
-        <div className="flex flex-col items-center">
-          <button
-            type="button"
-            onClick={incrementMin}
-            className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ChevronUp size={16} />
-          </button>
-          <span className="text-2xl font-bold tabular-nums text-foreground w-10 text-center">
-            {String(min).padStart(2, "0")}
-          </span>
-          <button
-            type="button"
-            onClick={decrementMin}
-            className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ChevronDown size={16} />
-          </button>
-        </div>
-      </div>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value || ""}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder="00:00"
+        className="w-full h-12 rounded-xl border border-border bg-background px-4 text-xl font-bold tabular-nums text-foreground text-center focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all"
+      />
     </div>
   );
 }
