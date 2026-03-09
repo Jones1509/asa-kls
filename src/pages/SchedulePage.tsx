@@ -210,7 +210,7 @@ export default function SchedulePage() {
                     <Users size={16} />
                     {selectedEmployeeIds.length > 0
                       ? `${selectedEmployeeIds.length} valgt`
-                      : "Alle medarbejdere"}
+                      : "Vælg medarbejder"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-72 p-0 rounded-xl" align="end">
