@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Pencil, Check, X, Clock } from "lucide-react";
+import { Trash2, Pencil, Check, X, Clock, Coffee } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +24,7 @@ interface TimeEntriesTableProps {
   isAdmin: boolean;
   selectedDate: Date | null;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null }) => void;
+  onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
   isDeleting: boolean;
   isUpdating: boolean;
 }
@@ -34,7 +35,7 @@ export function TimeEntriesTable({
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editData, setEditData] = useState({ start_time: "", end_time: "", notes: "" });
+  const [editData, setEditData] = useState({ start_time: "", end_time: "", notes: "", lunch_break: true });
 
   const filtered = useMemo(() => {
     const list = selectedDate
@@ -49,16 +50,18 @@ export function TimeEntriesTable({
 
   const startEdit = (entry: Entry) => {
     setEditId(entry.id);
+    const hasBreakNote = entry.notes?.includes("pause fratrukket") || false;
     setEditData({
       start_time: entry.start_time?.slice(0, 5) || "",
       end_time: entry.end_time?.slice(0, 5) || "",
       notes: entry.notes || "",
+      lunch_break: hasBreakNote,
     });
   };
 
   const saveEdit = () => {
     if (!editId) return;
-    onUpdate(editId, { start_time: editData.start_time, end_time: editData.end_time, notes: editData.notes || null });
+    onUpdate(editId, { start_time: editData.start_time, end_time: editData.end_time, notes: editData.notes || null, lunch_break: editData.lunch_break });
     setEditId(null);
   };
 
@@ -144,7 +147,21 @@ export function TimeEntriesTable({
                           <Input value={editData.end_time} onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="16:00" />
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">auto</td>
+                      <td className="px-4 py-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditData({ ...editData, lunch_break: !editData.lunch_break })}
+                          className={cn(
+                            "h-7 rounded-lg border flex items-center justify-center gap-1 text-[10px] font-medium transition-all px-2",
+                            editData.lunch_break
+                              ? "bg-warning/10 border-warning/30 text-warning"
+                              : "bg-muted/30 border-border text-muted-foreground"
+                          )}
+                        >
+                          <Coffee size={10} />
+                          {editData.lunch_break ? "30 min" : "Ingen"}
+                        </button>
+                      </td>
                       <td className="px-4 py-2 hidden lg:table-cell">
                         <Input value={editData.notes} onChange={(ev) => setEditData({ ...editData, notes: ev.target.value })} className="h-7 rounded-lg text-xs px-2" placeholder="Note..." />
                       </td>

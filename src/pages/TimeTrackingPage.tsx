@@ -142,11 +142,16 @@ export default function TimeTrackingPage() {
   });
 
   const updateEntry = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { start_time: string; end_time: string; notes: string | null } }) => {
-      const { netHours } = calcHours(data.start_time, data.end_time, true);
+    mutationFn: async ({ id, data }: { id: string; data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean } }) => {
+      const { netHours, breakDeducted } = calcHours(data.start_time, data.end_time, data.lunch_break);
+      // Clean old break note and re-add if applicable
+      let cleanNotes = (data.notes || "").replace(/\s*\|?\s*30 min pause fratrukket/g, "").trim();
+      if (breakDeducted > 0) {
+        cleanNotes = cleanNotes ? `${cleanNotes} | 30 min pause fratrukket` : "30 min pause fratrukket";
+      }
       const { error } = await supabase.from("time_entries").update({
         start_time: data.start_time, end_time: data.end_time,
-        hours: netHours, notes: data.notes,
+        hours: netHours, notes: cleanNotes || null,
       }).eq("id", id);
       if (error) throw error;
     },
