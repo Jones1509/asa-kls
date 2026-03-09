@@ -100,7 +100,7 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                   <ChevronDown size={16} className="text-muted-foreground" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0 rounded-xl" align="start">
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl" align="start">
                 <div className="p-2 border-b border-border">
                   <div className="relative">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
