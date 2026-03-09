@@ -328,7 +328,7 @@ export default function SchedulePage() {
                     <p className="text-sm font-semibold text-card-foreground pr-14">
                       {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "–"}
                     </p>
-                    {role === "admin" && (s as any).profiles?.full_name && (
+                    {(s as any).profiles?.full_name && (
                       <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
                     )}
                     {(s.cases as any)?.address && (
