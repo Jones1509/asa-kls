@@ -194,7 +194,7 @@ export function WeeklyTimesheet({
                     className="absolute left-0.5 right-0.5 rounded bg-warning/15 border border-warning/20 flex items-center justify-center z-20 pointer-events-none"
                     style={{ top: `${top}px`, height: `${height}px` }}
                   >
-                    <span className="text-[8px] font-bold text-warning">🍽</span>
+                    <span className="text-[7px] font-bold text-warning whitespace-nowrap">🍽 Frokost</span>
                   </div>
                 );
               })()}
