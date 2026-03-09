@@ -29,9 +29,9 @@ interface WeeklyTimesheetProps {
   isAdmin: boolean;
 }
 
-const START_HOUR = 6;
-const END_HOUR = 20;
-const HOUR_HEIGHT = 40; // compact
+const START_HOUR = 0;
+const END_HOUR = 24;
+const HOUR_HEIGHT = 40;
 
 export function WeeklyTimesheet({
   entries, currentWeekStart, onWeekChange,
@@ -145,7 +145,7 @@ export function WeeklyTimesheet({
       </div>
 
       {/* Time grid - compact scrollable */}
-      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: `${Math.min(gridHeight, 360)}px` }}>
+      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: '360px' }}>
         {/* Time labels */}
         <div className="border-r border-border/50 relative" style={{ height: `${gridHeight}px` }}>
           {hours.map((hour) => (
