@@ -10,9 +10,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
   const { user, role } = useAuth();
