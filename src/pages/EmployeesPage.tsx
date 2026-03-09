@@ -38,10 +38,9 @@ export default function EmployeesPage() {
     }
   }, [editEmployee]);
 
-  if (role !== "admin") return <Navigate to="/" replace />;
-
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["profiles_with_roles"],
+    enabled: role === "admin",
     queryFn: async () => {
       const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
       if (!profs) return [];
