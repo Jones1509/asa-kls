@@ -236,14 +236,29 @@ export default function SchedulePage() {
                         <p className="text-xs font-semibold text-primary">
                           {selectedEmployeeIds.length} valgt
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearEmployeeFilter}
-                          className="h-7 text-xs rounded-lg"
-                        >
-                          Ryd
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Slet ALLE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
+                                deleteAllSchedules.mutate(selectedEmployeeIds);
+                              }
+                            }}
+                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 size={12} className="mr-1" />
+                            Slet alle planer
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearEmployeeFilter}
+                            className="h-7 text-xs rounded-lg"
+                          >
+                            Ryd
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
