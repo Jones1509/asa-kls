@@ -38,7 +38,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
   const queryClient = useQueryClient();
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [form, setForm] = useState(defaultForm);
-  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set());
   const [employeeSearch, setEmployeeSearch] = useState("");
 
   const toggleDay = (day: number) => {
@@ -80,7 +80,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
   const reset = () => {
     setSelectedEmployeeIds([]);
     setForm(defaultForm);
-    setSelectedDays(new Set([1, 2, 3, 4, 5]));
+    setSelectedDays(new Set());
     setEmployeeSearch("");
   };
 
@@ -186,12 +186,10 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                 {filteredEmployees.map((emp) => {
                   const isSelected = selectedEmployeeIds.includes(emp.user_id);
                   return (
-                    <button
+                    <label
                       key={emp.user_id}
-                      type="button"
-                      onClick={() => toggleEmployee(emp.user_id)}
                       className={cn(
-                        "w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs transition-colors",
+                        "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs cursor-pointer transition-colors select-none",
                         isSelected
                           ? "bg-primary/10 text-primary font-semibold"
                           : "text-foreground hover:bg-muted/50"
@@ -200,10 +198,10 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleEmployee(emp.user_id)}
-                        className="flex-shrink-0"
+                        className="flex-shrink-0 h-5 w-5"
                       />
                       <span className="truncate">{emp.full_name}</span>
-                    </button>
+                    </label>
                   );
                 })}
               </ScrollArea>
