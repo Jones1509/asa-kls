@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { BulkScheduleDialog } from "@/components/schedule/BulkScheduleDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
