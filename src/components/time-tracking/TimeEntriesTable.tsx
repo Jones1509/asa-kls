@@ -50,10 +50,12 @@ export function TimeEntriesTable({
 
   const startEdit = (entry: Entry) => {
     setEditId(entry.id);
+    const hasBreakNote = entry.notes?.includes("pause fratrukket") || false;
     setEditData({
       start_time: entry.start_time?.slice(0, 5) || "",
       end_time: entry.end_time?.slice(0, 5) || "",
       notes: entry.notes || "",
+      lunch_break: hasBreakNote,
     });
   };
 
