@@ -398,7 +398,13 @@ export default function SchedulePage() {
                       {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "–"}
                     </p>
                     {(s as any).profiles?.full_name && (
-                      <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={(s as any).profiles.avatar_url || ""} />
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary">{(s as any).profiles.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
+                      </div>
                     )}
                     {(s.cases as any)?.address && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
