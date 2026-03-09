@@ -43,6 +43,21 @@ export default function SchedulePage() {
     return user ? [user.id] : [];
   }, [role, selectedEmployeeIds, user]);
 
+  const deleteAllSchedules = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { error } = await supabase
+        .from("schedules")
+        .delete()
+        .in("user_id", userIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      toast.success("Alle planer slettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["schedules", weekStart.toISOString(), viewUserIds],
     queryFn: async () => {
