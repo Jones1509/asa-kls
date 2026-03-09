@@ -145,7 +145,7 @@ export function WeeklyTimesheet({
       </div>
 
       {/* Time grid - compact scrollable */}
-      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: `${Math.min(gridHeight, 360)}px` }}>
+      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: '360px' }}>
         {/* Time labels */}
         <div className="border-r border-border/50 relative" style={{ height: `${gridHeight}px` }}>
           {hours.map((hour) => (
