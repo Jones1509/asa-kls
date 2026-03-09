@@ -32,7 +32,7 @@ interface TimeEntriesTableProps {
 }
 
 export function TimeEntriesTable({
-  entries, profileMap, isAdmin, currentUserId, selectedDate,
+  entries, profileMap, isAdmin, currentUserId, selectedDate, onClearDate,
   onDelete, onUpdate, isDeleting, isUpdating
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
