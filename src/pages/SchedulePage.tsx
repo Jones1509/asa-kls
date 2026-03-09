@@ -481,19 +481,6 @@ export default function SchedulePage() {
                   )}
                 </div>
               </div>
-                  <span className={cn(
-                    "text-xs font-medium uppercase tracking-wide",
-                    today ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    {dayName}
-                  </span>
-                </div>
-                {hasSchedule && (
-                  <span className="text-[10px] font-bold text-muted-foreground bg-muted/80 rounded-full px-2 py-0.5">
-                    {daySchedules.length}
-                  </span>
-                )}
-              </div>
 
               {/* Tasks */}
               <div className="flex-1 space-y-2">
