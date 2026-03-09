@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Pencil, Check, X, Clock } from "lucide-react";
@@ -36,9 +36,16 @@ export function TimeEntriesTable({
   const [editId, setEditId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ start_time: "", end_time: "", notes: "" });
 
-  const filtered = selectedDate
-    ? entries.filter((e) => e.date === format(selectedDate, "yyyy-MM-dd"))
-    : entries;
+  const filtered = useMemo(() => {
+    const list = selectedDate
+      ? entries.filter((e) => e.date === format(selectedDate, "yyyy-MM-dd"))
+      : entries;
+    return [...list].sort((a, b) => {
+      const nameA = profileMap[a.user_id] || "";
+      const nameB = profileMap[b.user_id] || "";
+      return nameA.localeCompare(nameB, "da") || a.date.localeCompare(b.date);
+    });
+  }, [entries, selectedDate, profileMap]);
 
   const startEdit = (entry: Entry) => {
     setEditId(entry.id);
@@ -59,123 +66,123 @@ export function TimeEntriesTable({
     ? format(selectedDate, "EEEE d. MMMM yyyy", { locale: da })
     : "Alle registreringer";
 
+  const totalHours = filtered.reduce((s, e) => s + Number(e.hours), 0);
+
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-border bg-card shadow-card overflow-hidden"
+    >
+      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted">
-            <Clock size={15} className="text-muted-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+            <Clock size={15} className="text-primary" />
           </div>
-          <h3 className="font-heading font-bold text-card-foreground text-[15px] capitalize">{title}</h3>
+          <div>
+            <h3 className="font-heading font-bold text-card-foreground text-[15px] capitalize">{title}</h3>
+            {selectedDate && filtered.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {filtered.length} registrering{filtered.length !== 1 ? "er" : ""} · <span className="font-bold text-primary">{Math.round(totalHours * 10) / 10}t</span>
+              </p>
+            )}
+          </div>
         </div>
-        <span className="text-xs text-muted-foreground">{filtered.length} poster</span>
+        {selectedDate && (
+          <Button variant="ghost" size="sm" className="text-xs rounded-lg h-7" onClick={() => {}}>
+            Vis alle
+          </Button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dato</th>
-              {isAdmin && <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Medarbejder</th>}
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sag</th>
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slut</th>
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Timer</th>
-              <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Note</th>
-              {isAdmin && <th className="px-5 py-3 w-20"></th>}
+              {!selectedDate && <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dato</th>}
+              {isAdmin && <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Medarbejder</th>}
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sag</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tid</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Timer</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Note</th>
+              {isAdmin && <th className="px-4 py-3 w-16"></th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
               {filtered.map((e) => (
                 <motion.tr
                   key={e.id}
+                  layout
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className="hover:bg-muted/20 transition-colors group"
                 >
-                  <td className="px-5 py-3.5 text-card-foreground">{e.date}</td>
+                  {!selectedDate && (
+                    <td className="px-4 py-3 text-card-foreground text-xs tabular-nums">
+                      {format(new Date(e.date + "T00:00"), "d. MMM", { locale: da })}
+                    </td>
+                  )}
                   {isAdmin && (
-                    <td className="px-5 py-3.5 text-card-foreground font-medium">
+                    <td className="px-4 py-3 font-medium text-card-foreground">
                       {profileMap[e.user_id] || "–"}
                     </td>
                   )}
-                  <td className="px-5 py-3.5 font-semibold text-card-foreground">
-                    {(e.cases as any)?.case_number || "–"}
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-xs font-semibold text-card-foreground">
+                      {(e.cases as any)?.case_number || "–"}
+                    </span>
                   </td>
 
                   {editId === e.id ? (
                     <>
-                      <td className="px-5 py-2">
-                        <Input
-                          value={editData.start_time}
-                          onChange={(ev) => setEditData({ ...editData, start_time: ev.target.value })}
-                          className="h-8 w-20 rounded-lg text-xs"
-                          placeholder="08:00"
-                        />
-                      </td>
-                      <td className="px-5 py-2">
-                        <Input
-                          value={editData.end_time}
-                          onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })}
-                          className="h-8 w-20 rounded-lg text-xs"
-                          placeholder="16:00"
-                        />
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-muted-foreground text-xs">auto</span>
-                      </td>
-                      <td className="px-5 py-2 hidden md:table-cell">
-                        <Input
-                          value={editData.notes}
-                          onChange={(ev) => setEditData({ ...editData, notes: ev.target.value })}
-                          className="h-8 rounded-lg text-xs"
-                          placeholder="Note..."
-                        />
-                      </td>
-                      <td className="px-5 py-2">
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-1">
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg text-primary" onClick={saveEdit} disabled={isUpdating}>
-                            <Check size={14} />
+                          <Input value={editData.start_time} onChange={(ev) => setEditData({ ...editData, start_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="08:00" />
+                          <span className="text-muted-foreground text-xs">–</span>
+                          <Input value={editData.end_time} onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="16:00" />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">auto</td>
+                      <td className="px-4 py-2 hidden lg:table-cell">
+                        <Input value={editData.notes} onChange={(ev) => setEditData({ ...editData, notes: ev.target.value })} className="h-7 rounded-lg text-xs px-2" placeholder="Note..." />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-0.5">
+                          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-primary hover:text-primary" onClick={saveEdit} disabled={isUpdating}>
+                            <Check size={13} />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => setEditId(null)}>
-                            <X size={14} />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={() => setEditId(null)}>
+                            <X size={13} />
                           </Button>
                         </div>
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="px-5 py-3.5 text-muted-foreground">{e.start_time?.slice(0, 5)}</td>
-                      <td className="px-5 py-3.5 text-muted-foreground">{e.end_time?.slice(0, 5)}</td>
-                      <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                      <td className="px-4 py-3 text-muted-foreground tabular-nums text-xs">
+                        {e.start_time?.slice(0, 5)} – {e.end_time?.slice(0, 5)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary tabular-nums">
                           {e.hours}t
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell max-w-[200px] truncate">
+                      <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
                         {e.notes || "–"}
                       </td>
                       {isAdmin && (
-                        <td className="px-5 py-3.5">
+                        <td className="px-4 py-3">
                           {deleteConfirm === e.id ? (
                             <div className="flex items-center gap-1">
-                              <Button size="sm" variant="destructive" className="rounded-lg h-7 text-[11px] px-2" onClick={() => { onDelete(e.id); setDeleteConfirm(null); }} disabled={isDeleting}>
-                                Slet
-                              </Button>
-                              <Button size="sm" variant="ghost" className="rounded-lg h-7 text-[11px] px-2" onClick={() => setDeleteConfirm(null)}>
-                                Nej
-                              </Button>
+                              <Button size="sm" variant="destructive" className="rounded-lg h-6 text-[10px] px-2" onClick={() => { onDelete(e.id); setDeleteConfirm(null); }} disabled={isDeleting}>Slet</Button>
+                              <Button size="sm" variant="ghost" className="rounded-lg h-6 text-[10px] px-2" onClick={() => setDeleteConfirm(null)}>Nej</Button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => startEdit(e)} className="rounded-lg p-1.5 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-all">
-                                <Pencil size={13} />
-                              </button>
-                              <button onClick={() => setDeleteConfirm(e.id)} className="rounded-lg p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all">
-                                <Trash2 size={13} />
-                              </button>
+                              <button onClick={() => startEdit(e)} className="rounded-lg p-1 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-all"><Pencil size={12} /></button>
+                              <button onClick={() => setDeleteConfirm(e.id)} className="rounded-lg p-1 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"><Trash2 size={12} /></button>
                             </div>
                           )}
                         </td>
@@ -187,14 +194,14 @@ export function TimeEntriesTable({
             </AnimatePresence>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={isAdmin ? 8 : 6} className="px-5 py-12 text-center text-sm text-muted-foreground">
-                  {selectedDate ? "Ingen registreringer på denne dato" : "Ingen registreringer endnu"}
+                <td colSpan={10} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  {selectedDate ? "Ingen registreringer denne dag" : "Ingen registreringer endnu"}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-    </div>
+    </motion.div>
   );
 }
