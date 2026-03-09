@@ -463,7 +463,7 @@ export default function SchedulePage() {
         <div className="grid grid-cols-[50px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
           {/* Time labels column */}
           <div className="border-r border-border/50 relative">
-            {Array.from({ length: 16 }, (_, i) => i + 6).map((hour) => (
+            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
               <div key={hour} className="h-[60px] relative">
                 <span className="absolute -top-2 right-2 text-[10px] font-medium text-muted-foreground/60 tabular-nums">
                   {String(hour).padStart(2, "0")}:00
