@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { AssignEmployeesDialog } from "@/components/cases/AssignEmployeesDialog";
 
 const statusColors: Record<string, string> = {
   Aktiv: "bg-success/10 text-success border border-success/20",
