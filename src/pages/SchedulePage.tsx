@@ -389,8 +389,6 @@ export default function SchedulePage() {
             const dayName = format(day, "EEE", { locale: da }).toUpperCase();
             const dayNum = format(day, "d");
             const dateStr = format(day, "yyyy-MM-dd");
-            const dayTime = timeEntriesByDate[dateStr];
-            const dayHours = dayTime ? Math.round(dayTime.total * 10) / 10 : 0;
 
             return (
               <div
@@ -415,14 +413,6 @@ export default function SchedulePage() {
                   )}>
                     {dayNum}
                   </span>
-                  {dayHours > 0 && (
-                    <span className={cn(
-                      "text-[9px] font-bold rounded-full px-2 py-0.5",
-                      dayHours >= 8 ? "bg-success/15 text-success" : dayHours >= 4 ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"
-                    )}>
-                      {dayHours}t
-                    </span>
-                  )}
                 </div>
               </div>
             );
