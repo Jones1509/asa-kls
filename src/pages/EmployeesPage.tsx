@@ -124,6 +124,8 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  if (role !== "admin") return <Navigate to="/" replace />;
+
   const filtered = profiles?.filter(p => {
     const matchSearch = p.full_name.toLowerCase().includes(search.toLowerCase()) ||
       p.email.toLowerCase().includes(search.toLowerCase()) ||
