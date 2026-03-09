@@ -85,7 +85,7 @@ export default function SchedulePage() {
       const endDate = format(days[6], "yyyy-MM-dd");
       const query = supabase
         .from("schedules")
-        .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name)")
+        .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name, avatar_url)")
         .gte("date", startDate)
         .lte("date", endDate)
         .in("user_id", viewUserIds);
