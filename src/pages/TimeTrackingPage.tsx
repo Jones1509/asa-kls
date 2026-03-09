@@ -149,11 +149,21 @@ export default function TimeTrackingPage() {
       if (breakDeducted > 0) {
         cleanNotes = cleanNotes ? `${cleanNotes} | 30 min pause fratrukket` : "30 min pause fratrukket";
       }
-      const { error } = await supabase.from("time_entries").update({
-        start_time: data.start_time, end_time: data.end_time,
-        hours: netHours, notes: cleanNotes || null,
-      }).eq("id", id);
+      const { data: updatedRows, error } = await supabase
+        .from("time_entries")
+        .update({
+          start_time: data.start_time,
+          end_time: data.end_time,
+          hours: netHours,
+          notes: cleanNotes || null,
+        })
+        .eq("id", id)
+        .select("id");
+
       if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error("Kunne ikke opdatere registreringen. Tjek adgangsrettigheder.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
