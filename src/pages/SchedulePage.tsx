@@ -409,225 +409,229 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* Week Grid - Full height modern layout */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-0 lg:border lg:border-border lg:rounded-2xl lg:overflow-hidden lg:bg-card lg:shadow-card" style={{ minHeight: 'calc(100vh - 220px)' }}>
-        {days.map((day, i) => {
-          const daySchedules = getScheduleForDay(day);
-          const dateStr = format(day, "yyyy-MM-dd");
-          const dayTime = timeEntriesByDate[dateStr];
-          const dayHours = dayTime ? Math.round(dayTime.total * 10) / 10 : 0;
-          const dayName = format(day, "EEE", { locale: da }).toUpperCase();
-          const dayNum = format(day, "d");
-          const monthName = format(day, "MMM", { locale: da });
-          const hasSchedule = daySchedules.length > 0;
-          const hasHours = dayHours > 0;
-          const today = isToday(day);
-          const isWeekend = i >= 5;
+      {/* Week Grid - Time-based layout like Google Calendar */}
+      <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+        {/* Day headers */}
+        <div className="grid grid-cols-[50px_repeat(7,1fr)] border-b border-border">
+          <div className="border-r border-border/50" />
+          {days.map((day, i) => {
+            const today = isToday(day);
+            const dayName = format(day, "EEE", { locale: da }).toUpperCase();
+            const dayNum = format(day, "d");
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayTime = timeEntriesByDate[dateStr];
+            const dayHours = dayTime ? Math.round(dayTime.total * 10) / 10 : 0;
 
-          return (
-            <motion.div
-              key={day.toISOString()}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.02, duration: 0.15 }}
-              className={cn(
-                "flex flex-col transition-all relative",
-                // Mobile: cards, Desktop: grid columns
-                "rounded-2xl lg:rounded-none",
-                "border lg:border-0 lg:border-r lg:last:border-r-0",
-                today
-                  ? "bg-primary/[0.03] lg:bg-primary/[0.03]"
-                  : isWeekend
-                    ? "bg-muted/20"
-                    : "bg-card",
-                "lg:border-b-0"
-              )}
-            >
-              {/* Day Header - Sticky top bar */}
-              <div className={cn(
-                "px-3 py-3 border-b flex items-center justify-between",
-                today ? "border-primary/20 bg-primary/5" : "border-border/50"
-              )}>
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "flex items-center justify-center w-9 h-9 rounded-xl text-sm font-bold",
+            return (
+              <div
+                key={day.toISOString()}
+                className={cn(
+                  "px-2 py-3 text-center border-r last:border-r-0 border-border/50",
+                  today && "bg-primary/5"
+                )}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className={cn(
+                    "text-[11px] font-bold uppercase tracking-wider",
+                    today ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {dayName}
+                  </span>
+                  <span className={cn(
+                    "flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold",
                     today
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "text-foreground"
                   )}>
                     {dayNum}
-                  </div>
-                  <div className="flex flex-col">
+                  </span>
+                  {dayHours > 0 && (
                     <span className={cn(
-                      "text-[11px] font-bold uppercase tracking-wider leading-none",
-                      today ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {dayName}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/60 capitalize">{monthName}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {hasHours && (
-                    <span className={cn(
-                      "text-[10px] font-bold rounded-lg px-2 py-1",
-                      dayHours >= 8
-                        ? "bg-success/15 text-success"
-                        : dayHours >= 4
-                          ? "bg-primary/10 text-primary"
-                          : "bg-warning/15 text-warning"
+                      "text-[9px] font-bold rounded-full px-2 py-0.5",
+                      dayHours >= 8 ? "bg-success/15 text-success" : dayHours >= 4 ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"
                     )}>
                       {dayHours}t
                     </span>
                   )}
-                  {hasSchedule && (
-                    <span className="text-[10px] font-bold text-muted-foreground bg-muted rounded-lg px-2 py-1">
-                      {daySchedules.length}
-                    </span>
-                  )}
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-              {/* Content area - fills remaining space */}
-              <div className="flex-1 p-2 space-y-2 overflow-y-auto">
-                {isLoading ? (
-                  <>
-                    <div className="h-16 rounded-xl bg-muted/40 animate-pulse" />
-                    <div className="h-12 rounded-xl bg-muted/30 animate-pulse" />
-                  </>
-                ) : hasSchedule ? (
-                  <>
-                    {daySchedules.map((s: any) => (
-                      <div
-                        key={s.id}
-                        className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15 p-3 group relative hover:from-primary/15 hover:to-primary/8 transition-all cursor-default"
-                      >
-                        <p className="text-[11px] font-bold text-foreground pr-10 leading-snug">
-                          {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "Ingen sag"}
-                        </p>
-                        {(s.cases as any)?.customer && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{(s.cases as any).customer}</p>
-                        )}
+        {/* Time grid */}
+        <div className="grid grid-cols-[50px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
+          {/* Time labels column */}
+          <div className="border-r border-border/50 relative">
+            {Array.from({ length: 16 }, (_, i) => i + 6).map((hour) => (
+              <div key={hour} className="h-[60px] relative">
+                <span className="absolute -top-2 right-2 text-[10px] font-medium text-muted-foreground/60 tabular-nums">
+                  {String(hour).padStart(2, "0")}:00
+                </span>
+              </div>
+            ))}
+          </div>
 
-                        {(s as any).profiles?.full_name && (
-                          <div className="flex items-center gap-1.5 mt-2">
-                            <Avatar className="h-5 w-5 ring-1 ring-background">
-                              <AvatarImage src={(s as any).profiles.avatar_url || ""} />
-                              <AvatarFallback className="text-[8px] bg-primary/20 text-primary font-bold">
-                                {(s as any).profiles.full_name?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-[10px] text-muted-foreground truncate font-medium">
-                              {(s as any).profiles.full_name}
-                            </span>
-                          </div>
-                        )}
+          {/* Day columns */}
+          {days.map((day, i) => {
+            const daySchedules = getScheduleForDay(day);
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayTime = timeEntriesByDate[dateStr];
+            const today = isToday(day);
+            const isWeekend = i >= 5;
 
-                        {s.start_time && s.end_time && (
-                          <div className="flex items-center gap-1.5 mt-2 rounded-lg bg-primary/8 px-2 py-1 w-fit">
-                            <Clock size={10} className="text-primary" />
-                            <span className="text-[10px] font-semibold text-primary tabular-nums">
-                              {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
-                            </span>
-                          </div>
-                        )}
+            const START_HOUR = 6;
+            const HOUR_HEIGHT = 60;
 
-                        {s.notes && (
-                          <p className="text-[9px] text-muted-foreground/70 mt-1.5 italic truncate">{s.notes}</p>
-                        )}
+            const getPosition = (startTime: string, endTime: string) => {
+              const [sh, sm] = startTime.split(":").map(Number);
+              const [eh, em] = endTime.split(":").map(Number);
+              const top = ((sh - START_HOUR) + sm / 60) * HOUR_HEIGHT;
+              const height = Math.max(((eh - sh) + (em - sm) / 60) * HOUR_HEIGHT, 28);
+              return { top: Math.max(top, 0), height };
+            };
 
-                        {role === "admin" && (
-                          <div className="absolute top-2 right-2 flex gap-0.5">
-                            {deleteConfirm === s.id ? (
-                              <div className="flex gap-0.5 bg-background rounded-lg p-0.5 shadow-sm">
-                                <button
-                                  onClick={() => deleteSchedule.mutate(s.id)}
-                                  className="rounded-md bg-destructive px-2 py-1 text-[9px] font-semibold text-destructive-foreground"
-                                >
-                                  Slet
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(null)}
-                                  className="rounded-md bg-muted px-2 py-1 text-[9px] font-semibold text-muted-foreground"
-                                >
-                                  Nej
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => openEdit(s)}
-                                  className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 bg-background/90 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm"
-                                >
-                                  <Pencil size={11} />
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(s.id)}
-                                  className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 bg-background/90 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shadow-sm"
-                                >
-                                  <Trash2 size={11} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+            return (
+              <div
+                key={day.toISOString()}
+                className={cn(
+                  "border-r last:border-r-0 border-border/50 relative",
+                  today && "bg-primary/[0.02]",
+                  isWeekend && !today && "bg-muted/10"
+                )}
+              >
+                {/* Hour grid lines */}
+                {Array.from({ length: 16 }, (_, h) => h + 6).map((hour) => (
+                  <div key={hour} className="h-[60px] border-b border-border/20" />
+                ))}
 
-                    {/* Time entries section if hours logged */}
-                    {hasHours && dayTime?.entries && (
-                      <div className="mt-1 pt-2 border-t border-border/30">
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">Registreret</p>
-                        {dayTime.entries.map((te: any) => (
-                          <div key={te.id} className="rounded-lg bg-success/8 border border-success/12 px-2.5 py-1.5 mb-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-semibold text-success truncate">
-                                {(te.cases as any)?.case_number || "–"}
-                              </span>
-                              <span className="text-[10px] font-bold text-success tabular-nums">
-                                {Number(te.hours).toFixed(1)}t
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-muted-foreground tabular-nums">
-                              {te.start_time?.slice(0, 5)}–{te.end_time?.slice(0, 5)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : hasHours ? (
-                  /* Only time entries, no schedules */
-                  <div>
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">Registreret</p>
-                    {dayTime?.entries.map((te: any) => (
-                      <div key={te.id} className="rounded-lg bg-success/8 border border-success/12 px-2.5 py-1.5 mb-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold text-success truncate">
-                            {(te.cases as any)?.case_number || "–"}
-                          </span>
-                          <span className="text-[10px] font-bold text-success tabular-nums">
-                            {Number(te.hours).toFixed(1)}t
+                {/* Schedule entries - positioned by time */}
+                {daySchedules.map((s: any) => {
+                  if (!s.start_time || !s.end_time) return null;
+                  const { top, height } = getPosition(s.start_time.slice(0, 5), s.end_time.slice(0, 5));
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="absolute left-1 right-1 rounded-lg bg-gradient-to-br from-primary/15 to-primary/8 border border-primary/20 px-2 py-1.5 group overflow-hidden hover:from-primary/20 hover:to-primary/12 transition-all cursor-default z-10 shadow-sm"
+                      style={{ top: `${top}px`, height: `${height}px`, minHeight: '28px' }}
+                    >
+                      <p className="text-[10px] font-bold text-foreground leading-tight truncate pr-8">
+                        {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "Ingen sag"}
+                      </p>
+                      {height > 40 && (s.cases as any)?.customer && (
+                        <p className="text-[9px] text-muted-foreground truncate">{(s.cases as any).customer}</p>
+                      )}
+                      {height > 55 && (s as any).profiles?.full_name && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Avatar className="h-4 w-4 ring-1 ring-background">
+                            <AvatarImage src={(s as any).profiles.avatar_url || ""} />
+                            <AvatarFallback className="text-[7px] bg-primary/20 text-primary font-bold">
+                              {(s as any).profiles.full_name?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[9px] text-muted-foreground truncate">
+                            {(s as any).profiles.full_name}
                           </span>
                         </div>
-                        <span className="text-[9px] text-muted-foreground tabular-nums">
-                          {te.start_time?.slice(0, 5)}–{te.end_time?.slice(0, 5)}
+                      )}
+                      {height > 70 && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Clock size={9} className="text-primary shrink-0" />
+                          <span className="text-[9px] font-semibold text-primary tabular-nums">
+                            {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Admin actions */}
+                      {role === "admin" && (
+                        <div className="absolute top-1 right-1 flex gap-0.5">
+                          {deleteConfirm === s.id ? (
+                            <div className="flex gap-0.5 bg-background rounded-md p-0.5 shadow-sm">
+                              <button
+                                onClick={() => deleteSchedule.mutate(s.id)}
+                                className="rounded bg-destructive px-1.5 py-0.5 text-[8px] font-semibold text-destructive-foreground"
+                              >
+                                Slet
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="rounded bg-muted px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground"
+                              >
+                                Nej
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => openEdit(s)}
+                                className="opacity-0 group-hover:opacity-100 rounded p-1 bg-background/90 text-muted-foreground hover:text-primary transition-all shadow-sm"
+                              >
+                                <Pencil size={10} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(s.id)}
+                                className="opacity-0 group-hover:opacity-100 rounded p-1 bg-background/90 text-muted-foreground hover:text-destructive transition-all shadow-sm"
+                              >
+                                <Trash2 size={10} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Time entries - positioned by time */}
+                {dayTime?.entries.map((te: any) => {
+                  if (!te.start_time || !te.end_time) return null;
+                  const { top, height } = getPosition(te.start_time.slice(0, 5), te.end_time.slice(0, 5));
+
+                  return (
+                    <div
+                      key={`te-${te.id}`}
+                      className="absolute left-1 right-1 rounded-lg bg-success/10 border border-success/20 px-2 py-1 overflow-hidden z-[5]"
+                      style={{ top: `${top}px`, height: `${height}px`, minHeight: '24px' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold text-success truncate">
+                          {(te.cases as any)?.case_number || "–"}
+                        </span>
+                        <span className="text-[9px] font-bold text-success tabular-nums">
+                          {Number(te.hours).toFixed(1)}t
                         </span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center gap-1 opacity-30">
-                    <div className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center">
-                      <CalendarX size={14} className="text-muted-foreground" />
+                      {height > 35 && (
+                        <span className="text-[8px] text-muted-foreground tabular-nums">
+                          {te.start_time?.slice(0, 5)}–{te.end_time?.slice(0, 5)}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-medium">Ingen opgaver</p>
-                  </div>
-                )}
+                  );
+                })}
+
+                {/* Current time indicator */}
+                {today && (() => {
+                  const now = new Date();
+                  const h = now.getHours();
+                  const m = now.getMinutes();
+                  if (h < START_HOUR || h > 21) return null;
+                  const top = ((h - START_HOUR) + m / 60) * HOUR_HEIGHT;
+                  return (
+                    <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${top}px` }}>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 rounded-full bg-destructive -ml-1" />
+                        <div className="flex-1 h-[2px] bg-destructive/70" />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
-            </motion.div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Bulk schedule dialog */}
