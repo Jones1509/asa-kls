@@ -426,7 +426,7 @@ export default function SchedulePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03, duration: 0.2 }}
               className={cn(
-                "rounded-2xl border p-3 transition-all min-h-[160px] flex flex-col",
+                "rounded-2xl border p-3 transition-all min-h-[200px] flex flex-col",
                 today
                   ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md"
                   : hasSchedule
@@ -436,7 +436,7 @@ export default function SchedulePage() {
                       : "border-border/60 bg-card/60 hover:bg-card hover:border-border"
               )}
             >
-              {/* Day Header - Compact and clean */}
+              {/* Day Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className={cn(
@@ -447,6 +447,40 @@ export default function SchedulePage() {
                   )}>
                     {dayNum}
                   </div>
+                  <span className={cn(
+                    "text-xs font-medium uppercase tracking-wide",
+                    today ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {dayName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {/* Registered hours badge */}
+                  {(() => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const dayTime = timeEntriesByDate[dateStr];
+                    if (!dayTime || dayTime.total === 0) return null;
+                    const rounded = Math.round(dayTime.total * 10) / 10;
+                    return (
+                      <span className={cn(
+                        "text-[10px] font-bold rounded-full px-2 py-0.5",
+                        rounded >= 8
+                          ? "bg-success/15 text-success"
+                          : rounded >= 4
+                            ? "bg-primary/10 text-primary"
+                            : "bg-warning/15 text-warning"
+                      )}>
+                        {rounded}t
+                      </span>
+                    );
+                  })()}
+                  {hasSchedule && (
+                    <span className="text-[10px] font-bold text-muted-foreground bg-muted/80 rounded-full px-2 py-0.5">
+                      {daySchedules.length}
+                    </span>
+                  )}
+                </div>
+              </div>
                   <span className={cn(
                     "text-xs font-medium uppercase tracking-wide",
                     today ? "text-primary" : "text-muted-foreground"
