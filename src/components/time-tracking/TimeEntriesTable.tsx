@@ -184,6 +184,9 @@ export function TimeEntriesTable({
                       <td className="px-4 py-3 text-muted-foreground tabular-nums text-xs">
                         {e.start_time?.slice(0, 5)} – {e.end_time?.slice(0, 5)}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-bold text-card-foreground tabular-nums text-xs">{e.hours}t</span>
+                      </td>
                       <td className="px-4 py-3">
                         {e.notes?.includes("pause fratrukket") ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 border border-warning/25 px-2 py-0.5 text-[11px] font-medium text-warning">
@@ -194,7 +197,7 @@ export function TimeEntriesTable({
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
-                        {e.notes || "–"}
+                        {e.notes?.replace(/\s*\|?\s*30 min pause fratrukket/g, "").trim() || "–"}
                       </td>
                       {(isAdmin || e.user_id === currentUserId) ? (
                         <td className="px-4 py-3">
