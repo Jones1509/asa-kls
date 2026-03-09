@@ -66,13 +66,16 @@ Deno.serve(async (req) => {
 
       if (profileError) throw profileError;
 
-      // Set role
+      // Set role – trigger already created 'employee', so delete first then insert desired role
       const chosenRole = make_admin ? "admin" : "employee";
-      const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
-        user_id: userId,
-        role: chosenRole,
-      });
-      if (roleError) throw roleError;
+      if (chosenRole !== "employee") {
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+        const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+          user_id: userId,
+          role: chosenRole,
+        });
+        if (roleError) throw roleError;
+      }
 
       return new Response(JSON.stringify({ success: true, user_id: userId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
