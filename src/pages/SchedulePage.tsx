@@ -35,21 +35,29 @@ export default function SchedulePage() {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const weekNum = getISOWeek(weekStart);
 
+  // Determine which users to show
+  const viewUserIds = useMemo(() => {
+    if (role === "admin" && selectedEmployeeIds.length > 0) {
+      return selectedEmployeeIds;
+    }
+    return user ? [user.id] : [];
+  }, [role, selectedEmployeeIds, user]);
+
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["schedules", weekStart.toISOString(), user?.id, role],
+    queryKey: ["schedules", weekStart.toISOString(), viewUserIds],
     queryFn: async () => {
       const startDate = format(days[0], "yyyy-MM-dd");
       const endDate = format(days[6], "yyyy-MM-dd");
-      let query = supabase
+      const query = supabase
         .from("schedules")
         .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name)")
         .gte("date", startDate)
-        .lte("date", endDate);
-      if (role !== "admin") query = query.eq("user_id", user!.id);
+        .lte("date", endDate)
+        .in("user_id", viewUserIds);
       const { data } = await query;
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!user && viewUserIds.length > 0,
   });
 
   const { data: cases } = useQuery({
