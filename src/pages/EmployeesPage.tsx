@@ -405,7 +405,14 @@ export default function EmployeesPage() {
                   <Camera size={20} className="text-white" />
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) { setEditAvatarFile(file); setEditAvatarPreview(URL.createObjectURL(file)); }
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setEditCropSrc(String(reader.result));
+                      setEditCropOpen(true);
+                      e.target.value = "";
+                    };
+                    reader.readAsDataURL(file);
                   }} />
                 </label>
               </div>
