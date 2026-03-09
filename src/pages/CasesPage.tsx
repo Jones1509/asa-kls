@@ -163,9 +163,8 @@ export default function CasesPage() {
   const { data: assignments } = useQuery({
     queryKey: ["case_assignments_all"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("case_assignments")
-        .select("*, profiles!case_assignments_user_id_fkey(full_name, email)");
+      const { data, error } = await supabase.from("case_assignments").select("*");
+      if (error) throw error;
       return data || [];
     },
     enabled: role === "admin",
