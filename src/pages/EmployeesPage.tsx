@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { AvatarCropDialog } from "@/components/profile/AvatarCropDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,8 @@ export default function EmployeesPage() {
   const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [editCropOpen, setEditCropOpen] = useState(false);
+  const [editCropSrc, setEditCropSrc] = useState<string | null>(null);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
@@ -382,6 +385,17 @@ export default function EmployeesPage() {
       </Dialog>
 
       {/* ── Edit Dialog ── */}
+      <AvatarCropDialog
+        open={editCropOpen}
+        imageSrc={editCropSrc}
+        onOpenChange={(open) => { setEditCropOpen(open); if (!open) setEditCropSrc(null); }}
+        onCropped={(file, previewUrl) => {
+          setEditAvatarFile(file);
+          setEditAvatarPreview(previewUrl);
+          setEditCropSrc(null);
+          setEditCropOpen(false);
+        }}
+      />
       <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
@@ -402,7 +416,14 @@ export default function EmployeesPage() {
                   <Camera size={20} className="text-white" />
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) { setEditAvatarFile(file); setEditAvatarPreview(URL.createObjectURL(file)); }
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setEditCropSrc(String(reader.result));
+                      setEditCropOpen(true);
+                      e.target.value = "";
+                    };
+                    reader.readAsDataURL(file);
                   }} />
                 </label>
               </div>
