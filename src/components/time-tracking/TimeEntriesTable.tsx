@@ -56,7 +56,7 @@ export function TimeEntriesTable({
     setEditData({
       start_time: entry.start_time?.slice(0, 5) || "",
       end_time: entry.end_time?.slice(0, 5) || "",
-      notes: entry.notes || "",
+      notes: (entry.notes || "").replace(/\s*\|?\s*30 min pause fratrukket/g, "").trim(),
       lunch_break: hasBreakNote,
     });
   };
