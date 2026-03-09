@@ -565,33 +565,6 @@ export default function SchedulePage() {
                   );
                 })}
 
-                {/* Time entries - positioned by time */}
-                {dayTime?.entries.map((te: any) => {
-                  if (!te.start_time || !te.end_time) return null;
-                  const { top, height } = getPosition(te.start_time.slice(0, 5), te.end_time.slice(0, 5));
-
-                  return (
-                    <div
-                      key={`te-${te.id}`}
-                      className="absolute left-1 right-1 rounded-lg bg-success/10 border border-success/20 px-2 py-1 overflow-hidden z-[5]"
-                      style={{ top: `${top}px`, height: `${height}px`, minHeight: '24px' }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold text-success truncate">
-                          {(te.cases as any)?.case_number || "–"}
-                        </span>
-                        <span className="text-[9px] font-bold text-success tabular-nums">
-                          {Number(te.hours).toFixed(1)}t
-                        </span>
-                      </div>
-                      {height > 35 && (
-                        <span className="text-[8px] text-muted-foreground tabular-nums">
-                          {te.start_time?.slice(0, 5)}–{te.end_time?.slice(0, 5)}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
 
                 {/* Current time indicator */}
                 {today && (() => {
