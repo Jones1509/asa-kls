@@ -28,7 +28,7 @@ export default function TimeTrackingPage() {
   const [filterDateOpen, setFilterDateOpen] = useState(false);
   const [form, setForm] = useState({
     case_id: "", user_id: "", date: new Date().toISOString().split("T")[0],
-    start_time: "08:00", end_time: "16:00", notes: ""
+    start_time: "08:00", end_time: "16:00", notes: "", lunch_break: true
   });
 
   const { data: cases } = useQuery({
