@@ -44,17 +44,36 @@ export default function SchedulePage() {
     return user ? [user.id] : [];
   }, [role, selectedEmployeeIds, user]);
 
-  const deleteAllSchedules = useMutation({
+  const deleteFutureSchedules = useMutation({
     mutationFn: async (userIds: string[]) => {
+      const today = format(new Date(), "yyyy-MM-dd");
       const { error } = await supabase
         .from("schedules")
         .delete()
-        .in("user_id", userIds);
+        .in("user_id", userIds)
+        .gte("date", today);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      toast.success("Alle planer slettet");
+      toast.success("Fremtidige planer slettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deletePastSchedules = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { error } = await supabase
+        .from("schedules")
+        .delete()
+        .in("user_id", userIds)
+        .lt("date", today);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      toast.success("Tidligere planer slettet");
     },
     onError: (e: any) => toast.error(e.message),
   });
