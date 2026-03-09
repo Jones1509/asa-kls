@@ -56,7 +56,7 @@ export function TimeEntriesTable({
     setEditData({
       start_time: entry.start_time?.slice(0, 5) || "",
       end_time: entry.end_time?.slice(0, 5) || "",
-      notes: entry.notes || "",
+      notes: (entry.notes || "").replace(/\s*\|?\s*30 min pause fratrukket/g, "").trim(),
       lunch_break: hasBreakNote,
     });
   };
@@ -149,6 +149,9 @@ export function TimeEntriesTable({
                           <span className="text-muted-foreground text-xs">–</span>
                           <Input value={editData.end_time} onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="16:00" />
                         </div>
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <span className="text-[10px] text-muted-foreground italic">auto</span>
                       </td>
                       <td className="px-4 py-2">
                         <button
