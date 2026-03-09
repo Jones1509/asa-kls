@@ -38,7 +38,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
   const queryClient = useQueryClient();
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [form, setForm] = useState(defaultForm);
-  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set());
   const [employeeSearch, setEmployeeSearch] = useState("");
 
   const toggleDay = (day: number) => {
