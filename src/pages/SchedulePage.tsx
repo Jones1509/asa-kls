@@ -94,37 +94,7 @@ export default function SchedulePage() {
     enabled: !!user && viewUserIds.length > 0,
   });
 
-  // Fetch time entries for the visible week to show hours
-  const { data: timeEntries } = useQuery({
-    queryKey: ["time_entries_schedule", weekStart.toISOString(), viewUserIds],
-    queryFn: async () => {
-      const startDate = format(days[0], "yyyy-MM-dd");
-      const endDate = format(days[6], "yyyy-MM-dd");
-      let query = supabase
-        .from("time_entries")
-        .select("id, date, hours, user_id, start_time, end_time, cases(case_number)")
-        .gte("date", startDate)
-        .lte("date", endDate);
-      if (role !== "admin") {
-        query = query.eq("user_id", user!.id);
-      } else if (viewUserIds.length > 0) {
-        query = query.in("user_id", viewUserIds);
-      }
-      const { data } = await query;
-      return data || [];
-    },
-    enabled: !!user,
-  });
-
-  const timeEntriesByDate = useMemo(() => {
-    const map: Record<string, { total: number; entries: any[] }> = {};
-    timeEntries?.forEach((e: any) => {
-      if (!map[e.date]) map[e.date] = { total: 0, entries: [] };
-      map[e.date].total += Number(e.hours);
-      map[e.date].entries.push(e);
-    });
-    return map;
-  }, [timeEntries]);
+  // No time entries in calendar - calendar is only for planned schedules
 
   const { data: cases } = useQuery({
     queryKey: ["cases_schedule"],
@@ -419,8 +389,6 @@ export default function SchedulePage() {
             const dayName = format(day, "EEE", { locale: da }).toUpperCase();
             const dayNum = format(day, "d");
             const dateStr = format(day, "yyyy-MM-dd");
-            const dayTime = timeEntriesByDate[dateStr];
-            const dayHours = dayTime ? Math.round(dayTime.total * 10) / 10 : 0;
 
             return (
               <div
@@ -445,14 +413,6 @@ export default function SchedulePage() {
                   )}>
                     {dayNum}
                   </span>
-                  {dayHours > 0 && (
-                    <span className={cn(
-                      "text-[9px] font-bold rounded-full px-2 py-0.5",
-                      dayHours >= 8 ? "bg-success/15 text-success" : dayHours >= 4 ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"
-                    )}>
-                      {dayHours}t
-                    </span>
-                  )}
                 </div>
               </div>
             );
@@ -476,7 +436,6 @@ export default function SchedulePage() {
           {days.map((day, i) => {
             const daySchedules = getScheduleForDay(day);
             const dateStr = format(day, "yyyy-MM-dd");
-            const dayTime = timeEntriesByDate[dateStr];
             const today = isToday(day);
             const isWeekend = i >= 5;
 
@@ -605,33 +564,6 @@ export default function SchedulePage() {
                   );
                 })}
 
-                {/* Time entries - positioned by time */}
-                {dayTime?.entries.map((te: any) => {
-                  if (!te.start_time || !te.end_time) return null;
-                  const { top, height } = getPosition(te.start_time.slice(0, 5), te.end_time.slice(0, 5));
-
-                  return (
-                    <div
-                      key={`te-${te.id}`}
-                      className="absolute left-1 right-1 rounded-lg bg-success/10 border border-success/20 px-2 py-1 overflow-hidden z-[5]"
-                      style={{ top: `${top}px`, height: `${height}px`, minHeight: '24px' }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold text-success truncate">
-                          {(te.cases as any)?.case_number || "–"}
-                        </span>
-                        <span className="text-[9px] font-bold text-success tabular-nums">
-                          {Number(te.hours).toFixed(1)}t
-                        </span>
-                      </div>
-                      {height > 35 && (
-                        <span className="text-[8px] text-muted-foreground tabular-nums">
-                          {te.start_time?.slice(0, 5)}–{te.end_time?.slice(0, 5)}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
 
                 {/* Current time indicator */}
                 {today && (() => {
