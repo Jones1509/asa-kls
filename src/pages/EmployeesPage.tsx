@@ -2,7 +2,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,14 @@ import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+async function callManageEmployee(body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await supabase.functions.invoke("manage-employee", { body });
+  if (res.error) throw new Error(res.error.message);
+  if (res.data?.error) throw new Error(res.data.error);
+  return res.data;
+}
 
 export default function EmployeesPage() {
   const { role, user } = useAuth();
@@ -25,6 +34,21 @@ export default function EmployeesPage() {
   const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+
+  // Create state
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: "",
+    password: "",
+    full_name: "",
+    phone: "",
+    role_label: "",
+    make_admin: false,
+  });
+  const [showCreatePw, setShowCreatePw] = useState(false);
 
   useEffect(() => {
     if (editEmployee) {
@@ -35,6 +59,8 @@ export default function EmployeesPage() {
       });
       setEditAvatarPreview(editEmployee.avatar_url || null);
       setEditAvatarFile(null);
+      setShowPasswordChange(false);
+      setNewPassword("");
     }
   }, [editEmployee]);
 
@@ -105,16 +131,35 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const changePassword = useMutation({
+    mutationFn: async () => {
+      if (!editEmployee || !newPassword) return;
+      await callManageEmployee({ action: "change_password", user_id: editEmployee.user_id, new_password: newPassword });
+    },
+    onSuccess: () => {
+      toast.success("Adgangskode ændret");
+      setNewPassword("");
+      setShowPasswordChange(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const createEmployee = useMutation({
+    mutationFn: async () => {
+      await callManageEmployee({ action: "create", ...createForm });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+      setShowCreate(false);
+      setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false });
+      toast.success("Medarbejder oprettet og kan nu logge ind");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      await Promise.all([
-        supabase.from("time_entries").delete().eq("user_id", userId),
-        supabase.from("schedules").delete().eq("user_id", userId),
-        supabase.from("user_roles").delete().eq("user_id", userId),
-        supabase.from("case_assignments").delete().eq("user_id", userId),
-      ]);
-      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
-      if (error) throw error;
+      await callManageEmployee({ action: "delete", user_id: userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
@@ -138,7 +183,6 @@ export default function EmployeesPage() {
 
   const activeCount = profiles?.length || 0;
   const adminCount = profiles?.filter((p) => p.isAdmin).length || 0;
-
   const editInitials = editForm.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
 
   return (
@@ -162,6 +206,9 @@ export default function EmployeesPage() {
             </button>
           ))}
         </div>
+        <Button onClick={() => setShowCreate(true)} className="rounded-xl gap-2 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] ml-auto">
+          <UserPlus size={15} /> Opret medarbejder
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -256,11 +303,85 @@ export default function EmployeesPage() {
               <UserPlus size={24} className="text-muted-foreground/30" />
             </div>
             <p className="text-sm font-medium text-muted-foreground">Ingen medarbejdere fundet</p>
+            <Button onClick={() => setShowCreate(true)} className="mt-4 rounded-xl gap-2">
+              <UserPlus size={15} /> Opret første medarbejder
+            </Button>
           </div>
         )}
       </div>
 
-      {/* Edit dialog */}
+      {/* ── Create Employee Dialog ── */}
+      <Dialog open={showCreate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false }); } }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading font-bold text-lg flex items-center gap-2">
+              <UserPlus size={18} className="text-primary" /> Opret ny medarbejder
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); createEmployee.mutate(); }} className="space-y-4">
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fulde navn</Label>
+              <Input value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
+                placeholder="Fornavn Efternavn" className="mt-1.5 rounded-xl h-11" required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Telefon</Label>
+                <Input value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  placeholder="+45 12 34 56 78" className="mt-1.5 rounded-xl h-11" />
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling / titel</Label>
+                <Input value={createForm.role_label} onChange={(e) => setCreateForm({ ...createForm, role_label: e.target.value })}
+                  placeholder="Tekniker, Leder..." className="mt-1.5 rounded-xl h-11" />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Login oplysninger</p>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
+                <div className="relative mt-1.5">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+                  <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                    placeholder="medarbejder@firma.dk" className="pl-10 rounded-xl h-11" required />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adgangskode</Label>
+                <div className="relative mt-1.5">
+                  <Key size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+                  <Input type={showCreatePw ? "text" : "password"} value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    placeholder="Min. 6 tegn" className="pl-10 pr-10 rounded-xl h-11" required minLength={6} />
+                  <button type="button" onClick={() => setShowCreatePw(!showCreatePw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                    {showCreatePw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-border p-3.5">
+              <div>
+                <p className="text-sm font-semibold text-card-foreground">Administrator</p>
+                <p className="text-xs text-muted-foreground">Giver adgang til alle admin-funktioner</p>
+              </div>
+              <Switch checked={createForm.make_admin} onCheckedChange={(v) => setCreateForm({ ...createForm, make_admin: v })} />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)} className="rounded-xl">Annuller</Button>
+              <Button type="submit" disabled={createEmployee.isPending} className="rounded-xl gap-2 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                <UserPlus size={15} /> {createEmployee.isPending ? "Opretter..." : "Opret medarbejder"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Dialog ── */}
       <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
@@ -309,6 +430,37 @@ export default function EmployeesPage() {
               </div>
             </div>
 
+            {/* Password change section */}
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key size={14} className="text-muted-foreground" />
+                  <p className="text-sm font-semibold text-card-foreground">Adgangskode</p>
+                </div>
+                <Button type="button" variant="ghost" size="sm" className="h-7 rounded-lg text-[11px]"
+                  onClick={() => setShowPasswordChange(!showPasswordChange)}>
+                  {showPasswordChange ? "Annuller" : "Skift adgangskode"}
+                </Button>
+              </div>
+              {showPasswordChange && (
+                <div className="mt-3 flex gap-2">
+                  <div className="relative flex-1">
+                    <Input type={showNewPw ? "text" : "password"} value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Ny adgangskode (min. 6 tegn)" className="pr-10 rounded-xl h-10" minLength={6} />
+                    <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                      {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <Button type="button" size="sm" className="rounded-xl h-10" onClick={() => changePassword.mutate()}
+                    disabled={changePassword.isPending || newPassword.length < 6}>
+                    {changePassword.isPending ? "Gemmer..." : "Gem"}
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" onClick={() => setEditEmployee(null)} className="rounded-xl">Annuller</Button>
               <Button type="submit" disabled={updateEmployee.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
@@ -319,7 +471,7 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
+      {/* ── Delete confirmation ── */}
       <Dialog open={!!deleteUserId} onOpenChange={(o) => !o && setDeleteUserId(null)}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
@@ -328,7 +480,7 @@ export default function EmployeesPage() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Er du sikker på at du vil slette <strong className="text-card-foreground">{deleteUserName}</strong> fra systemet? Alle timer, vagtplaner og rolletildelinger slettes permanent.
+            Er du sikker på at du vil slette <strong className="text-card-foreground">{deleteUserName}</strong> fra systemet? Alle timer, vagtplaner og rolletildelinger slettes permanent og brugeren kan ikke længere logge ind.
           </p>
           <div className="flex justify-end gap-2 pt-3">
             <Button variant="outline" className="rounded-xl" onClick={() => setDeleteUserId(null)}>Annuller</Button>
