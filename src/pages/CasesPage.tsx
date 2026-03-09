@@ -507,8 +507,25 @@ export default function CasesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Assign employee dialog */}
-      <Dialog open={assignOpen} onOpenChange={(v) => { setAssignOpen(v); if (!v) { setAssignCaseId(null); setSelectedUserId(""); } }}>
+      {/* Assign employees dialog */}
+      <AssignEmployeesDialog
+        open={assignOpen}
+        onOpenChange={(v) => {
+          setAssignOpen(v);
+          if (!v) {
+            setAssignCaseId(null);
+            setSelectedUserIds([]);
+          }
+        }}
+        employees={(employees as any) || []}
+        assignedUserIds={getCaseAssignments(assignCaseId || "").map((a: any) => a.user_id)}
+        selectedUserIds={selectedUserIds}
+        onSelectedUserIdsChange={setSelectedUserIds}
+        onConfirm={() => assignEmployees.mutate()}
+        confirmLoading={assignEmployees.isPending}
+        disabled={!assignCaseId}
+      />
+
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Tilknyt medarbejder</DialogTitle></DialogHeader>
           <div className="space-y-4">
