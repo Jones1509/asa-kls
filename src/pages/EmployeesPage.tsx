@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +20,25 @@ export default function EmployeesPage() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [deleteUserName, setDeleteUserName] = useState("");
 
+  // Edit state
+  const [editEmployee, setEditEmployee] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
+  const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+
   if (role !== "admin") return <Navigate to="/" replace />;
+
+  useEffect(() => {
+    if (editEmployee) {
+      setEditForm({
+        full_name: editEmployee.full_name || "",
+        phone: editEmployee.phone || "",
+        role_label: editEmployee.role_label || "",
+      });
+      setEditAvatarPreview(editEmployee.avatar_url || null);
+      setEditAvatarFile(null);
+    }
+  }, [editEmployee]);
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["profiles_with_roles"],
@@ -57,9 +76,38 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updateEmployee = useMutation({
+    mutationFn: async () => {
+      if (!editEmployee) return;
+      let avatar_url = editEmployee.avatar_url || null;
+
+      if (editAvatarFile) {
+        const ext = editAvatarFile.name.split(".").pop();
+        const path = `avatars/${editEmployee.user_id}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("uploads").upload(path, editAvatarFile, { upsert: true });
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+        avatar_url = `${urlData.publicUrl}?t=${Date.now()}`;
+      }
+
+      const { error } = await supabase.from("profiles").update({
+        full_name: editForm.full_name,
+        phone: editForm.phone || null,
+        role_label: editForm.role_label || null,
+        avatar_url,
+      }).eq("user_id", editEmployee.user_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+      setEditEmployee(null);
+      toast.success("Medarbejder opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete related data first, then profile. Auth user remains but has no profile.
       await Promise.all([
         supabase.from("time_entries").delete().eq("user_id", userId),
         supabase.from("schedules").delete().eq("user_id", userId),
@@ -81,14 +129,16 @@ export default function EmployeesPage() {
     const matchSearch = p.full_name.toLowerCase().includes(search.toLowerCase()) ||
       p.email.toLowerCase().includes(search.toLowerCase()) ||
       (p.role_label || "").toLowerCase().includes(search.toLowerCase());
-    const matchRole = roleFilter === "alle" || 
-      (roleFilter === "admin" && p.isAdmin) || 
+    const matchRole = roleFilter === "alle" ||
+      (roleFilter === "admin" && p.isAdmin) ||
       (roleFilter === "employee" && !p.isAdmin);
     return matchSearch && matchRole;
   });
 
   const activeCount = profiles?.length || 0;
   const adminCount = profiles?.filter((p) => p.isAdmin).length || 0;
+
+  const editInitials = editForm.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
 
   return (
     <div>
@@ -124,22 +174,29 @@ export default function EmployeesPage() {
             className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all">
             <div className="flex items-start gap-3.5">
               {e.avatar_url ? (
-                <img src={e.avatar_url} alt="" className="h-12 w-12 rounded-2xl object-cover shadow-card" />
+                <img src={e.avatar_url} alt="" className="h-12 w-12 rounded-2xl object-cover shadow-card flex-shrink-0" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-sm font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-sm font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] flex-shrink-0">
                   {e.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "?"}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <p className="font-semibold text-card-foreground truncate">{e.full_name || "Unavngivet"}</p>
                     {e.isAdmin && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary flex-shrink-0">
                         <Shield size={10} /> Admin
                       </span>
                     )}
                   </div>
+                  <button
+                    onClick={() => setEditEmployee(e)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                    title="Rediger medarbejder"
+                  >
+                    <Pencil size={13} />
+                  </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{e.role_label || "Medarbejder"}</p>
 
@@ -160,7 +217,7 @@ export default function EmployeesPage() {
                 {e.assignments.length > 0 && (
                   <div className="mt-3 space-y-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">Tilknyttede sager ({e.assignments.length})</p>
-                    {e.assignments.slice(0, 3).map((a: any, j: number) => (
+                    {e.assignments.slice(0, 2).map((a: any, j: number) => (
                       <div key={j} className="rounded-xl bg-muted/50 px-3 py-2 border border-border/50">
                         <p className="text-xs font-semibold text-card-foreground flex items-center gap-1.5">
                           <Briefcase size={11} className="text-primary" /> Sag {a.cases?.case_number}
@@ -170,30 +227,21 @@ export default function EmployeesPage() {
                         </p>
                       </div>
                     ))}
-                    {e.assignments.length > 3 && (
-                      <p className="text-[11px] text-muted-foreground/50 pl-1">+{e.assignments.length - 3} mere</p>
+                    {e.assignments.length > 2 && (
+                      <p className="text-[11px] text-muted-foreground/50 pl-1">+{e.assignments.length - 2} mere</p>
                     )}
                   </div>
                 )}
 
-                {/* Admin actions */}
                 <div className="mt-4 pt-3 border-t border-border/50 flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 rounded-lg text-[11px] text-muted-foreground hover:text-foreground"
-                    onClick={() => toggleRole.mutate({ userId: e.user_id, makeAdmin: !e.isAdmin })}
-                  >
+                  <Button variant="ghost" size="sm" className="h-7 rounded-lg text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => toggleRole.mutate({ userId: e.user_id, makeAdmin: !e.isAdmin })}>
                     {e.isAdmin ? "Fjern admin" : "Gør til admin"}
                   </Button>
                   {e.user_id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 rounded-lg text-[11px] text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => { setDeleteUserId(e.user_id); setDeleteUserName(e.full_name); }}
-                    >
-                      <Trash2 size={11} className="mr-1" /> Slet bruger
+                    <Button variant="ghost" size="sm" className="h-7 rounded-lg text-[11px] text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => { setDeleteUserId(e.user_id); setDeleteUserName(e.full_name); }}>
+                      <Trash2 size={11} className="mr-1" /> Slet
                     </Button>
                   )}
                 </div>
@@ -211,7 +259,66 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Delete user confirmation dialog */}
+      {/* Edit dialog */}
+      <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading font-bold text-lg">Rediger medarbejder</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateEmployee.mutate(); }} className="space-y-5">
+            {/* Avatar upload */}
+            <div className="flex items-center gap-5">
+              <div className="relative group flex-shrink-0">
+                {editAvatarPreview ? (
+                  <img src={editAvatarPreview} alt="Avatar" className="h-20 w-20 rounded-2xl object-cover shadow-card" />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl gradient-primary text-xl font-bold text-white shadow-[0_4px_16px_hsl(215_80%_56%/0.3)]">
+                    {editInitials}
+                  </div>
+                )}
+                <label className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Camera size={20} className="text-white" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) { setEditAvatarFile(file); setEditAvatarPreview(URL.createObjectURL(file)); }
+                  }} />
+                </label>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-card-foreground">{editEmployee?.full_name || "Unavngivet"}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{editEmployee?.email}</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-2">Klik på billedet for at skifte</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fulde navn</Label>
+                <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} className="mt-1.5 rounded-xl h-11" required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Telefon</Label>
+                  <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="+45 12 34 56 78" className="mt-1.5 rounded-xl h-11" />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling / titel</Label>
+                  <Input value={editForm.role_label} onChange={(e) => setEditForm({ ...editForm, role_label: e.target.value })} placeholder="Tekniker, Leder..." className="mt-1.5 rounded-xl h-11" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setEditEmployee(null)} className="rounded-xl">Annuller</Button>
+              <Button type="submit" disabled={updateEmployee.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                {updateEmployee.isPending ? "Gemmer..." : "Gem ændringer"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
       <Dialog open={!!deleteUserId} onOpenChange={(o) => !o && setDeleteUserId(null)}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
