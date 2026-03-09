@@ -240,19 +240,26 @@ export default function CasesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const assignEmployee = useMutation({
+  const assignEmployees = useMutation({
     mutationFn: async () => {
-      if (!assignCaseId || !selectedUserId) return;
-      const { error } = await supabase.from("case_assignments").insert({
-        case_id: assignCaseId,
-        user_id: selectedUserId,
-      });
+      if (!assignCaseId || selectedUserIds.length === 0) return;
+
+      const existing = new Set(getCaseAssignments(assignCaseId).map((a: any) => a.user_id));
+      const toInsert = selectedUserIds
+        .filter((uid) => !existing.has(uid))
+        .map((uid) => ({ case_id: assignCaseId, user_id: uid }));
+
+      if (toInsert.length === 0) return;
+
+      const { error } = await supabase.from("case_assignments").insert(toInsert);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case_assignments_all"] });
-      setSelectedUserId("");
-      toast.success("Medarbejder tilknyttet");
+      setSelectedUserIds([]);
+      setAssignOpen(false);
+      setAssignCaseId(null);
+      toast.success("Medarbejdere tilknyttet");
     },
     onError: (e: any) => toast.error(e.message),
   });
