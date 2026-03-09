@@ -3,15 +3,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, Coffee } from "lucide-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { Switch } from "@/components/ui/switch";
 
 interface QuickEntryFormProps {
-  form: { case_id: string; user_id: string; date: string; start_time: string; end_time: string; notes: string };
+  form: { case_id: string; user_id: string; date: string; start_time: string; end_time: string; notes: string; lunch_break: boolean };
   setForm: (form: any) => void;
   isAdmin: boolean;
   employees: { user_id: string; full_name: string }[];
@@ -50,13 +51,25 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
 
   const selectedDate = form.date ? new Date(form.date + "T00:00") : new Date();
 
+  // Calculate preview hours
+  const previewHours = useMemo(() => {
+    try {
+      const [sh, sm] = form.start_time.split(":").map(Number);
+      const [eh, em] = form.end_time.split(":").map(Number);
+      const raw = (eh + em / 60) - (sh + sm / 60);
+      if (raw <= 0 || isNaN(raw)) return null;
+      const breakDeducted = form.lunch_break && raw >= 7 ? 0.5 : 0;
+      return { raw: Math.round(raw * 10) / 10, net: Math.round((raw - breakDeducted) * 10) / 10, breakDeducted };
+    } catch { return null; }
+  }, [form.start_time, form.end_time, form.lunch_break]);
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <h3 className="font-heading font-bold text-card-foreground mb-4 flex items-center gap-2 text-[15px]">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
           <Plus size={15} className="text-primary" />
         </div>
-        {isAdmin ? "Registrer timer" : "Registrer timer"}
+        Registrer timer
       </h3>
 
       <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
@@ -113,8 +126,8 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </div>
         </div>
 
-        {/* Row 2: Start + End + Note + Submit */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+        {/* Row 2: Start + End + Lunch + Note + Submit */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Start</Label>
             <Input
@@ -144,6 +157,22 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
             />
           </div>
           <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Frokost</Label>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, lunch_break: !form.lunch_break })}
+              className={cn(
+                "w-full h-10 rounded-xl border flex items-center justify-center gap-2 text-sm font-medium transition-all",
+                form.lunch_break
+                  ? "bg-warning/10 border-warning/30 text-warning"
+                  : "bg-muted/30 border-border text-muted-foreground"
+              )}
+            >
+              <Coffee size={14} />
+              {form.lunch_break ? "30 min" : "Ingen"}
+            </button>
+          </div>
+          <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Note</Label>
             <Input
               value={form.notes}
@@ -160,6 +189,27 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
             {isPending ? "Gemmer..." : "Registrer"}
           </Button>
         </div>
+
+        {/* Hours preview */}
+        {previewHours && (
+          <div className="flex items-center gap-3 text-sm px-1">
+            <span className="text-muted-foreground">
+              Brutto: <span className="font-semibold text-foreground">{previewHours.raw}t</span>
+            </span>
+            {previewHours.breakDeducted > 0 && (
+              <>
+                <span className="text-muted-foreground/40">→</span>
+                <span className="text-muted-foreground">
+                  Pause: <span className="font-semibold text-warning">-0,5t</span>
+                </span>
+                <span className="text-muted-foreground/40">→</span>
+              </>
+            )}
+            <span className="text-muted-foreground">
+              Netto: <span className="font-bold text-primary">{previewHours.net}t</span>
+            </span>
+          </div>
+        )}
       </form>
     </div>
   );
