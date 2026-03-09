@@ -385,6 +385,17 @@ export default function EmployeesPage() {
       </Dialog>
 
       {/* ── Edit Dialog ── */}
+      <AvatarCropDialog
+        open={editCropOpen}
+        imageSrc={editCropSrc}
+        onOpenChange={(open) => { setEditCropOpen(open); if (!open) setEditCropSrc(null); }}
+        onCropped={(file, previewUrl) => {
+          setEditAvatarFile(file);
+          setEditAvatarPreview(previewUrl);
+          setEditCropSrc(null);
+          setEditCropOpen(false);
+        }}
+      />
       <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
