@@ -245,6 +245,10 @@ export default function SchedulePage() {
                                 onCheckedChange={() => toggleEmployee(emp.user_id)}
                                 className="flex-shrink-0 h-4 w-4"
                               />
+                              <Avatar className="h-6 w-6 flex-shrink-0">
+                                <AvatarImage src={(emp as any).avatar_url || ""} />
+                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{emp.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
                               <span className="text-sm truncate">{emp.full_name}</span>
                             </label>
                           );
