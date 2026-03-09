@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Clock, Calendar, TrendingUp } from "lucide-react";
+import { Clock, Calendar, TrendingUp, CalendarIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { format, startOfWeek } from "date-fns";
+import { da } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 
 import { EmployeeFilter } from "@/components/time-tracking/EmployeeFilter";
 import { WeeklyTimesheet } from "@/components/time-tracking/WeeklyTimesheet";
@@ -21,6 +25,7 @@ export default function TimeTrackingPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<string>("all");
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [filterDateOpen, setFilterDateOpen] = useState(false);
   const [form, setForm] = useState({
     case_id: "", user_id: "", date: new Date().toISOString().split("T")[0],
     start_time: "08:00", end_time: "16:00", notes: ""
@@ -67,8 +72,11 @@ export default function TimeTrackingPage() {
 
   const filteredEntries = useMemo(() => {
     if (!entries) return [];
-    if (!isAdmin || selectedEmployee === "all") return entries;
-    return entries.filter((e) => e.user_id === selectedEmployee);
+    let result = entries;
+    if (isAdmin && selectedEmployee !== "all") {
+      result = result.filter((e) => e.user_id === selectedEmployee);
+    }
+    return result;
   }, [entries, selectedEmployee, isAdmin]);
 
   const weekStats = useMemo(() => {
@@ -141,17 +149,62 @@ export default function TimeTrackingPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const handleFilterDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setCurrentWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
+      setFilterDateOpen(false);
+    }
+  };
+
+  const clearDateFilter = () => {
+    setSelectedDate(null);
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <PageHeader title="Timeregistrering" description="Registrer og se arbejdstimer" />
-        {isAdmin && employees && (
-          <EmployeeFilter
-            employees={employees}
-            selected={selectedEmployee}
-            onSelect={(v) => { setSelectedEmployee(v); setSelectedDate(null); }}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {/* Admin date picker filter */}
+          {isAdmin && (
+            <Popover open={filterDateOpen} onOpenChange={setFilterDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="rounded-xl h-10 border-border font-normal text-sm gap-2"
+                >
+                  <CalendarIcon size={14} className="text-muted-foreground" />
+                  {selectedDate
+                    ? format(selectedDate, "d. MMM yyyy", { locale: da })
+                    : "Vælg dato"
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-xl" align="end">
+                <CalendarPicker
+                  mode="single"
+                  selected={selectedDate || undefined}
+                  onSelect={handleFilterDateSelect}
+                  locale={da}
+                  className="rounded-xl"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+          {selectedDate && (
+            <Button variant="ghost" size="sm" onClick={clearDateFilter} className="rounded-xl text-xs text-muted-foreground">
+              Ryd filter
+            </Button>
+          )}
+          {isAdmin && employees && (
+            <EmployeeFilter
+              employees={employees}
+              selected={selectedEmployee}
+              onSelect={(v) => { setSelectedEmployee(v); setSelectedDate(null); }}
+            />
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -196,7 +249,7 @@ export default function TimeTrackingPage() {
         />
       </div>
 
-      {/* Detail table (shown when date selected or always) */}
+      {/* Detail table */}
       <TimeEntriesTable
         entries={filteredEntries}
         profileMap={profileMap || {}}
