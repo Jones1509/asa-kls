@@ -24,6 +24,7 @@ interface TimeEntriesTableProps {
   isAdmin: boolean;
   currentUserId?: string;
   selectedDate: Date | null;
+  onClearDate?: () => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
   isDeleting: boolean;
