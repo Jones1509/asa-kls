@@ -29,9 +29,9 @@ interface WeeklyTimesheetProps {
   isAdmin: boolean;
 }
 
-const START_HOUR = 6;
-const END_HOUR = 20;
-const HOUR_HEIGHT = 40; // compact
+const START_HOUR = 0;
+const END_HOUR = 24;
+const HOUR_HEIGHT = 40;
 
 export function WeeklyTimesheet({
   entries, currentWeekStart, onWeekChange,
