@@ -143,13 +143,10 @@ export default function TimeTrackingPage() {
 
   const updateEntry = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { start_time: string; end_time: string; notes: string | null } }) => {
-      const [sh, sm] = data.start_time.split(":").map(Number);
-      const [eh, em] = data.end_time.split(":").map(Number);
-      const hours = (eh + em / 60) - (sh + sm / 60);
-      if (hours <= 0) throw new Error("Sluttid skal være efter starttid");
+      const { netHours } = calcHoursWithBreak(data.start_time, data.end_time);
       const { error } = await supabase.from("time_entries").update({
         start_time: data.start_time, end_time: data.end_time,
-        hours: Math.round(hours * 100) / 100, notes: data.notes,
+        hours: netHours, notes: data.notes,
       }).eq("id", id);
       if (error) throw error;
     },
