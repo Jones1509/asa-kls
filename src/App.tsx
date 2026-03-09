@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { AppLayout } from "./components/AppLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import CasesPage from "./pages/CasesPage";
@@ -22,6 +22,13 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AdminRoute({ element }: { element: React.ReactElement }) {
+  const { role, loading } = useAuth();
+  if (loading) return null;
+  if (role !== "admin") return <Navigate to="/" replace />;
+  return element;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -34,13 +41,13 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/cases" element={<CasesPage />} />
-              <Route path="/invoices" element={<InvoicesPage />} />
+              <Route path="/invoices" element={<AdminRoute element={<InvoicesPage />} />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/time-tracking" element={<TimeTrackingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/verification" element={<VerificationPage />} />
               <Route path="/documentation" element={<DocumentationPage />} />
-              <Route path="/employees" element={<EmployeesPage />} />
+              <Route path="/employees" element={<AdminRoute element={<EmployeesPage />} />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/field-reports" element={<FieldReportsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
