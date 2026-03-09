@@ -480,7 +480,7 @@ export default function SchedulePage() {
             const today = isToday(day);
             const isWeekend = i >= 5;
 
-            const START_HOUR = 6;
+            const START_HOUR = 0;
             const HOUR_HEIGHT = 60;
 
             const getPosition = (startTime: string, endTime: string) => {
