@@ -24,7 +24,7 @@ interface TimeEntriesTableProps {
   isAdmin: boolean;
   selectedDate: Date | null;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null }) => void;
+  onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
   isDeleting: boolean;
   isUpdating: boolean;
 }
