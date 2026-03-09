@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { BulkScheduleDialog } from "@/components/schedule/BulkScheduleDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Clock, History, MapPin, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -43,17 +44,36 @@ export default function SchedulePage() {
     return user ? [user.id] : [];
   }, [role, selectedEmployeeIds, user]);
 
-  const deleteAllSchedules = useMutation({
+  const deleteFutureSchedules = useMutation({
     mutationFn: async (userIds: string[]) => {
+      const today = format(new Date(), "yyyy-MM-dd");
       const { error } = await supabase
         .from("schedules")
         .delete()
-        .in("user_id", userIds);
+        .in("user_id", userIds)
+        .gte("date", today);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      toast.success("Alle planer slettet");
+      toast.success("Fremtidige planer slettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deletePastSchedules = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { error } = await supabase
+        .from("schedules")
+        .delete()
+        .in("user_id", userIds)
+        .lt("date", today);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      toast.success("Tidligere planer slettet");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -65,7 +85,7 @@ export default function SchedulePage() {
       const endDate = format(days[6], "yyyy-MM-dd");
       const query = supabase
         .from("schedules")
-        .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name)")
+        .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name, avatar_url)")
         .gte("date", startDate)
         .lte("date", endDate)
         .in("user_id", viewUserIds);
@@ -91,7 +111,7 @@ export default function SchedulePage() {
   const { data: employees } = useQuery({
     queryKey: ["employees_schedule"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name").order("full_name");
+      const { data } = await supabase.from("profiles").select("user_id, full_name, avatar_url").order("full_name");
       return data || [];
     },
     enabled: role === "admin",
@@ -190,7 +210,7 @@ export default function SchedulePage() {
                     <Users size={16} />
                     {selectedEmployeeIds.length > 0
                       ? `${selectedEmployeeIds.length} valgt`
-                      : "Alle medarbejdere"}
+                      : "Vælg medarbejder"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-72 p-0 rounded-xl" align="end">
@@ -225,6 +245,10 @@ export default function SchedulePage() {
                                 onCheckedChange={() => toggleEmployee(emp.user_id)}
                                 className="flex-shrink-0 h-4 w-4"
                               />
+                              <Avatar className="h-6 w-6 flex-shrink-0">
+                                <AvatarImage src={(emp as any).avatar_url || ""} />
+                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{emp.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
                               <span className="text-sm truncate">{emp.full_name}</span>
                             </label>
                           );
@@ -232,24 +256,11 @@ export default function SchedulePage() {
                       </div>
                     </ScrollArea>
                     {selectedEmployeeIds.length > 0 && (
-                      <div className="px-3 py-2 border-t border-border flex justify-between items-center">
-                        <p className="text-xs font-semibold text-primary">
-                          {selectedEmployeeIds.length} valgt
-                        </p>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm(`Slet ALLE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
-                                deleteAllSchedules.mutate(selectedEmployeeIds);
-                              }
-                            }}
-                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 size={12} className="mr-1" />
-                            Slet alle planer
-                          </Button>
+                      <div className="px-3 py-2 border-t border-border space-y-2">
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-semibold text-primary">
+                            {selectedEmployeeIds.length} valgt
+                          </p>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -257,6 +268,34 @@ export default function SchedulePage() {
                             className="h-7 text-xs rounded-lg"
                           >
                             Ryd
+                          </Button>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Slet alle FREMTIDIGE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
+                                deleteFutureSchedules.mutate(selectedEmployeeIds);
+                              }
+                            }}
+                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
+                          >
+                            <CalendarX size={12} className="mr-1.5" />
+                            Slet fremtidige planer
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Slet alle TIDLIGERE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
+                                deletePastSchedules.mutate(selectedEmployeeIds);
+                              }
+                            }}
+                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
+                          >
+                            <History size={12} className="mr-1.5" />
+                            Slet tidligere planer
                           </Button>
                         </div>
                       </div>
@@ -359,7 +398,13 @@ export default function SchedulePage() {
                       {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "–"}
                     </p>
                     {(s as any).profiles?.full_name && (
-                      <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={(s as any).profiles.avatar_url || ""} />
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary">{(s as any).profiles.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
+                      </div>
                     )}
                     {(s.cases as any)?.address && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
