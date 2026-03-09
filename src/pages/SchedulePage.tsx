@@ -10,9 +10,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
   const { user, role } = useAuth();
@@ -23,26 +27,37 @@ export default function SchedulePage() {
   const [editEntry, setEditEntry] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [employeeFilterOpen, setEmployeeFilterOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   // 7 days: Monday - Sunday
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const weekNum = getISOWeek(weekStart);
 
+  // Determine which users to show
+  const viewUserIds = useMemo(() => {
+    if (role === "admin" && selectedEmployeeIds.length > 0) {
+      return selectedEmployeeIds;
+    }
+    return user ? [user.id] : [];
+  }, [role, selectedEmployeeIds, user]);
+
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["schedules", weekStart.toISOString(), user?.id, role],
+    queryKey: ["schedules", weekStart.toISOString(), viewUserIds],
     queryFn: async () => {
       const startDate = format(days[0], "yyyy-MM-dd");
       const endDate = format(days[6], "yyyy-MM-dd");
-      let query = supabase
+      const query = supabase
         .from("schedules")
         .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name)")
         .gte("date", startDate)
-        .lte("date", endDate);
-      if (role !== "admin") query = query.eq("user_id", user!.id);
+        .lte("date", endDate)
+        .in("user_id", viewUserIds);
       const { data } = await query;
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!user && viewUserIds.length > 0,
   });
 
   const { data: cases } = useQuery({
@@ -66,6 +81,23 @@ export default function SchedulePage() {
     },
     enabled: role === "admin",
   });
+
+  const filteredEmployees = useMemo(() => {
+    const q = employeeSearch.trim().toLowerCase();
+    if (!q || !employees) return employees || [];
+    return employees.filter((e: any) => e.full_name.toLowerCase().includes(q));
+  }, [employees, employeeSearch]);
+
+  const toggleEmployee = (uid: string) => {
+    setSelectedEmployeeIds((prev) =>
+      prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]
+    );
+  };
+
+  const clearEmployeeFilter = () => {
+    setSelectedEmployeeIds([]);
+    setEmployeeSearch("");
+  };
 
   const updateSchedule = useMutation({
     mutationFn: async (entry: any) => {
@@ -129,13 +161,87 @@ export default function SchedulePage() {
       <PageHeader title="Kalender" description={`Uge ${weekNum} · ${totalScheduled} opgaver`}>
         <div className="flex items-center gap-2">
           {role === "admin" && (
-            <Button
-              size="sm"
-              className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"
-              onClick={() => setBulkOpen(true)}
-            >
-              <Plus size={16} /> Planlæg
-            </Button>
+            <>
+              <Popover open={employeeFilterOpen} onOpenChange={setEmployeeFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "gap-2 rounded-xl",
+                      selectedEmployeeIds.length > 0 && "border-primary text-primary"
+                    )}
+                  >
+                    <Users size={16} />
+                    {selectedEmployeeIds.length > 0
+                      ? `${selectedEmployeeIds.length} valgt`
+                      : "Alle medarbejdere"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-0 rounded-xl" align="end">
+                  <div className="flex flex-col max-h-96">
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        Filtrer medarbejdere
+                      </p>
+                      <Input
+                        value={employeeSearch}
+                        onChange={(e) => setEmployeeSearch(e.target.value)}
+                        placeholder="Søg medarbejder..."
+                        className="h-8 text-xs rounded-lg"
+                      />
+                    </div>
+                    <ScrollArea className="flex-1 max-h-64">
+                      <div className="p-2 space-y-1">
+                        {filteredEmployees?.map((emp: any) => {
+                          const isSelected = selectedEmployeeIds.includes(emp.user_id);
+                          return (
+                            <label
+                              key={emp.user_id}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors select-none",
+                                isSelected
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "hover:bg-muted/50"
+                              )}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleEmployee(emp.user_id)}
+                                className="flex-shrink-0 h-4 w-4"
+                              />
+                              <span className="text-sm truncate">{emp.full_name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                    {selectedEmployeeIds.length > 0 && (
+                      <div className="px-3 py-2 border-t border-border flex justify-between items-center">
+                        <p className="text-xs font-semibold text-primary">
+                          {selectedEmployeeIds.length} valgt
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearEmployeeFilter}
+                          className="h-7 text-xs rounded-lg"
+                        >
+                          Ryd
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                size="sm"
+                className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"
+                onClick={() => setBulkOpen(true)}
+              >
+                <Plus size={16} /> Planlæg
+              </Button>
+            </>
           )}
           <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1">
             <Button
@@ -222,7 +328,7 @@ export default function SchedulePage() {
                     <p className="text-sm font-semibold text-card-foreground pr-14">
                       {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "–"}
                     </p>
-                    {role === "admin" && (s as any).profiles?.full_name && (
+                    {(s as any).profiles?.full_name && (
                       <p className="text-[11px] font-medium text-primary/70">{(s as any).profiles.full_name}</p>
                     )}
                     {(s.cases as any)?.address && (
