@@ -92,7 +92,7 @@ export default function SchedulePage() {
   const { data: employees } = useQuery({
     queryKey: ["employees_schedule"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name").order("full_name");
+      const { data } = await supabase.from("profiles").select("user_id, full_name, avatar_url").order("full_name");
       return data || [];
     },
     enabled: role === "admin",
