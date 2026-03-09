@@ -1,22 +1,24 @@
 import { PageHeader } from "@/components/PageHeader";
+import { AvatarCropDialog } from "@/components/profile/AvatarCropDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AvatarCropDialog } from "@/components/profile/AvatarCropDialog";
-import { User, Mail, Phone, Shield, Save, Camera, Briefcase, Clock, FileText } from "lucide-react";
-import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Briefcase, Camera, Clock, FileText, Mail, Phone, Save, Shield, User } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
-  const { user, role, profile } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
+
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", role_label: "" });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   const [cropOpen, setCropOpen] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
 
@@ -107,11 +109,29 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const initials = form.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+  const initials = form.full_name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageHeader title="Min profil" description="Administrer dine personlige oplysninger" />
+
+      <AvatarCropDialog
+        open={cropOpen}
+        imageSrc={cropSrc}
+        onOpenChange={handleCropOpenChange}
+        onCropped={(file, previewUrl) => {
+          if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+          setAvatarFile(file);
+          setAvatarPreview(previewUrl);
+          setCropSrc(null);
+          setCropOpen(false);
+        }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile card */}
@@ -138,21 +158,29 @@ export default function ProfilePage() {
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                     <Shield size={10} /> {role === "admin" ? "Administrator" : "Medarbejder"}
                   </span>
-                  {form.role_label && (
-                    <span className="text-xs text-muted-foreground">{form.role_label}</span>
-                  )}
+                  {form.role_label && <span className="text-xs text-muted-foreground">{form.role_label}</span>}
                 </div>
               </div>
             </div>
 
             {/* Form */}
-            <form onSubmit={(e) => { e.preventDefault(); updateProfile.mutate(); }} className="space-y-5">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateProfile.mutate();
+              }}
+              className="space-y-5"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fulde navn</Label>
                   <div className="relative mt-1.5">
                     <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
-                    <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="pl-10 rounded-xl h-11" />
+                    <Input
+                      value={form.full_name}
+                      onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                      className="pl-10 rounded-xl h-11"
+                    />
                   </div>
                 </div>
                 <div>
@@ -166,17 +194,31 @@ export default function ProfilePage() {
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Telefon</Label>
                   <div className="relative mt-1.5">
                     <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
-                    <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+45 12 34 56 78" className="pl-10 rounded-xl h-11" />
+                    <Input
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="+45 12 34 56 78"
+                      className="pl-10 rounded-xl h-11"
+                    />
                   </div>
                 </div>
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling</Label>
-                  <Input value={form.role_label} onChange={(e) => setForm({ ...form, role_label: e.target.value })} placeholder="Tekniker, Projektleder..." className="mt-1.5 rounded-xl h-11" />
+                  <Input
+                    value={form.role_label}
+                    onChange={(e) => setForm({ ...form, role_label: e.target.value })}
+                    placeholder="Tekniker, Projektleder..."
+                    className="mt-1.5 rounded-xl h-11"
+                  />
                 </div>
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={updateProfile.isPending} className="rounded-xl gap-2 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                <Button
+                  type="submit"
+                  disabled={updateProfile.isPending}
+                  className="rounded-xl gap-2 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"
+                >
                   <Save size={15} /> {updateProfile.isPending ? "Gemmer..." : "Gem ændringer"}
                 </Button>
               </div>
@@ -185,14 +227,24 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* Stats sidebar */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
+        >
           {[
             { label: "Tilknyttede sager", value: stats?.cases || 0, icon: Briefcase, color: "bg-primary/10 text-primary" },
             { label: "Rapporter indsendt", value: stats?.reports || 0, icon: FileText, color: "bg-success/10 text-success" },
             { label: "Timer registreret", value: `${stats?.hours || 0}t`, icon: Clock, color: "bg-warning/10 text-warning" },
           ].map((stat, i) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.05 }}
-              className="rounded-2xl border border-border bg-card p-5 shadow-card">
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 + i * 0.05 }}
+              className="rounded-2xl border border-border bg-card p-5 shadow-card"
+            >
               <div className="flex items-center gap-3">
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.color}`}>
                   <stat.icon size={18} />
