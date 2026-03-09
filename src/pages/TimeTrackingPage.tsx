@@ -143,7 +143,7 @@ export default function TimeTrackingPage() {
 
   const updateEntry = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { start_time: string; end_time: string; notes: string | null } }) => {
-      const { netHours } = calcHoursWithBreak(data.start_time, data.end_time);
+      const { netHours } = calcHours(data.start_time, data.end_time, true);
       const { error } = await supabase.from("time_entries").update({
         start_time: data.start_time, end_time: data.end_time,
         hours: netHours, notes: data.notes,
