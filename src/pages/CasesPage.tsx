@@ -147,7 +147,7 @@ export default function CasesPage() {
   const [form, setForm] = useState(emptyForm);
   const [editForm, setEditForm] = useState<any>(null);
   const [assignCaseId, setAssignCaseId] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ["cases"],
