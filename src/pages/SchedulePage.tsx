@@ -505,6 +505,27 @@ export default function SchedulePage() {
                   <div key={hour} className="h-[60px] border-b border-border/20" />
                 ))}
 
+                {/* Lunch break block - shown when any schedule is 7+ hours */}
+                {(() => {
+                  const hasLongDay = daySchedules.some((s: any) => {
+                    if (!s.start_time || !s.end_time) return false;
+                    const [sh, sm] = s.start_time.split(":").map(Number);
+                    const [eh, em] = s.end_time.split(":").map(Number);
+                    return ((eh + em / 60) - (sh + sm / 60)) >= 7;
+                  });
+                  if (!hasLongDay) return null;
+                  const { top, height } = getPosition("12:00", "12:30");
+                  return (
+                    <div
+                      className="absolute left-1 right-1 rounded-lg bg-warning/15 border border-warning/25 px-2 py-1 z-20 flex items-center gap-1.5 pointer-events-none"
+                      style={{ top: `${top}px`, height: `${height}px` }}
+                    >
+                      <span className="text-[9px] font-bold text-warning">🍽 Frokostpause</span>
+                      <span className="text-[8px] text-warning/70 tabular-nums">12:00–12:30</span>
+                    </div>
+                  );
+                })()}
+
                 {/* Schedule entries - positioned by time */}
                 {daySchedules.map((s: any) => {
                   if (!s.start_time || !s.end_time) return null;
