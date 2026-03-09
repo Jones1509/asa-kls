@@ -22,6 +22,7 @@ interface TimeEntriesTableProps {
   entries: Entry[];
   profileMap: Record<string, string>;
   isAdmin: boolean;
+  currentUserId?: string;
   selectedDate: Date | null;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
@@ -30,7 +31,7 @@ interface TimeEntriesTableProps {
 }
 
 export function TimeEntriesTable({
-  entries, profileMap, isAdmin, selectedDate,
+  entries, profileMap, isAdmin, currentUserId, selectedDate,
   onDelete, onUpdate, isDeleting, isUpdating
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
