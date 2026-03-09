@@ -24,6 +24,7 @@ interface TimeEntriesTableProps {
   isAdmin: boolean;
   currentUserId?: string;
   selectedDate: Date | null;
+  onClearDate?: () => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: { start_time: string; end_time: string; notes: string | null; lunch_break: boolean }) => void;
   isDeleting: boolean;
@@ -31,7 +32,7 @@ interface TimeEntriesTableProps {
 }
 
 export function TimeEntriesTable({
-  entries, profileMap, isAdmin, currentUserId, selectedDate,
+  entries, profileMap, isAdmin, currentUserId, selectedDate, onClearDate,
   onDelete, onUpdate, isDeleting, isUpdating
 }: TimeEntriesTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -92,8 +93,8 @@ export function TimeEntriesTable({
             )}
           </div>
         </div>
-        {selectedDate && (
-          <Button variant="ghost" size="sm" className="text-xs rounded-lg h-7" onClick={() => {}}>
+        {selectedDate && onClearDate && (
+          <Button variant="ghost" size="sm" className="text-xs rounded-lg h-7" onClick={onClearDate}>
             Vis alle
           </Button>
         )}
@@ -107,6 +108,7 @@ export function TimeEntriesTable({
               {isAdmin && <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Medarbejder</th>}
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sag</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tid</th>
+              <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Timer</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Frokost</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Note</th>
               <th className="px-4 py-3 w-16"></th>
@@ -182,6 +184,9 @@ export function TimeEntriesTable({
                       <td className="px-4 py-3 text-muted-foreground tabular-nums text-xs">
                         {e.start_time?.slice(0, 5)} – {e.end_time?.slice(0, 5)}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-bold text-card-foreground tabular-nums text-xs">{e.hours}t</span>
+                      </td>
                       <td className="px-4 py-3">
                         {e.notes?.includes("pause fratrukket") ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 border border-warning/25 px-2 py-0.5 text-[11px] font-medium text-warning">
@@ -192,7 +197,7 @@ export function TimeEntriesTable({
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
-                        {e.notes || "–"}
+                        {e.notes?.replace(/\s*\|?\s*30 min pause fratrukket/g, "").trim() || "–"}
                       </td>
                       {(isAdmin || e.user_id === currentUserId) ? (
                         <td className="px-4 py-3">

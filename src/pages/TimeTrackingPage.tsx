@@ -279,6 +279,7 @@ export default function TimeTrackingPage() {
         isAdmin={isAdmin}
         currentUserId={user?.id}
         selectedDate={selectedDate}
+        onClearDate={clearDateFilter}
         onDelete={(id) => deleteEntry.mutate(id)}
         onUpdate={(id, data) => updateEntry.mutate({ id, data })}
         isDeleting={deleteEntry.isPending}
