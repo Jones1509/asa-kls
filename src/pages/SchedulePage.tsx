@@ -27,6 +27,9 @@ export default function SchedulePage() {
   const [editEntry, setEditEntry] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [employeeFilterOpen, setEmployeeFilterOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   // 7 days: Monday - Sunday
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
