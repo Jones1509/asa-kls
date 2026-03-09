@@ -98,7 +98,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
                   {format(selectedDate, "d. MMMM yyyy", { locale: da })}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
