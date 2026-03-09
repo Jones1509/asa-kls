@@ -1,22 +1,21 @@
 import { PageHeader } from "@/components/PageHeader";
 import { BulkScheduleDialog } from "@/components/schedule/BulkScheduleDialog";
+import { EditScheduleDialog } from "@/components/schedule/EditScheduleDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";
 import { motion } from "framer-motion";
-import { CalendarX, ChevronLeft, ChevronRight, Clock, History, MapPin, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Clock, History, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
