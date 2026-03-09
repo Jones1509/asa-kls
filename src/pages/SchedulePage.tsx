@@ -256,24 +256,11 @@ export default function SchedulePage() {
                       </div>
                     </ScrollArea>
                     {selectedEmployeeIds.length > 0 && (
-                      <div className="px-3 py-2 border-t border-border flex justify-between items-center">
-                        <p className="text-xs font-semibold text-primary">
-                          {selectedEmployeeIds.length} valgt
-                        </p>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm(`Slet ALLE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
-                                deleteAllSchedules.mutate(selectedEmployeeIds);
-                              }
-                            }}
-                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 size={12} className="mr-1" />
-                            Slet alle planer
-                          </Button>
+                      <div className="px-3 py-2 border-t border-border space-y-2">
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-semibold text-primary">
+                            {selectedEmployeeIds.length} valgt
+                          </p>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -281,6 +268,34 @@ export default function SchedulePage() {
                             className="h-7 text-xs rounded-lg"
                           >
                             Ryd
+                          </Button>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Slet alle FREMTIDIGE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
+                                deleteFutureSchedules.mutate(selectedEmployeeIds);
+                              }
+                            }}
+                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
+                          >
+                            <CalendarX size={12} className="mr-1.5" />
+                            Slet fremtidige planer
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Slet alle TIDLIGERE planer for ${selectedEmployeeIds.length} medarbejder${selectedEmployeeIds.length > 1 ? 'e' : ''}?`)) {
+                                deletePastSchedules.mutate(selectedEmployeeIds);
+                              }
+                            }}
+                            className="h-7 text-xs rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 justify-start"
+                          >
+                            <History size={12} className="mr-1.5" />
+                            Slet tidligere planer
                           </Button>
                         </div>
                       </div>
