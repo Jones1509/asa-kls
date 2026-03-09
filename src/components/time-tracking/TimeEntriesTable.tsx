@@ -194,7 +194,7 @@ export function TimeEntriesTable({
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
                         {e.notes || "–"}
                       </td>
-                      {isAdmin && (
+                      {(isAdmin || e.user_id === currentUserId) ? (
                         <td className="px-4 py-3">
                           {deleteConfirm === e.id ? (
                             <div className="flex items-center gap-1">
@@ -208,6 +208,8 @@ export function TimeEntriesTable({
                             </div>
                           )}
                         </td>
+                      ) : (
+                        <td className="px-4 py-3" />
                       )}
                     </>
                   )}
