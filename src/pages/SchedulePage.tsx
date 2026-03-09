@@ -436,7 +436,7 @@ export default function SchedulePage() {
           {days.map((day, i) => {
             const daySchedules = getScheduleForDay(day);
             const dateStr = format(day, "yyyy-MM-dd");
-            const dayTime = timeEntriesByDate[dateStr];
+            const today = isToday(day);
             const today = isToday(day);
             const isWeekend = i >= 5;
 
