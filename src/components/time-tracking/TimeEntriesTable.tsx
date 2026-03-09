@@ -147,7 +147,21 @@ export function TimeEntriesTable({
                           <Input value={editData.end_time} onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="16:00" />
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">auto</td>
+                      <td className="px-4 py-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditData({ ...editData, lunch_break: !editData.lunch_break })}
+                          className={cn(
+                            "h-7 rounded-lg border flex items-center justify-center gap-1 text-[10px] font-medium transition-all px-2",
+                            editData.lunch_break
+                              ? "bg-warning/10 border-warning/30 text-warning"
+                              : "bg-muted/30 border-border text-muted-foreground"
+                          )}
+                        >
+                          <Coffee size={10} />
+                          {editData.lunch_break ? "30 min" : "Ingen"}
+                        </button>
+                      </td>
                       <td className="px-4 py-2 hidden lg:table-cell">
                         <Input value={editData.notes} onChange={(ev) => setEditData({ ...editData, notes: ev.target.value })} className="h-7 rounded-lg text-xs px-2" placeholder="Note..." />
                       </td>
