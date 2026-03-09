@@ -80,7 +80,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
   const reset = () => {
     setSelectedEmployeeIds([]);
     setForm(defaultForm);
-    setSelectedDays(new Set([1, 2, 3, 4, 5]));
+    setSelectedDays(new Set());
     setEmployeeSearch("");
   };
 
