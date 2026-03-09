@@ -150,6 +150,9 @@ export function TimeEntriesTable({
                           <Input value={editData.end_time} onChange={(ev) => setEditData({ ...editData, end_time: ev.target.value })} className="h-7 w-16 rounded-lg text-xs tabular-nums px-2" placeholder="16:00" />
                         </div>
                       </td>
+                      <td className="px-4 py-2 text-right">
+                        <span className="text-[10px] text-muted-foreground italic">auto</span>
+                      </td>
                       <td className="px-4 py-2">
                         <button
                           type="button"
