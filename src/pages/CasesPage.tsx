@@ -526,28 +526,6 @@ export default function CasesPage() {
         disabled={!assignCaseId}
       />
 
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Tilknyt medarbejder</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
-            >
-              <option value="">Vælg medarbejder...</option>
-              {employees?.filter(e => !getCaseAssignments(assignCaseId || "").some((a: any) => a.user_id === e.user_id)).map(e => (
-                <option key={e.user_id} value={e.user_id}>{e.full_name}</option>
-              ))}
-            </select>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAssignOpen(false)} className="rounded-xl">Annuller</Button>
-              <Button disabled={!selectedUserId || assignEmployee.isPending} onClick={() => assignEmployee.mutate()} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
-                {assignEmployee.isPending ? "Tilknytter..." : "Tilknyt"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
