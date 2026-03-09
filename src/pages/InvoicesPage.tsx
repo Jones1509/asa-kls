@@ -3,20 +3,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Receipt, Search, DollarSign, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Plus, Receipt, Search, CheckCircle2, Clock, AlertCircle, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const statusConfig: Record<string, { color: string; icon: any }> = {
   Udkast: { color: "bg-muted text-muted-foreground", icon: Clock },
   Sendt: { color: "bg-info/10 text-info border border-info/20", icon: Receipt },
   Betalt: { color: "bg-success/10 text-success border border-success/20", icon: CheckCircle2 },
   Forfalden: { color: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertCircle },
+};
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-elevated text-xs">
+      <p className="font-semibold text-card-foreground mb-1.5">{label}</p>
+      {payload.map((p: any) => (
+        <div key={p.name} className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-sm flex-shrink-0" style={{ backgroundColor: p.fill }} />
+          <span className="text-muted-foreground">{p.name}:</span>
+          <span className="font-semibold text-card-foreground">{Number(p.value).toLocaleString("da-DK")} kr</span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default function InvoicesPage() {
@@ -42,6 +61,35 @@ export default function InvoicesPage() {
       return data || [];
     },
   });
+
+  // Revenue analytics
+  const availableYears = useMemo(() => {
+    if (!invoices?.length) return [new Date().getFullYear()];
+    const years = [...new Set(invoices.map(inv => new Date(inv.created_at).getFullYear()))].sort((a, b) => b - a);
+    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+    return years;
+  }, [invoices]);
+
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const monthlyData = useMemo(() => {
+    return MONTHS.map((month, idx) => {
+      const monthInvoices = (invoices || []).filter(inv => {
+        const d = new Date(inv.created_at);
+        return d.getFullYear() === selectedYear && d.getMonth() === idx;
+      });
+      const betalt = monthInvoices.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+      const udestående = monthInvoices.filter(i => i.status !== "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+      return { month, Betalt: betalt, Udestående: udestående };
+    });
+  }, [invoices, selectedYear]);
+
+  const yearTotals = useMemo(() => {
+    const yearInvoices = (invoices || []).filter(inv => new Date(inv.created_at).getFullYear() === selectedYear);
+    const total = yearInvoices.reduce((s, i) => s + Number(i.amount), 0);
+    const betalt = yearInvoices.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+    return { total, betalt, udestående: total - betalt, count: yearInvoices.length };
+  }, [invoices, selectedYear]);
 
   const createInvoice = useMutation({
     mutationFn: async () => {
@@ -98,44 +146,42 @@ export default function InvoicesPage() {
   return (
     <div>
       <PageHeader title="Fakturaer & Ordrer" description={`${invoices?.length || 0} fakturaer`}>
-        {role === "admin" && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny faktura</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
-              <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret faktura</DialogTitle></DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); createInvoice.mutate(); }} className="space-y-4">
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
-                  <select value={form.case_id} onChange={(e) => handleCaseSelect(e.target.value)} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
-                    <option value="">Vælg sag...</option>
-                    {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number} – {c.customer}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="FA-001" className="mt-1.5 rounded-xl" required /></div>
-                  <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
-                </div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Forfaldsdato</Label><Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
-                <div className="flex justify-end gap-2 pt-3">
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
-                  <Button type="submit" disabled={createInvoice.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createInvoice.isPending ? "Opretter..." : "Gem faktura"}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny faktura</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
+            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret faktura</DialogTitle></DialogHeader>
+            <form onSubmit={(e) => { e.preventDefault(); createInvoice.mutate(); }} className="space-y-4">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
+                <select value={form.case_id} onChange={(e) => handleCaseSelect(e.target.value)} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
+                  <option value="">Vælg sag...</option>
+                  {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number} – {c.customer}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="FA-001" className="mt-1.5 rounded-xl" required /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
+              </div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Forfaldsdato</Label><Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
+              <div className="flex justify-end gap-2 pt-3">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
+                <Button type="submit" disabled={createInvoice.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createInvoice.isPending ? "Opretter..." : "Gem faktura"}</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </PageHeader>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: "Total faktureret", value: `${totalAmount.toLocaleString("da-DK")} DKK`, icon: Receipt, bg: "bg-primary/10", color: "text-primary" },
-          { label: "Betalt", value: `${paidAmount.toLocaleString("da-DK")} DKK`, icon: CheckCircle2, bg: "bg-success/10", color: "text-success" },
-          { label: "Udestående", value: `${pendingAmount.toLocaleString("da-DK")} DKK`, icon: Clock, bg: "bg-warning/10", color: "text-warning" },
+          { label: "Total faktureret", value: `${totalAmount.toLocaleString("da-DK")} kr`, icon: Receipt, bg: "bg-primary/10", color: "text-primary" },
+          { label: "Betalt", value: `${paidAmount.toLocaleString("da-DK")} kr`, icon: CheckCircle2, bg: "bg-success/10", color: "text-success" },
+          { label: "Udestående", value: `${pendingAmount.toLocaleString("da-DK")} kr`, icon: Clock, bg: "bg-warning/10", color: "text-warning" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="rounded-2xl border border-border bg-card p-5 shadow-card">
@@ -147,6 +193,60 @@ export default function InvoicesPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* Revenue Analytics */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+        className="rounded-2xl border border-border bg-card p-6 shadow-card mb-6">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <TrendingUp size={16} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-heading font-bold text-card-foreground">Omsætningsanalyse</p>
+              <p className="text-xs text-muted-foreground">{yearTotals.count} fakturaer · {yearTotals.betalt.toLocaleString("da-DK")} kr betalt</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+              {availableYears.map(year => (
+                <button key={year} onClick={() => setSelectedYear(year)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedYear === year ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Year summary */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {[
+            { label: "Faktureret", value: yearTotals.total, color: "text-card-foreground" },
+            { label: "Betalt ind", value: yearTotals.betalt, color: "text-success" },
+            { label: "Udestående", value: yearTotals.udestående, color: "text-warning" },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl bg-muted/30 px-4 py-3">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
+              <p className={`text-base font-heading font-bold ${s.color}`}>{s.value.toLocaleString("da-DK")} kr</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthlyData} barSize={14} barGap={3}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)", radius: 6 }} />
+              <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
+              <Bar dataKey="Betalt" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Udestående" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
       {/* Filters */}
       <div className="mb-5 flex flex-col sm:flex-row gap-3">
@@ -195,7 +295,7 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-sm font-heading font-bold text-card-foreground">{Number(inv.amount).toLocaleString("da-DK")} DKK</p>
+                    <p className="text-sm font-heading font-bold text-card-foreground">{Number(inv.amount).toLocaleString("da-DK")} kr</p>
                     {inv.due_date && <p className="text-[11px] text-muted-foreground">Forfald: {inv.due_date}</p>}
                   </div>
                   {role === "admin" ? (
