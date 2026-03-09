@@ -432,7 +432,30 @@ export default function CasesPage() {
                             <div className="flex flex-wrap gap-2">
                               {caseAssignments.map((a: any) => (
                                 <span key={a.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
-                                  {(a.profiles as any)?.full_name || "Ukendt"}
+                               {caseAssignments.map((a: any) => {
+                                 const emp = employeeByUserId.get(a.user_id);
+                                 const name = (emp?.full_name || "").trim() || "Ukendt";
+                                 return (
+                                   <span key={a.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                                     {name}
+                                     <button onClick={(e) => { e.stopPropagation(); removeAssignment.mutate(a.id); }} className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors">
+                                       <X size={10} />
+                                     </button>
+                                   </span>
+                                 );
+                               })}
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setAssignCaseId(c.id);
+                                   setSelectedUserIds([]);
+                                   setAssignOpen(true);
+                                 }}
+                                 className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                               >
+                                 <UserPlus size={12} /> Tilføj
+                               </button>
+
                                   <button onClick={(e) => { e.stopPropagation(); removeAssignment.mutate(a.id); }} className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors">
                                     <X size={10} />
                                   </button>
