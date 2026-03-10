@@ -213,7 +213,25 @@ export default function TimeTrackingPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <PageHeader title="Timeregistrering" description="Registrer og se arbejdstimer" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* PDF export */}
+          {isAdmin && (
+            <TimeTrackingPdfExport
+              entries={filteredEntries}
+              cases={cases || []}
+              profileMap={profileMap || {}}
+              isAdmin={isAdmin}
+            />
+          )}
+          {/* Bulk entry */}
+          {isAdmin && employees && (
+            <BulkTimeEntryDialog
+              employees={employees}
+              cases={cases || []}
+              onSubmit={(entries) => bulkCreateEntries.mutate(entries)}
+              isPending={bulkCreateEntries.isPending}
+            />
+          )}
           {/* Admin date picker filter */}
           {isAdmin && (
             <Popover open={filterDateOpen} onOpenChange={setFilterDateOpen}>
