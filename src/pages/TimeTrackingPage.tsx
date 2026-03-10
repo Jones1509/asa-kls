@@ -131,6 +131,29 @@ export default function TimeTrackingPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const bulkCreateEntries = useMutation({
+    mutationFn: async (entries: { user_id: string; case_id: string; date: string; start_time: string; end_time: string; lunch_break: boolean; notes: string }[]) => {
+      const rows = entries.map(e => {
+        const { netHours, breakDeducted } = calcHours(e.start_time, e.end_time, e.lunch_break);
+        const noteWithBreak = breakDeducted > 0
+          ? `${e.notes || ""}${e.notes ? " | " : ""}30 min pause fratrukket`.trim()
+          : e.notes || null;
+        return {
+          user_id: e.user_id, case_id: e.case_id, date: e.date,
+          start_time: e.start_time, end_time: e.end_time,
+          hours: netHours, notes: noteWithBreak,
+        };
+      });
+      const { error } = await supabase.from("time_entries").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["time_entries"] });
+      toast.success(`${vars.length} registreringer oprettet`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteEntry = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("time_entries").delete().eq("id", id);
