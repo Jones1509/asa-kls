@@ -16,6 +16,8 @@ import { EmployeeFilter } from "@/components/time-tracking/EmployeeFilter";
 import { WeeklyTimesheet } from "@/components/time-tracking/WeeklyTimesheet";
 import { TimeEntriesTable } from "@/components/time-tracking/TimeEntriesTable";
 import { QuickEntryForm } from "@/components/time-tracking/QuickEntryForm";
+import { BulkTimeEntryDialog } from "@/components/time-tracking/BulkTimeEntryDialog";
+import { TimeTrackingPdfExport } from "@/components/time-tracking/TimeTrackingPdfExport";
 
 export default function TimeTrackingPage() {
   const { user, role } = useAuth();
@@ -129,6 +131,29 @@ export default function TimeTrackingPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const bulkCreateEntries = useMutation({
+    mutationFn: async (entries: { user_id: string; case_id: string; date: string; start_time: string; end_time: string; lunch_break: boolean; notes: string }[]) => {
+      const rows = entries.map(e => {
+        const { netHours, breakDeducted } = calcHours(e.start_time, e.end_time, e.lunch_break);
+        const noteWithBreak = breakDeducted > 0
+          ? `${e.notes || ""}${e.notes ? " | " : ""}30 min pause fratrukket`.trim()
+          : e.notes || null;
+        return {
+          user_id: e.user_id, case_id: e.case_id, date: e.date,
+          start_time: e.start_time, end_time: e.end_time,
+          hours: netHours, notes: noteWithBreak,
+        };
+      });
+      const { error } = await supabase.from("time_entries").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["time_entries"] });
+      toast.success(`${vars.length} registreringer oprettet`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteEntry = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("time_entries").delete().eq("id", id);
@@ -188,7 +213,25 @@ export default function TimeTrackingPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <PageHeader title="Timeregistrering" description="Registrer og se arbejdstimer" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* PDF export */}
+          {isAdmin && (
+            <TimeTrackingPdfExport
+              entries={filteredEntries}
+              cases={cases || []}
+              profileMap={profileMap || {}}
+              isAdmin={isAdmin}
+            />
+          )}
+          {/* Bulk entry */}
+          {isAdmin && employees && (
+            <BulkTimeEntryDialog
+              employees={employees}
+              cases={cases || []}
+              onSubmit={(entries) => bulkCreateEntries.mutate(entries)}
+              isPending={bulkCreateEntries.isPending}
+            />
+          )}
           {/* Admin date picker filter */}
           {isAdmin && (
             <Popover open={filterDateOpen} onOpenChange={setFilterDateOpen}>
