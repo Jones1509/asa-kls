@@ -16,6 +16,8 @@ import { EmployeeFilter } from "@/components/time-tracking/EmployeeFilter";
 import { WeeklyTimesheet } from "@/components/time-tracking/WeeklyTimesheet";
 import { TimeEntriesTable } from "@/components/time-tracking/TimeEntriesTable";
 import { QuickEntryForm } from "@/components/time-tracking/QuickEntryForm";
+import { BulkTimeEntryDialog } from "@/components/time-tracking/BulkTimeEntryDialog";
+import { TimeTrackingPdfExport } from "@/components/time-tracking/TimeTrackingPdfExport";
 
 export default function TimeTrackingPage() {
   const { user, role } = useAuth();
