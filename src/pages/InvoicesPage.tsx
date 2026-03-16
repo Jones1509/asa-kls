@@ -269,6 +269,10 @@ export default function InvoicesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
+                <Input value={editForm.invoice_number} onChange={(e) => setEditForm({ ...editForm, invoice_number: e.target.value })} className="mt-1.5 rounded-xl" required />
+              </div>
+              <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
                 <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
                   {statuses.map(s => <option key={s} value={s}>{s}</option>)}
