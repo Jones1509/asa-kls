@@ -136,6 +136,7 @@ export default function InvoicesPage() {
       if (!editId) return;
       const updates: any = {
         case_id: editForm.case_id,
+        invoice_number: editForm.invoice_number,
         customer: editForm.customer,
         description: editForm.description || null,
         amount: parseFloat(editForm.amount) || 0,
