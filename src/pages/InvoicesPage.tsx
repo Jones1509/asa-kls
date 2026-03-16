@@ -240,7 +240,6 @@ export default function InvoicesPage() {
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
                   <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder={nextNum} className="mt-1.5 rounded-xl" />
                 </div>
-                </div>
                 <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
               </div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
