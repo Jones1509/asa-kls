@@ -119,7 +119,7 @@ export default function LoginPage() {
               ASA
             </span>
             <div className="font-heading font-semibold text-sm tracking-[0.2em] uppercase text-primary/70">
-              Kontrolsystem
+              Kvalitetsledelsessystem
             </div>
           </div>
         </div>
