@@ -238,9 +238,8 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
-                  <div className="mt-1.5 flex h-11 items-center rounded-xl border border-input bg-muted/50 px-3 text-sm text-muted-foreground font-semibold">
-                    #{nextNum}
-                  </div>
+                  <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder={nextNum} className="mt-1.5 rounded-xl" />
+                </div>
                 </div>
                 <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
               </div>
