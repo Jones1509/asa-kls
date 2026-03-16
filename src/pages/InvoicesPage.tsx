@@ -206,6 +206,7 @@ export default function InvoicesPage() {
     setEditId(inv.id);
     setEditForm({
       case_id: inv.case_id,
+      invoice_number: inv.invoice_number,
       customer: inv.customer,
       description: inv.description || "",
       amount: String(inv.amount),
