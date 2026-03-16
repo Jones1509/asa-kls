@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Receipt, Search, CheckCircle2, Clock, AlertCircle, TrendingUp } from "lucide-react";
+import { Plus, Receipt, Search, CheckCircle2, Clock, AlertCircle, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,13 +38,30 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+const emptyForm = { case_id: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
+
+function getNextInvoiceNumber(invoices: any[]): string {
+  if (!invoices?.length) return "1";
+  const nums = invoices
+    .map((inv) => {
+      const match = inv.invoice_number.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter((n) => !isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return String(max + 1);
+}
+
 export default function InvoicesPage() {
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("alle");
-  const [form, setForm] = useState({ case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "" });
+  const [form, setForm] = useState(emptyForm);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(emptyForm);
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -57,7 +74,7 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, cases(case_number)").order("created_at", { ascending: false });
+      const { data } = await supabase.from("invoices").select("*, cases(case_number)").order("created_at", { ascending: true });
       return data || [];
     },
   });
@@ -93,10 +110,11 @@ export default function InvoicesPage() {
 
   const createInvoice = useMutation({
     mutationFn: async () => {
+      const nextNum = getNextInvoiceNumber(invoices || []);
       const { error } = await supabase.from("invoices").insert({
         created_by: user!.id,
         case_id: form.case_id,
-        invoice_number: form.invoice_number,
+        invoice_number: nextNum,
         customer: form.customer,
         description: form.description || null,
         amount: parseFloat(form.amount) || 0,
@@ -107,8 +125,44 @@ export default function InvoicesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       setOpen(false);
-      setForm({ case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "" });
+      setForm(emptyForm);
       toast.success("Faktura oprettet");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const updateInvoice = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const updates: any = {
+        case_id: editForm.case_id,
+        customer: editForm.customer,
+        description: editForm.description || null,
+        amount: parseFloat(editForm.amount) || 0,
+        due_date: editForm.due_date || null,
+        status: editForm.status,
+      };
+      if (editForm.status === "Betalt") updates.paid_date = new Date().toISOString().split("T")[0];
+      const { error } = await supabase.from("invoices").update(updates).eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      setEditOpen(false);
+      setEditId(null);
+      toast.success("Faktura opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteInvoice = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("invoices").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("Faktura slettet");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -138,10 +192,29 @@ export default function InvoicesPage() {
   const paidAmount = invoices?.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0) || 0;
   const pendingAmount = totalAmount - paidAmount;
 
-  const handleCaseSelect = (caseId: string) => {
+  const handleCaseSelect = (caseId: string, isEdit = false) => {
     const c = cases?.find(c => c.id === caseId);
-    setForm({ ...form, case_id: caseId, customer: c?.customer || form.customer });
+    if (isEdit) {
+      setEditForm({ ...editForm, case_id: caseId, customer: c?.customer || editForm.customer });
+    } else {
+      setForm({ ...form, case_id: caseId, customer: c?.customer || form.customer });
+    }
   };
+
+  const openEdit = (inv: any) => {
+    setEditId(inv.id);
+    setEditForm({
+      case_id: inv.case_id,
+      customer: inv.customer,
+      description: inv.description || "",
+      amount: String(inv.amount),
+      due_date: inv.due_date || "",
+      status: inv.status,
+    });
+    setEditOpen(true);
+  };
+
+  const nextNum = getNextInvoiceNumber(invoices || []);
 
   return (
     <div>
@@ -161,7 +234,12 @@ export default function InvoicesPage() {
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="FA-001" className="mt-1.5 rounded-xl" required /></div>
+                <div>
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
+                  <div className="mt-1.5 flex h-11 items-center rounded-xl border border-input bg-muted/50 px-3 text-sm text-muted-foreground font-semibold">
+                    #{nextNum}
+                  </div>
+                </div>
                 <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
               </div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
@@ -175,6 +253,48 @@ export default function InvoicesPage() {
           </DialogContent>
         </Dialog>
       </PageHeader>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
+          <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Rediger faktura</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateInvoice.mutate(); }} className="space-y-4">
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
+              <select value={editForm.case_id} onChange={(e) => handleCaseSelect(e.target.value, true)} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
+                <option value="">Vælg sag...</option>
+                {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number} – {c.customer}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
+                <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
+                  {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
+            </div>
+            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
+            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Forfaldsdato</Label><Input type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
+            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
+            <div className="flex justify-between pt-3">
+              <Button type="button" variant="destructive" size="sm" className="rounded-xl gap-1.5" onClick={() => {
+                if (editId && confirm("Er du sikker på du vil slette denne faktura?")) {
+                  deleteInvoice.mutate(editId);
+                  setEditOpen(false);
+                }
+              }}>
+                <Trash2 size={14} /> Slet
+              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="rounded-xl">Annuller</Button>
+                <Button type="submit" disabled={updateInvoice.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{updateInvoice.isPending ? "Gemmer..." : "Gem ændringer"}</Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -286,7 +406,7 @@ export default function InvoicesPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-card-foreground">{inv.invoice_number}</p>
+                      <p className="text-sm font-semibold text-card-foreground">Faktura #{inv.invoice_number}</p>
                       {isOverdue && <span className="text-[10px] font-bold text-destructive uppercase">Forfalden</span>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · Sag {(inv.cases as any)?.case_number || "–"}</p>
@@ -299,13 +419,21 @@ export default function InvoicesPage() {
                     {inv.due_date && <p className="text-[11px] text-muted-foreground">Forfald: {inv.due_date}</p>}
                   </div>
                   {role === "admin" ? (
-                    <select
-                      value={inv.status}
-                      onChange={(e) => updateStatus.mutate({ id: inv.id, status: e.target.value })}
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border-0 outline-none cursor-pointer ${config.color}`}
-                    >
-                      {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={inv.status}
+                        onChange={(e) => updateStatus.mutate({ id: inv.id, status: e.target.value })}
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border-0 outline-none cursor-pointer ${config.color}`}
+                      >
+                        {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <button
+                        onClick={() => openEdit(inv)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </div>
                   ) : (
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${config.color}`}>{inv.status}</span>
                   )}
