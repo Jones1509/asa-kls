@@ -110,11 +110,11 @@ export default function InvoicesPage() {
 
   const createInvoice = useMutation({
     mutationFn: async () => {
-      const nextNum = getNextInvoiceNumber(invoices || []);
+      const invoiceNum = form.invoice_number.trim() || getNextInvoiceNumber(invoices || []);
       const { error } = await supabase.from("invoices").insert({
         created_by: user!.id,
         case_id: form.case_id,
-        invoice_number: nextNum,
+        invoice_number: invoiceNum,
         customer: form.customer,
         description: form.description || null,
         amount: parseFloat(form.amount) || 0,
