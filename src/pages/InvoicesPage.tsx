@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const emptyForm = { case_id: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
+const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
 
 function getNextInvoiceNumber(invoices: any[]): string {
   if (!invoices?.length) return "1";
