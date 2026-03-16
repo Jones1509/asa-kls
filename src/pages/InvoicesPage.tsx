@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const emptyForm = { case_id: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
+const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
 
 function getNextInvoiceNumber(invoices: any[]): string {
   if (!invoices?.length) return "1";
@@ -110,11 +110,11 @@ export default function InvoicesPage() {
 
   const createInvoice = useMutation({
     mutationFn: async () => {
-      const nextNum = getNextInvoiceNumber(invoices || []);
+      const invoiceNum = form.invoice_number.trim() || getNextInvoiceNumber(invoices || []);
       const { error } = await supabase.from("invoices").insert({
         created_by: user!.id,
         case_id: form.case_id,
-        invoice_number: nextNum,
+        invoice_number: invoiceNum,
         customer: form.customer,
         description: form.description || null,
         amount: parseFloat(form.amount) || 0,
@@ -136,6 +136,7 @@ export default function InvoicesPage() {
       if (!editId) return;
       const updates: any = {
         case_id: editForm.case_id,
+        invoice_number: editForm.invoice_number,
         customer: editForm.customer,
         description: editForm.description || null,
         amount: parseFloat(editForm.amount) || 0,
@@ -205,6 +206,7 @@ export default function InvoicesPage() {
     setEditId(inv.id);
     setEditForm({
       case_id: inv.case_id,
+      invoice_number: inv.invoice_number,
       customer: inv.customer,
       description: inv.description || "",
       amount: String(inv.amount),
@@ -236,9 +238,7 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
-                  <div className="mt-1.5 flex h-11 items-center rounded-xl border border-input bg-muted/50 px-3 text-sm text-muted-foreground font-semibold">
-                    #{nextNum}
-                  </div>
+                  <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder={nextNum} className="mt-1.5 rounded-xl" />
                 </div>
                 <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
               </div>
@@ -267,6 +267,10 @@ export default function InvoicesPage() {
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
+                <Input value={editForm.invoice_number} onChange={(e) => setEditForm({ ...editForm, invoice_number: e.target.value })} className="mt-1.5 rounded-xl" required />
+              </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
                 <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
