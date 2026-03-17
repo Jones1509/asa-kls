@@ -127,7 +127,7 @@ export default function EmployeesPage() {
       const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
       if (!profs) return [];
       const [{ data: assignments }, { data: roles }, { data: timeData }, { data: certs }] = await Promise.all([
-        supabase.from("case_assignments").select("user_id, cases(case_number, address)"),
+        supabase.from("case_assignments").select("user_id, cases(case_number, customer, case_description, address)"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("time_entries").select("user_id, hours"),
         supabase.from("employee_certificates").select("*"),
