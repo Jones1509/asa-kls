@@ -62,11 +62,13 @@ export default function EmployeesPage() {
         full_name: editEmployee.full_name || "",
         phone: editEmployee.phone || "",
         role_label: editEmployee.role_label || "",
+        education_plan: editEmployee.education_plan || "",
       });
       setEditAvatarPreview(editEmployee.avatar_url || null);
       setEditAvatarFile(null);
       setShowPasswordChange(false);
       setNewPassword("");
+      setCustomCertName("");
     }
   }, [editEmployee]);
 
