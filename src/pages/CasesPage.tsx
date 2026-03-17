@@ -11,7 +11,7 @@ import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, ChevronDown, Edit, MapPin, Plus, Search, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Building2, ChevronDown, Edit, Hash, MapPin, Plus, Search, Trash2, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ const emptyCaseForm = {
 
 const emptyCustomerForm = {
   customer_type: "Privat" as CustomerType,
+  customer_number: "",
   name: "",
   company_name: "",
   contact_person: "",
@@ -58,6 +59,7 @@ function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
   return {
     created_by: userId,
     customer_type: form.customer_type,
+    customer_number: form.customer_number.trim() || null,
     name: displayName,
     company_name: isBusiness ? form.company_name.trim() || null : null,
     contact_person: isBusiness ? form.contact_person.trim() || null : null,
@@ -66,6 +68,17 @@ function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
     email: form.email.trim() || null,
     notes: form.notes.trim() || null,
   };
+}
+
+function getCustomerDisplayName(customer: any) {
+  return customer?.customer_type === "Erhverv"
+    ? customer?.company_name || customer?.name || "–"
+    : customer?.name || "–";
+}
+
+function getCustomerOptionLabel(customer: any) {
+  const name = getCustomerDisplayName(customer);
+  return customer?.customer_number ? `${customer.customer_number} · ${name}` : name;
 }
 
 function getCaseStatusLabel(status: string) {
@@ -146,7 +159,7 @@ function CaseFormFields({
           <option value="">Vælg kunde...</option>
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
-              {customer.name}
+              {getCustomerOptionLabel(customer)}
             </option>
           ))}
         </select>
@@ -234,7 +247,10 @@ export default function CasesPage() {
   const { data: customers } = useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("id, name, customer_type, company_name, contact_person").order("name");
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, name, customer_number, customer_type, company_name, contact_person")
+        .order("name");
       if (error) throw error;
       return data || [];
     },
@@ -260,6 +276,12 @@ export default function CasesPage() {
     },
     enabled: role === "admin",
   });
+
+  const customerById = useMemo(() => {
+    const map = new Map<string, any>();
+    (customers || []).forEach((customer: any) => map.set(customer.id, customer));
+    return map;
+  }, [customers]);
 
   useEffect(() => {
     const state = location.state as { newCaseForCustomer?: any; focusCaseId?: string } | null;
@@ -399,7 +421,7 @@ export default function CasesPage() {
       const { data, error } = await supabase
         .from("customers")
         .insert(payload)
-        .select("id, name")
+        .select("id, name, customer_number")
         .single();
       if (error) throw error;
       return data;
@@ -528,6 +550,7 @@ export default function CasesPage() {
           {(filtered || []).map((caseItem: any, index: number) => {
             const isExpanded = expandedId === caseItem.id;
             const caseAssignments = role === "admin" ? getCaseAssignments(caseItem.id) : [];
+            const linkedCustomer = customerById.get(caseItem.customer_id);
 
             return (
               <motion.div
@@ -547,7 +570,7 @@ export default function CasesPage() {
                     <div className="min-w-0">
                       <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-card-foreground">
                         <Building2 size={14} className="text-primary" />
-                        <span className="truncate">{caseItem.customer || "Ingen kunde"}</span>
+                        <span className="truncate">{linkedCustomer ? getCustomerOptionLabel(linkedCustomer) : caseItem.customer || "Ingen kunde"}</span>
                       </div>
                     </div>
                     <div>
@@ -593,9 +616,14 @@ export default function CasesPage() {
                           </div>
                           <div>
                             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Kunde</p>
-                            <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-card-foreground">
+                            <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-card-foreground">
                               <Building2 size={14} className="text-primary" />
-                              {caseItem.customer || "Ingen kunde"}
+                              <span>{linkedCustomer ? getCustomerDisplayName(linkedCustomer) : caseItem.customer || "Ingen kunde"}</span>
+                              {linkedCustomer?.customer_number && (
+                                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Hash size={11} /> {linkedCustomer.customer_number}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -804,6 +832,10 @@ export default function CasesPage() {
               </div>
             )}
 
+            <div>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
+              <Input value={customerForm.customer_number} onChange={(e) => setCustomerForm({ ...customerForm, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+            </div>
             <div>
               <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
               <Input value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })} className="mt-1.5 rounded-xl" />

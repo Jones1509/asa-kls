@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
+import { formatCaseLabel } from "@/lib/case-format";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Briefcase, Building2, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, User } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, Hash, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ const customerFilters = ["Alle", "Privat", "Erhverv"] as const;
 
 const emptyCustomerForm = {
   customer_type: "Privat" as CustomerType,
+  customer_number: "",
   name: "",
   company_name: "",
   contact_person: "",
@@ -38,6 +39,7 @@ function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
   return {
     created_by: userId,
     customer_type: form.customer_type,
+    customer_number: form.customer_number.trim() || null,
     name: displayName,
     company_name: isBusiness ? form.company_name.trim() || null : null,
     contact_person: isBusiness ? form.contact_person.trim() || null : null,
@@ -52,6 +54,11 @@ function getCustomerNameLabel(customer: any) {
   return customer.customer_type === "Erhverv"
     ? customer.company_name || customer.name || "–"
     : customer.name || "–";
+}
+
+function getCustomerOptionLabel(customer: any) {
+  const name = getCustomerNameLabel(customer);
+  return customer.customer_number ? `${customer.customer_number} · ${name}` : name;
 }
 
 function getCustomerTypeBadgeVariant(type: string | null) {
@@ -116,6 +123,7 @@ export default function CustomersPage() {
     return (customers || []).filter((customer: any) => {
       const matchesType = typeFilter === "Alle" || customer.customer_type === typeFilter;
       const matchesSearch = !query || [
+        customer.customer_number,
         customer.name,
         customer.company_name,
         customer.contact_person,
@@ -162,6 +170,7 @@ export default function CustomersPage() {
         .from("customers")
         .update({
           customer_type: editForm.customer_type,
+          customer_number: editForm.customer_number?.trim() || null,
           name: displayName,
           company_name: isBusiness ? editForm.company_name?.trim() || null : null,
           contact_person: isBusiness ? editForm.contact_person?.trim() || null : null,
@@ -185,7 +194,16 @@ export default function CustomersPage() {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       if (selectedCustomer) {
-        setSelectedCustomer((prev: any) => (prev ? { ...prev, ...editForm, name: editForm.customer_type === "Erhverv" ? editForm.company_name : editForm.name } : prev));
+        setSelectedCustomer((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                ...editForm,
+                name: editForm.customer_type === "Erhverv" ? editForm.company_name : editForm.name,
+                customer_number: editForm.customer_number,
+              }
+            : prev,
+        );
       }
       setEditOpen(false);
       setEditForm(null);
@@ -232,6 +250,9 @@ export default function CustomersPage() {
                     <Badge variant={getCustomerTypeBadgeVariant(selectedCustomer.customer_type)}>
                       {selectedCustomer.customer_type || "Privat"}
                     </Badge>
+                    {selectedCustomer.customer_number && (
+                      <Badge variant="outline">#{selectedCustomer.customer_number}</Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {caseCounts[selectedCustomer.id] || 0} {(caseCounts[selectedCustomer.id] || 0) === 1 ? "sag" : "sager"}
@@ -244,7 +265,14 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</p>
+                  <p className="flex items-center gap-2 text-sm text-card-foreground">
+                    <Hash size={14} className="text-muted-foreground" />
+                    {selectedCustomer.customer_number || "–"}
+                  </p>
+                </div>
                 <div className="rounded-xl border border-border bg-muted/20 p-4">
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</p>
                   <p className="flex items-start gap-2 text-sm text-card-foreground">
@@ -252,7 +280,7 @@ export default function CustomersPage() {
                     {selectedCustomer.address || "–"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <div className="rounded-xl border border-border bg-muted/20 p-4 sm:col-span-2 lg:col-span-1">
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontakt</p>
                   <div className="space-y-1.5 text-sm text-card-foreground">
                     <p className="flex items-center gap-2"><Phone size={14} className="text-muted-foreground" />{selectedCustomer.phone || "–"}</p>
@@ -397,6 +425,10 @@ export default function CustomersPage() {
                 )}
 
                 <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
+                  <Input value={editForm.customer_number || ""} onChange={(e) => setEditForm({ ...editForm, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+                </div>
+                <div>
                   <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
                   <Input value={editForm.address || ""} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="mt-1.5 rounded-xl" />
                 </div>
@@ -500,6 +532,10 @@ export default function CustomersPage() {
               )}
 
               <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
+                <Input value={form.customer_number} onChange={(e) => setForm({ ...form, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+              </div>
+              <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
                 <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="mt-1.5 rounded-xl" />
               </div>
@@ -531,7 +567,7 @@ export default function CustomersPage() {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søg kunder..." className="h-11 rounded-xl pl-10" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søg kunder eller kundenummer..." className="h-11 rounded-xl pl-10" />
         </div>
         <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
           {customerFilters.map((filter) => (
@@ -574,6 +610,7 @@ export default function CustomersPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-card-foreground">{getCustomerNameLabel(customer)}</p>
                     <Badge variant={getCustomerTypeBadgeVariant(customer.customer_type)}>{customer.customer_type || "Privat"}</Badge>
+                    {customer.customer_number && <Badge variant="outline">#{customer.customer_number}</Badge>}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{customer.address || "Ingen adresse"}</p>
                   <p className="mt-1 text-xs text-muted-foreground/80">
@@ -582,8 +619,11 @@ export default function CustomersPage() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                {caseCounts[customer.id] || 0} {(caseCounts[customer.id] || 0) === 1 ? "sag" : "sager"}
+              <div className="flex flex-col items-end gap-2">
+                <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+                  {caseCounts[customer.id] || 0} {(caseCounts[customer.id] || 0) === 1 ? "sag" : "sager"}
+                </div>
+                <p className="text-[11px] font-medium text-muted-foreground">{getCustomerOptionLabel(customer)}</p>
               </div>
             </div>
           </motion.button>
