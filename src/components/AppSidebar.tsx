@@ -32,14 +32,14 @@ const adminLinks = [
   { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Oversigt" },
   { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
-  { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
-  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
-  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
+  { to: "/company", icon: Building2, label: "KLS Dokumentation", section: "KLS & Kvalitet" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS & Kvalitet" },
+  { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "KLS & Kvalitet" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS & Kvalitet" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS & Kvalitet" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS & Kvalitet" },
   { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
-  { to: "/company", icon: Building2, label: "KLS Dokumentation", section: "Administration" },
 ];
 
 const employeeLinks = [
@@ -47,12 +47,12 @@ const employeeLinks = [
   { to: "/cases", icon: Briefcase, label: "Mine sager", section: "Oversigt" },
   { to: "/schedule", icon: Calendar, label: "Min plan", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timer", section: "Planlægning" },
-  { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
-  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
-  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS & Kvalitet" },
+  { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "KLS & Kvalitet" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS & Kvalitet" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS & Kvalitet" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS & Kvalitet" },
 ];
 
 export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarProps) {
