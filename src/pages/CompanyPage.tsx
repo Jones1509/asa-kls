@@ -441,7 +441,7 @@ export default function CompanyPage() {
                 return (
                   <div key={inst.id} className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3.5 hover:border-border transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
+                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-foreground truncate">{inst.name}</p>
                         {inst.serial_number && <p className="text-[11px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
