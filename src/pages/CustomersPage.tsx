@@ -1,26 +1,66 @@
 import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { formatCaseLabel } from "@/lib/case-format";
+import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Briefcase, Building2, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+type CustomerType = "Privat" | "Erhverv";
+
+const customerTypeOptions: CustomerType[] = ["Privat", "Erhverv"];
+const customerFilters = ["Alle", "Privat", "Erhverv"] as const;
+
 const emptyCustomerForm = {
+  customer_type: "Privat" as CustomerType,
   name: "",
+  company_name: "",
+  contact_person: "",
   address: "",
   phone: "",
   email: "",
   notes: "",
 };
+
+function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
+  const isBusiness = form.customer_type === "Erhverv";
+  const displayName = isBusiness ? form.company_name.trim() : form.name.trim();
+
+  return {
+    created_by: userId,
+    customer_type: form.customer_type,
+    name: displayName,
+    company_name: isBusiness ? form.company_name.trim() || null : null,
+    contact_person: isBusiness ? form.contact_person.trim() || null : null,
+    address: form.address.trim() || null,
+    phone: form.phone.trim() || null,
+    email: form.email.trim() || null,
+    notes: form.notes.trim() || null,
+  };
+}
+
+function getCustomerNameLabel(customer: any) {
+  return customer.customer_type === "Erhverv"
+    ? customer.company_name || customer.name || "–"
+    : customer.name || "–";
+}
+
+function getCustomerTypeBadgeVariant(type: string | null) {
+  return type === "Erhverv" ? "default" : "secondary";
+}
+
+function getCustomerCaseStatus(caseItem: any) {
+  return caseItem.status === "Afsluttet" ? "Afsluttet" : "Igangværende";
+}
 
 export default function CustomersPage() {
   const { user } = useAuth();
@@ -28,6 +68,7 @@ export default function CustomersPage() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<(typeof customerFilters)[number]>("Alle");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -49,7 +90,7 @@ export default function CustomersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cases")
-        .select("id, case_number, customer, customer_id, description, status, start_date, end_date, address")
+        .select("id, case_number, customer, customer_id, case_description, description, status, start_date, end_date, address")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -71,25 +112,31 @@ export default function CustomersPage() {
   }, [cases, selectedCustomer]);
 
   const filteredCustomers = useMemo(() => {
-    const query = search.toLowerCase();
-    return (customers || []).filter((customer: any) =>
-      customer.name.toLowerCase().includes(query) ||
-      customer.address?.toLowerCase().includes(query) ||
-      customer.phone?.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query)
-    );
-  }, [customers, search]);
+    const query = search.toLowerCase().trim();
+    return (customers || []).filter((customer: any) => {
+      const matchesType = typeFilter === "Alle" || customer.customer_type === typeFilter;
+      const matchesSearch = !query || [
+        customer.name,
+        customer.company_name,
+        customer.contact_person,
+        customer.address,
+        customer.phone,
+        customer.email,
+      ].some((value) => value?.toLowerCase().includes(query));
+
+      return matchesType && matchesSearch;
+    });
+  }, [customers, search, typeFilter]);
 
   const createCustomer = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("customers").insert({
-        ...form,
-        address: form.address || null,
-        phone: form.phone || null,
-        email: form.email || null,
-        notes: form.notes || null,
-        created_by: user!.id,
-      });
+      if (!user?.id) throw new Error("Du skal være logget ind");
+
+      const payload = getCustomerPayload(form, user.id);
+      if (!payload.name) throw new Error(form.customer_type === "Erhverv" ? "Indtast firmanavn" : "Indtast navn");
+      if (form.customer_type === "Erhverv" && !payload.contact_person) throw new Error("Indtast kontaktperson");
+
+      const { error } = await supabase.from("customers").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -105,14 +152,23 @@ export default function CustomersPage() {
     mutationFn: async () => {
       if (!editForm) return;
 
+      const isBusiness = editForm.customer_type === "Erhverv";
+      const displayName = isBusiness ? editForm.company_name?.trim() : editForm.name?.trim();
+
+      if (!displayName) throw new Error(isBusiness ? "Indtast firmanavn" : "Indtast navn");
+      if (isBusiness && !editForm.contact_person?.trim()) throw new Error("Indtast kontaktperson");
+
       const { error } = await supabase
         .from("customers")
         .update({
-          name: editForm.name,
-          address: editForm.address || null,
-          phone: editForm.phone || null,
-          email: editForm.email || null,
-          notes: editForm.notes || null,
+          customer_type: editForm.customer_type,
+          name: displayName,
+          company_name: isBusiness ? editForm.company_name?.trim() || null : null,
+          contact_person: isBusiness ? editForm.contact_person?.trim() || null : null,
+          address: editForm.address?.trim() || null,
+          phone: editForm.phone?.trim() || null,
+          email: editForm.email?.trim() || null,
+          notes: editForm.notes?.trim() || null,
         })
         .eq("id", editForm.id);
 
@@ -120,7 +176,7 @@ export default function CustomersPage() {
 
       const { error: caseError } = await supabase
         .from("cases")
-        .update({ customer: editForm.name })
+        .update({ customer: displayName })
         .eq("customer_id", editForm.id);
 
       if (caseError) throw caseError;
@@ -129,7 +185,7 @@ export default function CustomersPage() {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       if (selectedCustomer) {
-        setSelectedCustomer((prev: any) => prev ? { ...prev, ...editForm } : prev);
+        setSelectedCustomer((prev: any) => (prev ? { ...prev, ...editForm, name: editForm.customer_type === "Erhverv" ? editForm.company_name : editForm.name } : prev));
       }
       setEditOpen(false);
       setEditForm(null);
@@ -165,23 +221,36 @@ export default function CustomersPage() {
 
         <div className="mb-6 rounded-2xl border border-border bg-card p-6 shadow-card">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="mb-3 flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="mb-4 flex items-start gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
                   <Building2 size={18} className="text-primary" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-heading font-bold text-card-foreground">{selectedCustomer.name}</h2>
-                  <p className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-heading font-bold text-card-foreground">{getCustomerNameLabel(selectedCustomer)}</h2>
+                    <Badge variant={getCustomerTypeBadgeVariant(selectedCustomer.customer_type)}>
+                      {selectedCustomer.customer_type || "Privat"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {caseCounts[selectedCustomer.id] || 0} {(caseCounts[selectedCustomer.id] || 0) === 1 ? "sag" : "sager"}
                   </p>
+                  {selectedCustomer.customer_type === "Erhverv" && selectedCustomer.contact_person && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <User size={12} /> Kontaktperson: {selectedCustomer.contact_person}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-border bg-muted/20 p-4">
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</p>
-                  <p className="flex items-start gap-2 text-sm text-card-foreground"><MapPin size={14} className="mt-0.5 text-muted-foreground" />{selectedCustomer.address || "–"}</p>
+                  <p className="flex items-start gap-2 text-sm text-card-foreground">
+                    <MapPin size={14} className="mt-0.5 text-muted-foreground" />
+                    {selectedCustomer.address || "–"}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/20 p-4">
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontakt</p>
@@ -194,7 +263,7 @@ export default function CustomersPage() {
 
               <div className="mt-3 rounded-xl border border-border bg-muted/20 p-4">
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Noter</p>
-                <p className="text-sm leading-relaxed text-card-foreground whitespace-pre-wrap">{selectedCustomer.notes || "Ingen noter endnu"}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-card-foreground">{selectedCustomer.notes || "Ingen noter endnu"}</p>
               </div>
             </div>
 
@@ -222,39 +291,45 @@ export default function CustomersPage() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tilknyttede sager</h3>
-            <p className="text-sm text-muted-foreground">Alle sager for denne kunde</p>
+            <p className="text-sm text-muted-foreground">Fuldt historikoverblik for kunden</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          {customerCases.map((caseItem: any, index: number) => (
-            <motion.button
-              key={caseItem.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              onClick={() => navigate("/cases", { state: { focusCaseId: caseItem.id } })}
-              className="w-full rounded-2xl border border-border bg-card p-5 text-left shadow-card transition-all hover:shadow-elevated"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                      <Briefcase size={16} className="text-primary" />
+          {customerCases.map((caseItem: any, index: number) => {
+            const customerCaseStatus = getCustomerCaseStatus(caseItem);
+            return (
+              <motion.button
+                key={caseItem.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={() => navigate("/cases", { state: { focusCaseId: caseItem.id } })}
+                className="w-full rounded-2xl border border-border bg-card p-5 text-left shadow-card transition-all hover:shadow-elevated"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                        <Briefcase size={16} className="text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-card-foreground">{formatCaseLabel(caseItem)}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{caseItem.description || caseItem.address || "Ingen ekstra beskrivelse"}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-card-foreground">{caseItem.case_number}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{caseItem.description || caseItem.address || "Ingen beskrivelse"}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>Periode: {caseItem.start_date || "–"} → {caseItem.end_date || "–"}</span>
+                      <span>{caseItem.address || "Ingen adresse"}</span>
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>Status: {caseItem.status}</span>
-                    <span>Periode: {caseItem.start_date || "–"} → {caseItem.end_date || "–"}</span>
-                  </div>
+                  <Badge variant={customerCaseStatus === "Afsluttet" ? "secondary" : "default"}>
+                    {customerCaseStatus}
+                  </Badge>
                 </div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.button>
+            );
+          })}
 
           {customerCases.length === 0 && (
             <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
@@ -284,9 +359,43 @@ export default function CustomersPage() {
                 className="space-y-4"
               >
                 <div>
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
-                  <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundetype</Label>
+                  <div className="mt-1.5 flex gap-2 rounded-xl bg-muted/40 p-1">
+                    {customerTypeOptions.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setEditForm({
+                          ...editForm,
+                          customer_type: type,
+                          name: type === "Erhverv" ? editForm.company_name || editForm.name : editForm.name,
+                        })}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${editForm.customer_type === type ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {editForm.customer_type === "Erhverv" ? (
+                  <>
+                    <div>
+                      <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Virksomhedsnavn</Label>
+                      <Input value={editForm.company_name || ""} onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontaktperson</Label>
+                      <Input value={editForm.contact_person || ""} onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })} className="mt-1.5 rounded-xl" required />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
+                    <Input value={editForm.name || ""} onChange={(e) => setEditForm({ ...editForm, name: e.target.value, company_name: null, contact_person: null })} className="mt-1.5 rounded-xl" required />
+                  </div>
+                )}
+
                 <div>
                   <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
                   <Input value={editForm.address || ""} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="mt-1.5 rounded-xl" />
@@ -357,9 +466,39 @@ export default function CustomersPage() {
               className="space-y-4"
             >
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundetype</Label>
+                <div className="mt-1.5 flex gap-2 rounded-xl bg-muted/40 p-1">
+                  {customerTypeOptions.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, customer_type: type }))}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${form.customer_type === type ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {form.customer_type === "Erhverv" ? (
+                <>
+                  <div>
+                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Virksomhedsnavn</Label>
+                    <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontaktperson</Label>
+                    <Input value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="mt-1.5 rounded-xl" required />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                </div>
+              )}
+
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
                 <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="mt-1.5 rounded-xl" />
@@ -389,10 +528,21 @@ export default function CustomersPage() {
         </Dialog>
       </PageHeader>
 
-      <div className="mb-5 max-w-sm">
-        <div className="relative">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative max-w-sm flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Søg kunder..." className="h-11 rounded-xl pl-10" />
+        </div>
+        <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
+          {customerFilters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setTypeFilter(filter)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${typeFilter === filter ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -421,9 +571,15 @@ export default function CustomersPage() {
                   <Building2 size={18} className="text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-card-foreground">{customer.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-card-foreground">{getCustomerNameLabel(customer)}</p>
+                    <Badge variant={getCustomerTypeBadgeVariant(customer.customer_type)}>{customer.customer_type || "Privat"}</Badge>
+                  </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{customer.address || "Ingen adresse"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground/80">{customer.phone || "–"} · {customer.email || "–"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground/80">
+                    {customer.customer_type === "Erhverv" && customer.contact_person ? `${customer.contact_person} · ` : ""}
+                    {customer.phone || "–"} · {customer.email || "–"}
+                  </p>
                 </div>
               </div>
               <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
@@ -438,7 +594,7 @@ export default function CustomersPage() {
         <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
           <Building2 size={40} className="mx-auto mb-4 text-muted-foreground/15" />
           <p className="text-sm font-medium text-muted-foreground">Ingen kunder fundet</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">Opret din første kunde for at knytte sager til den</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">Prøv et andet filter eller opret en ny kunde</p>
           <Button className="mt-4 gap-2 rounded-xl" onClick={() => setOpen(true)}>
             <Plus size={14} /> Ny kunde
           </Button>
