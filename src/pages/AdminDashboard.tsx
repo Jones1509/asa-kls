@@ -1,6 +1,6 @@
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
-import { Briefcase, Clock, FileText, Users, ArrowRight, CalendarDays, ClipboardCheck, Receipt, Radio, Shield, TrendingUp, BarChart3 } from "lucide-react";
+import { Briefcase, Clock, FileText, Users, ArrowRight, CalendarDays, ClipboardCheck, Receipt, Radio, Shield, TrendingUp, BarChart3, AlertOctagon, Wrench, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
