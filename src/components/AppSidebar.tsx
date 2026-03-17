@@ -14,6 +14,8 @@ import {
   Radio,
   User,
   Settings,
+  Building2,
+  AlertOctagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
