@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Shield, Upload, Calendar, CheckCircle2, XCircle, AlertTriangle, Plus, Pencil, Trash2, FileText, Wrench, ClipboardCheck } from "lucide-react";
+import { Shield, Upload, Calendar, CheckCircle2, XCircle, AlertTriangle, Plus, Pencil, Trash2, FileText, Wrench, ClipboardCheck, BookOpen, Download } from "lucide-react";
 import { format, differenceInDays, addMonths, differenceInMonths } from "date-fns";
 import { da } from "date-fns/locale";
 
@@ -69,6 +69,36 @@ export default function CompanyPage() {
   const authDoc = companyDocs?.find(d => d.document_type === "autorisation");
   const authExpiry = authDoc?.expiry_date ? new Date(authDoc.expiry_date) : null;
   const authDaysLeft = authExpiry ? differenceInDays(authExpiry, new Date()) : null;
+
+  const klsDoc = companyDocs?.find(d => d.document_type === "kls_haandbog");
+
+  // Upload KLS handbook
+  const uploadKls = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `company/kls_haandbog_${Date.now()}.${file.name.split(".").pop()}`;
+      const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+
+      if (klsDoc) {
+        await supabase.from("company_documents").update({ file_url: urlData.publicUrl, document_name: file.name, uploaded_at: new Date().toISOString() }).eq("id", klsDoc.id);
+      } else {
+        await supabase.from("company_documents").insert({ document_type: "kls_haandbog", document_name: file.name, file_url: urlData.publicUrl, created_by: user!.id });
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["company_documents"] }); toast.success("KLS-håndbog uploadet"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteKls = useMutation({
+    mutationFn: async () => {
+      if (!klsDoc) return;
+      const { error } = await supabase.from("company_documents").delete().eq("id", klsDoc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["company_documents"] }); toast.success("KLS-håndbog slettet"); },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   // Upload authorization doc
   const uploadAuth = useMutation({
@@ -197,6 +227,57 @@ export default function CompanyPage() {
               <Upload size={15} /> {uploadAuth.isPending ? "Uploader..." : "Upload"}
             </Button>
           </form>
+        </motion.div>
+
+        {/* Section: KLS-håndbog */}
+        <motion.div variants={item} initial="hidden" animate="show" transition={{ delay: 0.05 }} className="rounded-2xl border border-border bg-card shadow-card p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+              <BookOpen size={18} className="text-primary" />
+            </div>
+            <div>
+              <h2 className="font-heading font-bold text-foreground">KLS-håndbog</h2>
+              <p className="text-xs text-muted-foreground">Virksomhedens kvalitetsledelses-håndbog</p>
+            </div>
+          </div>
+
+          {klsDoc?.file_url ? (
+            <div className="rounded-xl bg-muted/50 border border-border/50 p-4 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText size={18} className="text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{klsDoc.document_name}</p>
+                  <p className="text-xs text-muted-foreground">Uploadet {klsDoc.uploaded_at ? format(new Date(klsDoc.uploaded_at), "d. MMM yyyy", { locale: da }) : "–"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={klsDoc.file_url} target="_blank" rel="noopener" download className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                  <Download size={13} /> Download
+                </a>
+                <button onClick={() => { if (confirm("Er du sikker på at du vil slette KLS-håndbogen?")) deleteKls.mutate(); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors">
+                  <Trash2 size={13} /> Slet
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 mb-4">
+              <BookOpen size={28} className="mx-auto text-muted-foreground/20 mb-2" />
+              <p className="text-sm text-muted-foreground">Ingen KLS-håndbog uploadet endnu</p>
+            </div>
+          )}
+
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{klsDoc ? "Erstat med nyt dokument" : "Upload KLS-håndbog"} (PDF/Word)</Label>
+              <Input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadKls.mutate(f); }}
+                className="mt-1.5 rounded-xl"
+              />
+            </div>
+            {uploadKls.isPending && <p className="text-xs text-muted-foreground pb-2">Uploader...</p>}
+          </div>
         </motion.div>
 
         {/* Section B: KLS Audit */}
