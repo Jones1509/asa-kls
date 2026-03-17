@@ -114,6 +114,7 @@ export default function InvoicesPage() {
       const { error } = await supabase.from("invoices").insert({
         created_by: user!.id,
         case_id: form.case_id,
+        invoice_number: "",
         customer: form.customer,
         description: form.description || null,
         amount: parseFloat(form.amount) || 0,
