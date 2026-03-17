@@ -210,7 +210,7 @@ export default function EmployeesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
       setShowCreate(false);
-      setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false });
+      setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", company_title: "Medarbejder", make_admin: false });
       toast.success("Medarbejder oprettet og kan nu logge ind");
     },
     onError: (e: any) => toast.error(e.message),
