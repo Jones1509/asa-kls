@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN company_title text NOT NULL DEFAULT 'Medarbejder';
