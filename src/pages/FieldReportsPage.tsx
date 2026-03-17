@@ -60,7 +60,7 @@ export default function FieldReportsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("field_reports")
-        .select("*, cases(case_number), profiles!field_reports_user_id_fkey(full_name)")
+        .select("*, cases(case_number, customer), profiles!field_reports_user_id_fkey(full_name)")
         .order("created_at", { ascending: false });
       return data || [];
     },
