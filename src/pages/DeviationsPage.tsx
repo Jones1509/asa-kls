@@ -27,7 +27,7 @@ export default function DeviationsPage() {
   const { data: deviations, isLoading } = useQuery({
     queryKey: ["deviations"],
     queryFn: async () => {
-      const { data } = await supabase.from("deviations").select("*, cases(case_number)").order("created_at", { ascending: false });
+      const { data } = await supabase.from("deviations").select("*, cases(case_number, customer, case_description)").order("created_at", { ascending: false });
       return data || [];
     },
   });
@@ -35,7 +35,7 @@ export default function DeviationsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer").eq("status", "Aktiv");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
       return data || [];
     },
   });
