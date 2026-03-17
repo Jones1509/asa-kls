@@ -74,7 +74,7 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, cases(case_number)").order("created_at", { ascending: true });
+      const { data } = await supabase.from("invoices").select("*, cases(case_number)").order("invoice_number", { ascending: true });
       return data || [];
     },
   });
