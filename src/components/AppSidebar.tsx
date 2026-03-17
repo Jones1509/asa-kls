@@ -71,7 +71,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
       <div className="flex h-14 items-center gap-3 px-6 flex-shrink-0 border-b border-sidebar-border/50">
         <div>
           <span className="font-heading text-xl font-extrabold italic tracking-tight text-sidebar-primary">ASA</span>
-          <p className="text-[8px] font-semibold text-sidebar-primary/50 tracking-[0.2em] uppercase leading-none mt-0.5">Kontrolsystem</p>
+          <p className="text-[8px] font-semibold text-sidebar-primary/50 tracking-[0.2em] uppercase leading-none mt-0.5">Kvalitetsledelsessystem</p>
         </div>
       </div>
 
