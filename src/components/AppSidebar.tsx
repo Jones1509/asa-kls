@@ -39,7 +39,7 @@ const adminLinks = [
   { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
   { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
-  { to: "/company", icon: Building2, label: "Virksomhed", section: "Administration" },
+  { to: "/company", icon: Building2, label: "KLS Dokumentation", section: "Administration" },
 ];
 
 const employeeLinks = [

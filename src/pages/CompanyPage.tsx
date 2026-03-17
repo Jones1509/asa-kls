@@ -223,7 +223,7 @@ export default function CompanyPage() {
 
   return (
     <div>
-      <PageHeader title="Virksomhed" description="Autorisation, KLS-audit og måleinstrumenter" />
+      <PageHeader title="KLS Dokumentation" description="Autorisation, KLS-audit og måleinstrumenter" />
 
       {/* ========== STATUS BAR ========== */}
       <motion.div variants={item} initial="hidden" animate="show" className="grid grid-cols-3 gap-4 mb-8">
