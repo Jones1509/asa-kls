@@ -87,11 +87,11 @@ function SectionCard({ icon: Icon, iconColor, title, subtitle, action, children,
       className="rounded-2xl border border-border/60 bg-card"
     >
       <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Icon size={18} className={iconColor || "text-primary"} strokeWidth={1.8} />
+        <div className="flex items-center gap-2.5">
+          <Icon size={20} className={`flex-shrink-0 ${iconColor || "text-primary"}`} strokeWidth={1.8} />
           <div>
-            <h2 className="text-[15px] font-bold text-foreground">{title}</h2>
-            <p className="text-[12px] text-muted-foreground/60">{subtitle}</p>
+            <h2 className="text-[15px] font-bold leading-tight text-foreground">{title}</h2>
+            <p className="text-[12px] leading-tight text-muted-foreground/60">{subtitle}</p>
           </div>
         </div>
         {action}
