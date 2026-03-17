@@ -412,6 +412,20 @@ export default function EmployeesPage() {
               </div>
             </div>
 
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel i virksomheden</Label>
+              <Select value={createForm.company_title} onValueChange={(v) => setCreateForm({ ...createForm, company_title: v })}>
+                <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                  <SelectValue placeholder="Vælg..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMPANY_TITLES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Login oplysninger</p>
               <div>
