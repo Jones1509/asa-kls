@@ -543,6 +543,19 @@ export default function EmployeesPage() {
                   </Select>
                 </div>
               </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel i virksomheden</Label>
+                <Select value={editForm.company_title} onValueChange={(v) => setEditForm({ ...editForm, company_title: v })}>
+                  <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                    <SelectValue placeholder="Vælg..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMPANY_TITLES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Education plan */}
