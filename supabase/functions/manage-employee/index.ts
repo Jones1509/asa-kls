@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
         full_name: full_name || "",
         phone: phone || null,
         role_label: role_label || null,
+        company_title: company_title || "Medarbejder",
       }, { onConflict: "user_id" });
 
       if (profileError) throw profileError;
