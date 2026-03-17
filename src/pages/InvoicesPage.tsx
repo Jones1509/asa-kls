@@ -76,17 +76,13 @@ type InvoiceWithCase = {
 type SearchFilters = {
   year: string;
   month: string;
-  week: string;
-  status: string;
   search: string;
   sort: "newest" | "oldest";
 };
 
 const defaultFilters: SearchFilters = {
-  year: String(new Date().getFullYear()),
+  year: "all",
   month: "all",
-  week: "all",
-  status: "alle",
   search: "",
   sort: "newest",
 };
@@ -121,49 +117,6 @@ function getCaseSortValue(caseNumber?: string | null) {
   return Number.parseInt(match[1], 10) * 1000 + Number.parseInt(match[2], 10);
 }
 
-function getWeekNumber(date: Date) {
-  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNumber = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - dayNumber);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-}
-
-function getIsoWeekRange(year: number, week: number) {
-  const januaryFourth = new Date(Date.UTC(year, 0, 4));
-  const januaryFourthDay = januaryFourth.getUTCDay() || 7;
-  const monday = new Date(januaryFourth);
-  monday.setUTCDate(januaryFourth.getUTCDate() - januaryFourthDay + 1 + (week - 1) * 7);
-
-  const start = new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate());
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-
-  return { start, end };
-}
-
-function getWeekOptionLabel(year: number, week: number) {
-  const { start, end } = getIsoWeekRange(year, week);
-  return `Uge ${week} · ${danishDateFormatter.format(start)} – ${danishDateFormatter.format(end)}`;
-}
-
-function getMonthWeekOptions(year: number, monthIndex: number) {
-  const firstDay = new Date(year, monthIndex, 1);
-  const lastDay = new Date(year, monthIndex + 1, 0);
-  const startWeek = getWeekNumber(firstDay);
-  const endWeek = getWeekNumber(lastDay);
-  const maxWeek = getWeekNumber(new Date(year, 11, 28));
-
-  const weeks: { value: string; label: string }[] = [];
-  for (let week = startWeek; week <= Math.min(endWeek, maxWeek); week += 1) {
-    weeks.push({ value: String(week), label: getWeekOptionLabel(year, week) });
-  }
-
-  return weeks;
-}
 
 export default function InvoicesPage() {
   const { user, role } = useAuth();
@@ -176,8 +129,8 @@ export default function InvoicesPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
   const [expandedCases, setExpandedCases] = useState<Record<string, boolean>>({});
-  const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
-  const [showAllInvoices, setShowAllInvoices] = useState(false);
+  const [draftFilters, setDraftFilters] = useState<SearchFilters>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(defaultFilters);
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -213,10 +166,6 @@ export default function InvoicesPage() {
     return years;
   }, [invoices]);
 
-  const availableWeeksForMonth = useMemo(() => {
-    if (filters.month === "all") return [];
-    return getMonthWeekOptions(Number(filters.year), Number(filters.month));
-  }, [filters.month, filters.year]);
 
   const createInvoice = useMutation({
     mutationFn: async () => {
@@ -299,18 +248,15 @@ export default function InvoicesPage() {
   });
 
   const filteredInvoices = useMemo(() => {
-    const searchValue = filters.search.toLowerCase().trim();
+    const searchValue = appliedFilters.search.toLowerCase().trim();
 
     const result = (invoices || []).filter((invoice) => {
       const createdAt = new Date(invoice.created_at);
       const invoiceYear = createdAt.getFullYear();
       const invoiceMonth = createdAt.getMonth();
-      const invoiceWeek = getWeekNumber(createdAt);
 
-      const matchesYear = showAllInvoices || invoiceYear === Number(filters.year);
-      const matchesMonth = showAllInvoices || filters.month === "all" || invoiceMonth === Number(filters.month);
-      const matchesWeek = showAllInvoices || filters.week === "all" || invoiceWeek === Number(filters.week);
-      const matchesStatus = filters.status === "alle" || invoice.status === filters.status;
+      const matchesYear = appliedFilters.year === "all" || invoiceYear === Number(appliedFilters.year);
+      const matchesMonth = appliedFilters.month === "all" || invoiceMonth === Number(appliedFilters.month);
 
       const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
       const caseLabel = formatCaseLabel(caseData, "").toLowerCase();
@@ -321,15 +267,15 @@ export default function InvoicesPage() {
         caseLabel.includes(searchValue) ||
         (invoice.description || "").toLowerCase().includes(searchValue);
 
-      return matchesYear && matchesMonth && matchesWeek && matchesStatus && matchesSearch;
+      return matchesYear && matchesMonth && matchesSearch;
     });
 
     return result.sort((a, b) => {
       const first = new Date(a.created_at).getTime();
       const second = new Date(b.created_at).getTime();
-      return filters.sort === "newest" ? second - first : first - second;
+      return appliedFilters.sort === "newest" ? second - first : first - second;
     });
-  }, [casesById, filters, invoices, showAllInvoices]);
+  }, [appliedFilters, casesById, invoices]);
 
   const groupedInvoices = useMemo(() => {
     const grouped = new Map<string, { customerKey: string; customerLabel: string; customerNumberLabel: string; customerNumberValue: number; cases: Map<string, { caseId: string; caseNumber: string; caseLabel: string; invoices: InvoiceWithCase[] }> }>();
@@ -377,21 +323,20 @@ export default function InvoicesPage() {
   }, [casesById, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
-    if (showAllInvoices) return `Alle fakturaer · ${filters.sort === "newest" ? "nyeste først" : "ældste først"}`;
-
-    const monthLabel = filters.month === "all" ? "alle måneder" : MONTHS[Number(filters.month)];
-    const weekLabel = filters.week === "all" ? "alle uger" : getWeekOptionLabel(Number(filters.year), Number(filters.week));
-
-    if (filters.month !== "all" && filters.week !== "all") {
-      return `${monthLabel} ${filters.year} · ${weekLabel}`;
+    if (appliedFilters.year === "all" && appliedFilters.month === "all") {
+      return "Alle fakturaer";
     }
 
-    if (filters.month !== "all") {
-      return `${monthLabel} ${filters.year}`;
+    if (appliedFilters.month !== "all" && appliedFilters.year === "all") {
+      return `${MONTHS[Number(appliedFilters.month)]} · alle år`;
     }
 
-    return `${filters.year}`;
-  }, [filters, showAllInvoices]);
+    if (appliedFilters.month !== "all") {
+      return `${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`;
+    }
+
+    return appliedFilters.year;
+  }, [appliedFilters]);
 
   const periodTotals = useMemo(() => {
     const byStatus = statuses.reduce(
@@ -416,7 +361,22 @@ export default function InvoicesPage() {
     };
   }, [filteredInvoices]);
 
-  const hasSearchTerm = filters.search.trim().length > 0;
+  const hasSearchTerm = appliedFilters.search.trim().length > 0;
+  const hasPendingChanges =
+    draftFilters.year !== appliedFilters.year ||
+    draftFilters.month !== appliedFilters.month ||
+    draftFilters.search !== appliedFilters.search ||
+    draftFilters.sort !== appliedFilters.sort;
+
+  const applySearch = () => {
+    setAppliedFilters(draftFilters);
+    setExpandedCustomers({});
+    setExpandedCases({});
+  };
+
+  const resetDraftFilters = () => {
+    setDraftFilters(defaultFilters);
+  };
 
   const handleCaseSelect = (caseId: string, isEdit = false) => {
     const selectedCase = cases?.find((caseItem) => caseItem.id === caseId);
@@ -585,133 +545,93 @@ export default function InvoicesPage() {
             </div>
             <h2 className="font-heading text-2xl font-bold tracking-tight text-card-foreground">Find fakturaer hurtigt og enkelt</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vælg år, måned og eventuelt uge i måneden — eller klik på <span className="font-semibold text-foreground">Vis alle fakturaer</span> for at se alt i dato-rækkefølge.
+              Vælg år, måned, søgning og sortering — og tryk derefter på <span className="font-semibold text-foreground">Søg</span>. Standardvisningen er alle fakturaer med nyeste først.
             </p>
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Viser</p>
             <p className="mt-1 font-heading text-lg font-bold text-card-foreground">{periodSummary}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer</p>
+            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer · {appliedFilters.sort === "newest" ? "nyeste først" : "ældste først"}</p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 rounded-2xl border border-border bg-muted/15 p-4 md:grid-cols-2 xl:grid-cols-5">
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
-            <Select
-              value={filters.year}
-              onValueChange={(value) => {
-                setShowAllInvoices(false);
-                setFilters((current) => ({ ...current, year: value, month: "all", week: "all" }));
-              }}
-            >
-              <SelectTrigger className="rounded-xl bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="mt-6 rounded-2xl border border-border bg-muted/15 p-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
+              <Select value={draftFilters.year} onValueChange={(value) => setDraftFilters((current) => ({ ...current, year: value }))}>
+                <SelectTrigger className="rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle år</SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
+              <Select value={draftFilters.month} onValueChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}>
+                <SelectTrigger className="rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle måneder</SelectItem>
+                  {MONTHS.map((month, index) => (
+                    <SelectItem key={month} value={String(index)}>{month}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sortering</Label>
+              <Select value={draftFilters.sort} onValueChange={(value) => setDraftFilters((current) => ({ ...current, sort: value as "newest" | "oldest" }))}>
+                <SelectTrigger className="rounded-xl bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Nyeste først</SelectItem>
+                  <SelectItem value="oldest">Ældste først</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Søgning</Label>
+              <div className="relative">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Fakturanummer, kunde eller sag"
+                  className="h-11 rounded-xl bg-background pl-10"
+                  value={draftFilters.search}
+                  onChange={(e) => setDraftFilters((current) => ({ ...current, search: e.target.value }))}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
-            <Select
-              value={filters.month}
-              onValueChange={(value) => {
-                setShowAllInvoices(false);
-                setFilters((current) => ({ ...current, month: value, week: "all" }));
-              }}
-            >
-              <SelectTrigger className="rounded-xl bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle måneder</SelectItem>
-                {MONTHS.map((month, index) => (
-                  <SelectItem key={month} value={String(index)}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-medium text-card-foreground">Resultater opdateres først, når du trykker på Søg</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hasPendingChanges ? "Du har ændringer, som ikke er søgt på endnu." : "De viste resultater matcher dine senest valgte indstillinger."}
+              </p>
+            </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Uger i måneden</Label>
-            <Select
-              value={filters.week}
-              onValueChange={(value) => {
-                setShowAllInvoices(false);
-                setFilters((current) => ({ ...current, week: value }));
-              }}
-              disabled={filters.month === "all"}
-            >
-              <SelectTrigger className="rounded-xl bg-background">
-                <SelectValue placeholder="Alle uger" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle uger</SelectItem>
-                {availableWeeksForMonth.map((week) => (
-                  <SelectItem key={week.value} value={week.value}>{week.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="button" variant="outline" className="h-11 rounded-xl px-6" onClick={resetDraftFilters}>
+                Nulstil alle indstillinger
+              </Button>
+              <Button type="button" className="h-11 rounded-xl px-6 shadow-card" onClick={applySearch}>
+                Søg
+              </Button>
+            </div>
           </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
-            <Select value={filters.status} onValueChange={(value) => setFilters((current) => ({ ...current, status: value }))}>
-              <SelectTrigger className="rounded-xl bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="alle">Alle statusser</SelectItem>
-                {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sortering</Label>
-            <Select value={filters.sort} onValueChange={(value) => setFilters((current) => ({ ...current, sort: value as "newest" | "oldest" }))}>
-              <SelectTrigger className="rounded-xl bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Nyeste først</SelectItem>
-                <SelectItem value="oldest">Ældste først</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="relative w-full max-w-md">
-            <Label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Søgning</Label>
-            <Search size={16} className="absolute left-3.5 top-[calc(50%+10px)] -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Fakturanummer, kunde eller sag"
-              className="h-11 rounded-xl bg-background pl-10"
-              value={filters.search}
-              onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
-            />
-          </div>
-
-          <Button
-            type="button"
-            variant={showAllInvoices ? "secondary" : "outline"}
-            className="h-11 rounded-xl px-6"
-            onClick={() => {
-              setShowAllInvoices(true);
-              setFilters((current) => ({ ...current, month: "all", week: "all" }));
-            }}
-          >
-            Vis alle fakturaer
-          </Button>
         </div>
       </motion.section>
 
@@ -720,7 +640,7 @@ export default function InvoicesPage() {
           { label: "Faktureret", value: formatCurrency(periodTotals.totalAmount), meta: `${periodTotals.count} fakturaer`, icon: Receipt, tone: "text-card-foreground" },
           { label: "Sendt", value: formatCurrency(periodTotals.byStatus.Sendt.amount), meta: `${periodTotals.byStatus.Sendt.count} fakturaer`, icon: TrendingUp, tone: "text-info" },
           { label: "Betalt", value: formatCurrency(periodTotals.byStatus.Betalt.amount), meta: `${periodTotals.byStatus.Betalt.count} fakturaer`, icon: CheckCircle2, tone: "text-success" },
-          { label: filters.sort === "newest" ? "Nyeste først" : "Ældste først", value: showAllInvoices ? "Alle" : "Filter", meta: showAllInvoices ? "Viser alt i dato-rækkefølge" : "Sorterede resultater", icon: filters.sort === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
+          { label: appliedFilters.sort === "newest" ? "Nyeste først" : "Ældste først", value: periodSummary, meta: hasSearchTerm ? `Søgning: ${appliedFilters.search}` : "Aktive resultater", icon: appliedFilters.sort === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
         ].map((card) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-5 shadow-card">
             <div className="mb-5 flex items-center justify-between">
@@ -738,9 +658,8 @@ export default function InvoicesPage() {
       <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
         <p className="text-sm font-medium text-card-foreground">Resultater for: {periodSummary}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {filters.status !== "alle" ? `Status: ${filters.status}. ` : ""}
-          {hasSearchTerm ? `Søgning: ${filters.search}. ` : ""}
-          Sortering: {filters.sort === "newest" ? "nyeste først" : "ældste først"}.
+          {hasSearchTerm ? `Søgning: ${appliedFilters.search}. ` : ""}
+          Sortering: {appliedFilters.sort === "newest" ? "nyeste først" : "ældste først"}.
         </p>
       </div>
 
