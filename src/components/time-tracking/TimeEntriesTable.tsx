@@ -15,7 +15,7 @@ interface Entry {
   hours: number;
   notes: string | null;
   user_id: string;
-  cases?: { case_number: string } | null;
+  cases?: { case_number: string; customer?: string | null } | null;
 }
 
 interface TimeEntriesTableProps {

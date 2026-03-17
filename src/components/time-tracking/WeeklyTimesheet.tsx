@@ -16,7 +16,7 @@ interface TimeEntry {
   hours: number;
   user_id: string;
   notes: string | null;
-  cases?: { case_number: string } | null;
+  cases?: { case_number: string; customer?: string | null } | null;
 }
 
 interface WeeklyTimesheetProps {

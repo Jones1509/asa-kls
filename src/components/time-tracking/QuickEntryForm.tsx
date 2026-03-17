@@ -16,7 +16,7 @@ interface QuickEntryFormProps {
   setForm: (form: any) => void;
   isAdmin: boolean;
   employees: { user_id: string; full_name: string }[];
-  cases: { id: string; case_number: string; customer?: string }[];
+  cases: { id: string; case_number: string; customer?: string; display_label?: string }[];
   onSubmit: () => void;
   isPending: boolean;
 }
