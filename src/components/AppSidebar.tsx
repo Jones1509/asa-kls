@@ -14,6 +14,8 @@ import {
   Radio,
   User,
   Settings,
+  Building2,
+  AlertOctagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -34,9 +36,11 @@ const adminLinks = [
   { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
   { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
   { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
   { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "Kommunikation" },
-  { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
+  { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
+  { to: "/company", icon: Building2, label: "Virksomhed", section: "Administration" },
 ];
 
 const employeeLinks = [
@@ -47,6 +51,7 @@ const employeeLinks = [
   { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
   { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
   { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
   { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
 ];

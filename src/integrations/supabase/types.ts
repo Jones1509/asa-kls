@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_reports: {
+        Row: {
+          answers: Json
+          audit_date: string
+          created_at: string
+          created_by: string
+          id: string
+        }
+        Insert: {
+          answers?: Json
+          audit_date?: string
+          created_at?: string
+          created_by: string
+          id?: string
+        }
+        Update: {
+          answers?: Json
+          audit_date?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+        }
+        Relationships: []
+      }
       case_assignments: {
         Row: {
           case_id: string
@@ -109,6 +133,89 @@ export type Database = {
         }
         Relationships: []
       }
+      company_documents: {
+        Row: {
+          created_at: string
+          created_by: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          updated_at: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          updated_at?: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          updated_at?: string
+          uploaded_at?: string | null
+        }
+        Relationships: []
+      }
+      deviations: {
+        Row: {
+          case_id: string | null
+          corrective_action: string | null
+          created_at: string
+          created_by: string
+          description: string
+          deviation_date: string
+          id: string
+          responsible_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          corrective_action?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          deviation_date?: string
+          id?: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          corrective_action?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          deviation_date?: string
+          id?: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deviations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentation: {
         Row: {
           case_id: string
@@ -149,6 +256,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      employee_certificates: {
+        Row: {
+          certificate_name: string
+          created_at: string
+          file_url: string | null
+          id: string
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          certificate_name: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          certificate_name?: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       field_reports: {
         Row: {
@@ -199,6 +333,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      instruments: {
+        Row: {
+          certificate_url: string | null
+          created_at: string
+          created_by: string
+          id: string
+          last_calibrated: string | null
+          name: string
+          next_calibration: string | null
+          serial_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          last_calibrated?: string | null
+          name: string
+          next_calibration?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_url?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_calibrated?: string | null
+          name?: string
+          next_calibration?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       invoices: {
         Row: {

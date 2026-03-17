@@ -1,12 +1,14 @@
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
-import { Briefcase, Clock, FileText, Users, ArrowRight, CalendarDays, ClipboardCheck, Receipt, Radio, Shield, TrendingUp, BarChart3 } from "lucide-react";
+import { Briefcase, Clock, FileText, Users, ArrowRight, CalendarDays, ClipboardCheck, Receipt, Radio, Shield, TrendingUp, BarChart3, AlertOctagon, Wrench, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { differenceInDays, differenceInMonths, addMonths, format } from "date-fns";
+import { da } from "date-fns/locale";
 
 const container = {
   hidden: { opacity: 0 },
@@ -102,6 +104,61 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  // New: Deviations
+  const { data: deviations } = useQuery({
+    queryKey: ["deviations_summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("deviations").select("status").limit(500);
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Instruments
+  const { data: instruments } = useQuery({
+    queryKey: ["instruments_summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("instruments").select("next_calibration").limit(500);
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Audit reports
+  const { data: latestAudit } = useQuery({
+    queryKey: ["audit_latest"],
+    queryFn: async () => {
+      const { data } = await supabase.from("audit_reports").select("audit_date").order("audit_date", { ascending: false }).limit(1);
+      return data?.[0] || null;
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Employee certificates
+  const { data: certSummary } = useQuery({
+    queryKey: ["cert_summary"],
+    queryFn: async () => {
+      const [{ data: profs }, { data: certs }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("user_id"),
+        supabase.from("employee_certificates").select("user_id, file_url"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (!profs) return { total: 0, uploaded: 0 };
+      const adminIds = new Set(roles?.filter(r => r.role === "admin").map(r => r.user_id) || []);
+      let total = 0;
+      let uploaded = 0;
+      profs.forEach(p => {
+        const isAdmin = adminIds.has(p.user_id);
+        const expected = isAdmin ? 4 : 3;
+        const userCerts = certs?.filter(c => c.user_id === p.user_id && c.file_url) || [];
+        total += expected;
+        uploaded += Math.min(userCerts.length, expected);
+      });
+      return { total, uploaded };
+    },
+    enabled: role === "admin",
+  });
+
   const activeCases = cases?.filter((c) => c.status === "Aktiv").length || 0;
   const totalCases = cases?.length || 0;
 
@@ -138,6 +195,17 @@ export default function AdminDashboard() {
     return items.length > 0 && (items as any[]).every((i: any) => i.checked);
   }).length || 0;
 
+  // New KLS stats
+  const openDeviations = deviations?.filter(d => d.status === "Åben").length || 0;
+  const instrumentsExpiring = instruments?.filter(i => {
+    if (!i.next_calibration) return false;
+    const days = differenceInDays(new Date(i.next_calibration), new Date());
+    return days <= 30;
+  }).length || 0;
+  const lastAuditDate = latestAudit ? new Date(latestAudit.audit_date) : null;
+  const nextAuditDate = lastAuditDate ? addMonths(lastAuditDate, 12) : null;
+  const monthsSinceAudit = lastAuditDate ? differenceInMonths(new Date(), lastAuditDate) : 999;
+  const certsPct = certSummary?.total ? Math.round((certSummary.uploaded / certSummary.total) * 100) : 0;
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 6) return "God nat";
@@ -204,6 +272,40 @@ export default function AdminDashboard() {
           </motion.div>
           <motion.div variants={item}>
             <StatCard title="Betalt i alt" value={`${Math.round(paidInvoices).toLocaleString("da-DK")} kr`} icon={<TrendingUp size={22} />} trend="up" trendValue="Samlet omsætning" />
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* KLS Status cards */}
+      {role === "admin" && (
+        <motion.div variants={container} className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <motion.div variants={item}>
+            <Link to="/employees" className="block">
+              <StatCard title="Certifikater" value={`${certsPct}%`} icon={<Award size={22} />}
+                trend={certsPct === 100 ? "up" : certsPct >= 50 ? "neutral" : "down"}
+                trendValue={certsPct === 100 ? "Alle uploadet" : `${certSummary?.uploaded || 0}/${certSummary?.total || 0} uploadet`} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/deviations" className="block">
+              <StatCard title="Afvigelser" value={openDeviations} icon={<AlertOctagon size={22} />}
+                trend={openDeviations === 0 ? "up" : openDeviations <= 3 ? "neutral" : "down"}
+                trendValue={openDeviations === 0 ? "Ingen åbne" : `${openDeviations} åbne`} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/company" className="block">
+              <StatCard title="KLS-audit" value={nextAuditDate ? format(nextAuditDate, "MMM yyyy", { locale: da }) : "Ingen"} icon={<ClipboardCheck size={22} />}
+                trend={monthsSinceAudit >= 11 ? "down" : "up"}
+                trendValue={monthsSinceAudit >= 12 ? "Overskredet!" : monthsSinceAudit >= 11 ? "Snart forfald" : "OK"} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/company" className="block">
+              <StatCard title="Kalibrering" value={instrumentsExpiring} icon={<Wrench size={22} />}
+                trend={instrumentsExpiring === 0 ? "up" : "down"}
+                trendValue={instrumentsExpiring === 0 ? "Alt OK" : `${instrumentsExpiring} snart udløber`} />
+            </Link>
           </motion.div>
         </motion.div>
       )}
