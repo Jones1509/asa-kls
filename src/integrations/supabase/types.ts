@@ -221,6 +221,7 @@ export type Database = {
           case_id: string
           created_at: string
           description: string | null
+          file_url: string | null
           id: string
           image_urls: string[] | null
           title: string
@@ -231,6 +232,7 @@ export type Database = {
           case_id: string
           created_at?: string
           description?: string | null
+          file_url?: string | null
           id?: string
           image_urls?: string[] | null
           title: string
@@ -241,6 +243,7 @@ export type Database = {
           case_id?: string
           created_at?: string
           description?: string | null
+          file_url?: string | null
           id?: string
           image_urls?: string[] | null
           title?: string
@@ -630,33 +633,63 @@ export type Database = {
       }
       verification_forms: {
         Row: {
+          admin_comment: string | null
+          approved_at: string | null
+          approved_by: string | null
           case_id: string
           comments: string | null
           created_at: string
+          description: string | null
+          form_date: string
+          form_time: string | null
           form_type: string
           id: string
+          image_urls: string[] | null
+          installation_type: string | null
           items: Json
+          measurements: string | null
           signature_url: string | null
+          status: string
           user_id: string
         }
         Insert: {
+          admin_comment?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           case_id: string
           comments?: string | null
           created_at?: string
+          description?: string | null
+          form_date?: string
+          form_time?: string | null
           form_type: string
           id?: string
+          image_urls?: string[] | null
+          installation_type?: string | null
           items?: Json
+          measurements?: string | null
           signature_url?: string | null
+          status?: string
           user_id: string
         }
         Update: {
+          admin_comment?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           case_id?: string
           comments?: string | null
           created_at?: string
+          description?: string | null
+          form_date?: string
+          form_time?: string | null
           form_type?: string
           id?: string
+          image_urls?: string[] | null
+          installation_type?: string | null
           items?: Json
+          measurements?: string | null
           signature_url?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: [

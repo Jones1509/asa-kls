@@ -3,66 +3,96 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FolderOpen, AlertTriangle, AlertCircle, Info, Search, ImagePlus, X } from "lucide-react";
+import { FolderOpen, Search, ChevronLeft, Plus, FileText, ClipboardCheck, Download, Trash2, Upload, ImagePlus, X, CheckCircle2, File } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-const typeConfig: Record<string, { color: string; icon: any; bg: string }> = {
-  Fejl: { color: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertCircle, bg: "bg-destructive/10" },
-  Mangel: { color: "bg-warning/10 text-warning border border-warning/20", icon: AlertTriangle, bg: "bg-warning/10" },
-  "Farligt forhold": { color: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertTriangle, bg: "bg-destructive/10" },
-  Note: { color: "bg-info/10 text-info border border-info/20", icon: Info, bg: "bg-info/10" },
-};
-
-const typeOptions = ["Fejl", "Mangel", "Farligt forhold", "Note"];
-
 export default function DocumentationPage() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("alle");
-  const [form, setForm] = useState({ case_id: "", type: "Fejl", title: "", description: "" });
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ title: "", description: "", type: "Andet" });
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadPreviews, setUploadPreviews] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const docFileRef = useRef<HTMLInputElement>(null);
+  const [docFile, setDocFile] = useState<File | null>(null);
 
-  const { data: cases } = useQuery({
-    queryKey: ["cases_active"],
+  // Cases with document counts
+  const { data: cases, isLoading: casesLoading } = useQuery({
+    queryKey: ["cases_for_docs"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, status").order("case_number");
       return data || [];
     },
   });
 
-  const { data: docs, isLoading } = useQuery({
-    queryKey: ["documentation"],
+  // Approved verification forms for selected case
+  const { data: verificationForms } = useQuery({
+    queryKey: ["verification_docs", selectedCase?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("documentation").select("*, cases(case_number)").order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("verification_forms")
+        .select("*, profiles!verification_forms_user_id_fkey(full_name)")
+        .eq("case_id", selectedCase!.id)
+        .eq("status", "Godkendt")
+        .order("approved_at", { ascending: false });
       return data || [];
+    },
+    enabled: !!selectedCase,
+  });
+
+  // Other documents for selected case
+  const { data: otherDocs } = useQuery({
+    queryKey: ["documentation", selectedCase?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("documentation")
+        .select("*, profiles:user_id(full_name)")
+        .eq("case_id", selectedCase!.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!selectedCase,
+  });
+
+  // Count documents per case
+  const { data: docCounts } = useQuery({
+    queryKey: ["doc_counts"],
+    queryFn: async () => {
+      const [vfRes, docRes] = await Promise.all([
+        supabase.from("verification_forms").select("case_id").eq("status", "Godkendt"),
+        supabase.from("documentation").select("case_id"),
+      ]);
+      const counts: Record<string, number> = {};
+      (vfRes.data || []).forEach(r => { counts[r.case_id] = (counts[r.case_id] || 0) + 1; });
+      (docRes.data || []).forEach(r => { counts[r.case_id] = (counts[r.case_id] || 0) + 1; });
+      return counts;
     },
   });
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles(prev => [...prev, ...files]);
-    files.forEach(f => setImagePreviews(prev => [...prev, URL.createObjectURL(f)]));
+    setUploadFiles(prev => [...prev, ...files]);
+    files.forEach(f => setUploadPreviews(prev => [...prev, URL.createObjectURL(f)]));
   };
 
   const removeImage = (idx: number) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== idx));
-    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+    setUploadFiles(prev => prev.filter((_, i) => i !== idx));
+    setUploadPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const createDoc = useMutation({
+  const uploadDoc = useMutation({
     mutationFn: async () => {
       let image_urls: string[] = [];
-      for (const file of imageFiles) {
+      for (const file of uploadFiles) {
         const path = `documentation/${user!.id}/${Date.now()}-${file.name}`;
         const { error } = await supabase.storage.from("uploads").upload(path, file);
         if (error) throw error;
@@ -70,78 +100,209 @@ export default function DocumentationPage() {
         image_urls.push(data.publicUrl);
       }
 
+      let file_url: string | null = null;
+      if (docFile) {
+        const path = `documentation/${user!.id}/${Date.now()}-${docFile.name}`;
+        const { error } = await supabase.storage.from("uploads").upload(path, docFile);
+        if (error) throw error;
+        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+        file_url = data.publicUrl;
+      }
+
       const { error } = await supabase.from("documentation").insert({
         user_id: user!.id,
-        case_id: form.case_id,
-        type: form.type,
-        title: form.title,
-        description: form.description || null,
+        case_id: selectedCase!.id,
+        type: uploadForm.type,
+        title: uploadForm.title || docFile?.name || "Dokument",
+        description: uploadForm.description || null,
         image_urls: image_urls.length > 0 ? image_urls : null,
+        file_url,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documentation"] });
-      setOpen(false);
-      setForm({ case_id: "", type: "Fejl", title: "", description: "" });
-      setImageFiles([]);
-      setImagePreviews([]);
-      toast.success("Dokumentation oprettet");
+      queryClient.invalidateQueries({ queryKey: ["documentation", selectedCase?.id] });
+      queryClient.invalidateQueries({ queryKey: ["doc_counts"] });
+      setUploadOpen(false);
+      setUploadForm({ title: "", description: "", type: "Andet" });
+      setUploadFiles([]);
+      setUploadPreviews([]);
+      setDocFile(null);
+      toast.success("Dokument uploadet");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = docs?.filter(d => {
-    const matchSearch = d.title.toLowerCase().includes(search.toLowerCase()) ||
-      (d.cases as any)?.case_number?.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "alle" || d.type === typeFilter;
-    return matchSearch && matchType;
+  const deleteDoc = useMutation({
+    mutationFn: async (docId: string) => {
+      const { error } = await supabase.from("documentation").delete().eq("id", docId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documentation", selectedCase?.id] });
+      queryClient.invalidateQueries({ queryKey: ["doc_counts"] });
+      toast.success("Dokument slettet");
+    },
   });
 
-  const counts = {
-    alle: docs?.length || 0,
-    ...Object.fromEntries(typeOptions.map(t => [t, docs?.filter(d => d.type === t).length || 0])),
-  };
+  const filteredCases = cases?.filter(c =>
+    c.case_number.toLowerCase().includes(search.toLowerCase()) ||
+    c.customer.toLowerCase().includes(search.toLowerCase())
+  );
 
-  return (
-    <div>
-      <PageHeader title="Dokumentation" description={`${counts.alle} dokumenter · Opbevares i 5 år`}>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]"><Plus size={16} /> Ny dokumentation</Button>
-          </DialogTrigger>
+  // Case folder view
+  if (selectedCase) {
+    return (
+      <div>
+        <button onClick={() => setSelectedCase(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <ChevronLeft size={16} /> Tilbage til sager
+        </button>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-heading font-bold text-foreground">{selectedCase.case_number}</h2>
+            <p className="text-sm text-muted-foreground">{selectedCase.customer}</p>
+          </div>
+          {role === "admin" && (
+            <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+              <Upload size={14} /> Upload dokument
+            </Button>
+          )}
+        </div>
+
+        {/* Verification forms section */}
+        <div className="mb-8">
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Verifikationsskemaer (KLS)</h3>
+          {verificationForms && verificationForms.length > 0 ? (
+            <div className="space-y-2">
+              {verificationForms.map((vf, i) => (
+                <motion.div key={vf.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  className="rounded-xl border border-success/20 bg-card p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 flex-shrink-0">
+                      <ClipboardCheck size={16} className="text-success" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-card-foreground truncate">{vf.form_type}</p>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success/10 text-success border border-success/20 px-2 py-0.5 text-[9px] font-bold">
+                          <CheckCircle2 size={8} /> GODKENDT
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{(vf.profiles as any)?.full_name} · {vf.form_date}</p>
+                    </div>
+                  </div>
+                  {vf.image_urls && (vf.image_urls as string[]).length > 0 && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      {(vf.image_urls as string[]).slice(0, 3).map((url, j) => (
+                        <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-8 w-8 rounded-lg overflow-hidden border border-border">
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+              <ClipboardCheck size={24} className="mx-auto text-muted-foreground/20 mb-2" />
+              <p className="text-xs text-muted-foreground">Ingen godkendte verifikationsskemaer for denne sag</p>
+            </div>
+          )}
+        </div>
+
+        {/* Other documents section */}
+        <div>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Andre dokumenter</h3>
+          {otherDocs && otherDocs.length > 0 ? (
+            <div className="space-y-2">
+              {otherDocs.map((doc, i) => (
+                <motion.div key={doc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/50 flex-shrink-0">
+                      {doc.file_url ? <File size={16} className="text-muted-foreground" /> : <FileText size={16} className="text-muted-foreground" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-card-foreground truncate">{doc.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(doc.profiles as any)?.full_name || "–"} · {doc.created_at?.split("T")[0]}
+                        {doc.type && doc.type !== "Andet" && ` · ${doc.type}`}
+                      </p>
+                      {doc.description && <p className="text-xs text-muted-foreground/60 mt-0.5 truncate">{doc.description}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {doc.image_urls && (doc.image_urls as string[]).length > 0 && (
+                      <div className="flex gap-1 mr-2">
+                        {(doc.image_urls as string[]).slice(0, 2).map((url, j) => (
+                          <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-8 w-8 rounded-lg overflow-hidden border border-border">
+                            <img src={url} alt="" className="h-full w-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {doc.file_url && (
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                        <Download size={14} />
+                      </a>
+                    )}
+                    {role === "admin" && (
+                      <button onClick={() => deleteDoc.mutate(doc.id)} className="rounded-lg p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+              <FileText size={24} className="mx-auto text-muted-foreground/20 mb-2" />
+              <p className="text-xs text-muted-foreground">Ingen dokumenter uploadet endnu</p>
+              {role === "admin" && (
+                <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)} className="mt-3 rounded-xl gap-1.5">
+                  <Upload size={12} /> Upload
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Upload dialog */}
+        <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
-            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Opret dokumentation</DialogTitle></DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); createDoc.mutate(); }} className="space-y-4">
+            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Upload dokument til {selectedCase.case_number}</DialogTitle></DialogHeader>
+            <form onSubmit={(e) => { e.preventDefault(); uploadDoc.mutate(); }} className="space-y-4">
               <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
-                <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
-                  <option value="">Vælg sag...</option>
-                  {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number}</option>)}
-                </select>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel</Label>
+                <Input value={uploadForm.title} onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })} placeholder="Dokumenttitel..." className="mt-1.5 rounded-xl" />
               </div>
               <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
-                <div className="mt-2 flex gap-2 flex-wrap">
-                  {typeOptions.map(t => {
-                    const cfg = typeConfig[t];
-                    return (
-                      <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${form.type === t ? cfg.color : "bg-muted/50 text-muted-foreground"}`}>
-                        {t}
-                      </button>
-                    );
-                  })}
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Noter</Label>
+                <Textarea value={uploadForm.description} onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })} placeholder="Eventuelle noter..." className="mt-1.5 rounded-xl" rows={3} />
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fil (valgfrit)</Label>
+                <div className="mt-1.5">
+                  {docFile ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-border p-3">
+                      <File size={16} className="text-muted-foreground" />
+                      <span className="text-sm flex-1 truncate">{docFile.name}</span>
+                      <button type="button" onClick={() => setDocFile(null)} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => docFileRef.current?.click()} className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                      <Upload size={16} /> Vælg fil
+                    </button>
+                  )}
+                  <input ref={docFileRef} type="file" onChange={(e) => setDocFile(e.target.files?.[0] || null)} className="hidden" />
                 </div>
               </div>
-              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
-              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" rows={4} /></div>
-              
-              {/* Image upload */}
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Billeder (valgfrit)</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {imagePreviews.map((src, i) => (
+                  {uploadPreviews.map((src, i) => (
                     <div key={i} className="relative h-16 w-16 rounded-xl overflow-hidden border border-border">
                       <img src={src} alt="" className="h-full w-full object-cover" />
                       <button type="button" onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 rounded-full bg-black/60 p-0.5 text-white"><X size={10} /></button>
@@ -153,83 +314,66 @@ export default function DocumentationPage() {
                   <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
                 </div>
               </div>
-
               <div className="flex justify-end gap-2 pt-3">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
-                <Button type="submit" disabled={createDoc.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">{createDoc.isPending ? "Opretter..." : "Gem"}</Button>
+                <Button type="button" variant="outline" onClick={() => setUploadOpen(false)} className="rounded-xl">Annuller</Button>
+                <Button type="submit" disabled={uploadDoc.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                  {uploadDoc.isPending ? "Uploader..." : "Upload"}
+                </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
-      </PageHeader>
+      </div>
+    );
+  }
 
-      {/* Filters */}
-      <div className="mb-5 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
+  // Case list view
+  return (
+    <div>
+      <PageHeader title="Dokumentation" description="Centralt arkiv for al sagsdokumentation" />
+
+      <div className="mb-5">
+        <div className="relative max-w-sm">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Søg dokumentation..." className="pl-10 rounded-xl h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 overflow-x-auto">
-          {["alle", ...typeOptions].map((t) => (
-            <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                typeFilter === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t === "alle" ? "Alle" : t} ({(counts as any)[t] || 0})
-            </button>
-          ))}
+          <Input placeholder="Søg sager..." className="pl-10 rounded-xl h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
-      <div className="space-y-3">
-        {isLoading && [1, 2, 3].map(i => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {casesLoading && [1, 2, 3, 4, 5, 6].map(i => (
           <div key={i} className="rounded-2xl border border-border bg-card p-5 animate-pulse">
-            <div className="flex items-center gap-4"><div className="h-11 w-11 rounded-2xl bg-muted" /><div className="space-y-2 flex-1"><div className="h-4 w-40 rounded bg-muted" /><div className="h-3 w-28 rounded bg-muted" /></div></div>
+            <div className="space-y-2"><div className="h-5 w-32 rounded bg-muted" /><div className="h-4 w-24 rounded bg-muted" /><div className="h-3 w-16 rounded bg-muted mt-3" /></div>
           </div>
         ))}
-        {(filtered || []).map((d, i) => {
-          const config = typeConfig[d.type] || typeConfig.Note;
-          const TypeIcon = config.icon;
+        {(filteredCases || []).map((c, i) => {
+          const count = docCounts?.[c.id] || 0;
           return (
-            <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all">
-              <div className="flex items-start gap-4">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl flex-shrink-0 ${config.bg}`}>
-                  <TypeIcon size={18} />
+            <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+              onClick={() => setSelectedCase(c)}
+              className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elevated transition-all cursor-pointer group">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0 group-hover:bg-primary/15 transition-colors">
+                  <FolderOpen size={18} className="text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-card-foreground">{d.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Sag {(d.cases as any)?.case_number || "–"} · {d.created_at?.split("T")[0]}</p>
-                    </div>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold flex-shrink-0 ml-3 ${config.color}`}>{d.type}</span>
-                  </div>
-                  {d.description && <p className="text-xs text-muted-foreground/70 mt-2 leading-relaxed">{d.description}</p>}
-                  
-                  {/* Images */}
-                  {d.image_urls && (d.image_urls as string[]).length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {(d.image_urls as string[]).map((url, j) => (
-                        <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-16 w-16 rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
-                          <img src={url} alt="" className="h-full w-full object-cover" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-sm font-semibold text-card-foreground">{c.case_number}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.customer}</p>
+                  <p className="text-[11px] text-muted-foreground/50 mt-2">
+                    {count} {count === 1 ? "dokument" : "dokumenter"}
+                  </p>
                 </div>
               </div>
             </motion.div>
           );
         })}
-        {!isLoading && (!filtered || filtered.length === 0) && (
-          <div className="text-center py-16">
-            <FolderOpen size={32} className="mx-auto text-muted-foreground/20 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">Ingen dokumentation fundet</p>
-          </div>
-        )}
       </div>
+
+      {!casesLoading && (!filteredCases || filteredCases.length === 0) && (
+        <div className="text-center py-16">
+          <FolderOpen size={40} className="mx-auto text-muted-foreground/15 mb-4" />
+          <p className="text-sm font-medium text-muted-foreground">Ingen sager fundet</p>
+        </div>
+      )}
     </div>
   );
 }
