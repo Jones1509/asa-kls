@@ -169,7 +169,6 @@ export default function CustomersPage() {
         .from("customers")
         .update({
           customer_type: editForm.customer_type,
-          customer_number: editForm.customer_number?.trim() || null,
           name: displayName,
           company_name: isBusiness ? editForm.company_name?.trim() || null : null,
           contact_person: isBusiness ? editForm.contact_person?.trim() || null : null,
