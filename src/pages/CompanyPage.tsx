@@ -336,7 +336,7 @@ export default function CompanyPage() {
         <SectionCard icon={BookOpen} title="KLS-håndbog" subtitle="Virksomhedens kvalitetsledelses-håndbog" delay={0.1}>
           {klsDoc?.file_url ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/40 bg-[hsl(210_20%_98%)] px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText size={16} className="text-primary/60 flex-shrink-0" />
                   <div className="min-w-0">
