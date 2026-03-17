@@ -195,6 +195,17 @@ export default function AdminDashboard() {
     return items.length > 0 && (items as any[]).every((i: any) => i.checked);
   }).length || 0;
 
+  // New KLS stats
+  const openDeviations = deviations?.filter(d => d.status === "Åben").length || 0;
+  const instrumentsExpiring = instruments?.filter(i => {
+    if (!i.next_calibration) return false;
+    const days = differenceInDays(new Date(i.next_calibration), new Date());
+    return days <= 30;
+  }).length || 0;
+  const lastAuditDate = latestAudit ? new Date(latestAudit.audit_date) : null;
+  const nextAuditDate = lastAuditDate ? addMonths(lastAuditDate, 12) : null;
+  const monthsSinceAudit = lastAuditDate ? differenceInMonths(new Date(), lastAuditDate) : 999;
+  const certsPct = certSummary?.total ? Math.round((certSummary.uploaded / certSummary.total) * 100) : 0;
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 6) return "God nat";
