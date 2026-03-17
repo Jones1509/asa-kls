@@ -15,6 +15,29 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const EMPLOYEE_TITLES = [
+  { value: "Lærling", label: "Lærling" },
+  { value: "Svend", label: "Svend" },
+  { value: "Elinstallatør", label: "Elinstallatør" },
+  { value: "Aut. elinstallatør", label: "Autoriseret elinstallatør" },
+  { value: "Arbejdsmand", label: "Arbejdsmand" },
+  { value: "Leder", label: "Leder" },
+  { value: "Kontor", label: "Kontor / administration" },
+  { value: "Andet", label: "Andet" },
+] as const;
+
+const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
+  "Lærling": ["Lærlingekontrakt", "Uddannelsesbevis"],
+  "Svend": ["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt"],
+  "Elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
+  "Aut. elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Bevis for bestået autorisationsprøve", "Ansættelseskontrakt"],
+  "Arbejdsmand": ["Ansættelseskontrakt"],
+  "Leder": ["Ansættelseskontrakt"],
+  "Kontor": ["Ansættelseskontrakt"],
+  "Andet": ["Ansættelseskontrakt"],
+};
 
 async function callManageEmployee(body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
