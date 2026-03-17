@@ -9,7 +9,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CasesPage from "./pages/CasesPage";
 import SchedulePage from "./pages/SchedulePage";
 import TimeTrackingPage from "./pages/TimeTrackingPage";
-import ReportsPage from "./pages/ReportsPage";
 import VerificationPage from "./pages/VerificationPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import EmployeesPage from "./pages/EmployeesPage";
@@ -46,7 +45,6 @@ const App = () => (
               <Route path="/invoices" element={<AdminRoute element={<InvoicesPage />} />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/time-tracking" element={<TimeTrackingPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
               <Route path="/verification" element={<VerificationPage />} />
               <Route path="/documentation" element={<DocumentationPage />} />
               <Route path="/deviations" element={<DeviationsPage />} />
