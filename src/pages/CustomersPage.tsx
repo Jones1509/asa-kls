@@ -309,7 +309,7 @@ export default function CustomersPage() {
       if (!caseForm.case_description?.trim()) throw new Error("Indtast sagsbeskrivelse");
       if (!caseForm.address?.trim()) throw new Error("Indtast adresse");
 
-      const { error } = await supabase.from("cases").insert({
+      const { error } = await supabase.from("cases").insert([{
         customer_id: caseForm.customer_id,
         customer: caseForm.customer,
         case_description: caseForm.case_description.trim(),
@@ -319,7 +319,7 @@ export default function CustomersPage() {
         end_date: caseForm.end_date || null,
         status: caseForm.status,
         created_by: user.id,
-      });
+      }]);
 
       if (error) throw error;
     },
