@@ -558,11 +558,13 @@ export default function EmployeesPage() {
                   ))}
                 </div>
 
-                {/* Quick upload predefined types */}
+                {/* Quick upload predefined types based on title */}
                 <div className="mb-3">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Hurtig upload</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Påkrævede dokumenter {editForm.role_label ? `for ${editForm.role_label.toLowerCase()}` : ""}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt", "Lærlingekontrakt", "Autorisationsprøve", "Elinstallatørbevis"].map(name => {
+                    {(CERTIFICATES_BY_TITLE[editForm.role_label] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"]).map(name => {
                       const exists = editEmployee.certificates?.some((c: any) => c.certificate_name === name);
                       return (
                         <label key={name} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-colors border ${exists ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
