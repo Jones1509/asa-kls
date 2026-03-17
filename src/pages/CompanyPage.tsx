@@ -384,18 +384,18 @@ export default function CompanyPage() {
         >
           <div className="flex items-center gap-10 mb-5">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-0.5">Seneste audit</p>
-              <p className="text-[15px] font-bold text-foreground tabular-nums">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 mb-1">Seneste audit</p>
+              <p className="text-[15px] font-bold leading-tight text-foreground tabular-nums">
                 {lastAuditDate ? format(lastAuditDate, "d. MMM yyyy", { locale: da }) : "Aldrig gennemført"}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-0.5">Næste audit</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 mb-1">Næste audit</p>
               <div className="flex items-center gap-2">
-                <p className="text-[15px] font-bold text-foreground tabular-nums">
+                <p className="text-[15px] font-bold leading-tight text-foreground tabular-nums">
                   {nextAuditDate ? format(nextAuditDate, "d. MMM yyyy", { locale: da }) : "–"}
                 </p>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full leading-none ${
                   auditStatus === "ok" ? "bg-success/10 text-success" :
                   auditStatus === "warning" ? "bg-warning/10 text-warning" :
                   "bg-destructive/10 text-destructive"
