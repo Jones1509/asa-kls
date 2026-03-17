@@ -284,19 +284,21 @@ export default function InvoicesPage() {
   }, [casesById, invoices, search, statusFilter]);
 
   const groupedInvoices = useMemo(() => {
-    const grouped = new Map<string, { customerKey: string; customerLabel: string; customerNumberValue: number; cases: Map<string, { caseId: string; caseNumber: string; caseLabel: string; invoices: InvoiceWithCase[] }> }>();
+    const grouped = new Map<string, { customerKey: string; customerLabel: string; customerNumberLabel: string; customerNumberValue: number; cases: Map<string, { caseId: string; caseNumber: string; caseLabel: string; invoices: InvoiceWithCase[] }> }>();
 
     filteredInvoices.forEach((invoice) => {
       const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
       const customerKey = getCustomerKey(caseData) || invoice.customer || invoice.case_id;
       const customerLabel = caseData?.customer || invoice.customer || "Ukendt kunde";
       const caseNumber = caseData?.case_number || "";
+      const customerNumberLabel = caseNumber.split("-").slice(0, 2).join("-");
       const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
 
       if (!grouped.has(customerKey)) {
         grouped.set(customerKey, {
           customerKey,
           customerLabel,
+          customerNumberLabel,
           customerNumberValue: getCustomerSortValue(caseNumber),
           cases: new Map(),
         });
