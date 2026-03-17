@@ -104,6 +104,61 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  // New: Deviations
+  const { data: deviations } = useQuery({
+    queryKey: ["deviations_summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("deviations").select("status").limit(500);
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Instruments
+  const { data: instruments } = useQuery({
+    queryKey: ["instruments_summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("instruments").select("next_calibration").limit(500);
+      return data || [];
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Audit reports
+  const { data: latestAudit } = useQuery({
+    queryKey: ["audit_latest"],
+    queryFn: async () => {
+      const { data } = await supabase.from("audit_reports").select("audit_date").order("audit_date", { ascending: false }).limit(1);
+      return data?.[0] || null;
+    },
+    enabled: role === "admin",
+  });
+
+  // New: Employee certificates
+  const { data: certSummary } = useQuery({
+    queryKey: ["cert_summary"],
+    queryFn: async () => {
+      const [{ data: profs }, { data: certs }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("user_id"),
+        supabase.from("employee_certificates").select("user_id, file_url"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (!profs) return { total: 0, uploaded: 0 };
+      const adminIds = new Set(roles?.filter(r => r.role === "admin").map(r => r.user_id) || []);
+      let total = 0;
+      let uploaded = 0;
+      profs.forEach(p => {
+        const isAdmin = adminIds.has(p.user_id);
+        const expected = isAdmin ? 4 : 3;
+        const userCerts = certs?.filter(c => c.user_id === p.user_id && c.file_url) || [];
+        total += expected;
+        uploaded += Math.min(userCerts.length, expected);
+      });
+      return { total, uploaded };
+    },
+    enabled: role === "admin",
+  });
+
   const activeCases = cases?.filter((c) => c.status === "Aktiv").length || 0;
   const totalCases = cases?.length || 0;
 
