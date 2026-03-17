@@ -276,6 +276,40 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
+      {/* KLS Status cards */}
+      {role === "admin" && (
+        <motion.div variants={container} className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <motion.div variants={item}>
+            <Link to="/employees" className="block">
+              <StatCard title="Certifikater" value={`${certsPct}%`} icon={<Award size={22} />}
+                trend={certsPct === 100 ? "up" : certsPct >= 50 ? "neutral" : "down"}
+                trendValue={certsPct === 100 ? "Alle uploadet" : `${certSummary?.uploaded || 0}/${certSummary?.total || 0} uploadet`} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/deviations" className="block">
+              <StatCard title="Afvigelser" value={openDeviations} icon={<AlertOctagon size={22} />}
+                trend={openDeviations === 0 ? "up" : openDeviations <= 3 ? "neutral" : "down"}
+                trendValue={openDeviations === 0 ? "Ingen åbne" : `${openDeviations} åbne`} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/company" className="block">
+              <StatCard title="KLS-audit" value={nextAuditDate ? format(nextAuditDate, "MMM yyyy", { locale: da }) : "Ingen"} icon={<ClipboardCheck size={22} />}
+                trend={monthsSinceAudit >= 11 ? "down" : "up"}
+                trendValue={monthsSinceAudit >= 12 ? "Overskredet!" : monthsSinceAudit >= 11 ? "Snart forfald" : "OK"} />
+            </Link>
+          </motion.div>
+          <motion.div variants={item}>
+            <Link to="/company" className="block">
+              <StatCard title="Kalibrering" value={instrumentsExpiring} icon={<Wrench size={22} />}
+                trend={instrumentsExpiring === 0 ? "up" : "down"}
+                trendValue={instrumentsExpiring === 0 ? "Alt OK" : `${instrumentsExpiring} snart udløber`} />
+            </Link>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Chart + Today's schedule row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Hours chart */}
