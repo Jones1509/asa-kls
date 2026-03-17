@@ -403,7 +403,7 @@ export default function VerificationPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {(f.profiles as any)?.full_name || "–"} · Sag {(f.cases as any)?.case_number || "–"} · {f.form_date}
+                      {(f.profiles as any)?.full_name || "–"} · {formatCaseLabel(f.cases as any, "Sag –")} · {f.form_date}
                     </p>
                   </div>
                 </div>

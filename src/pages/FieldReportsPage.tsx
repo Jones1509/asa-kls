@@ -343,7 +343,7 @@ export default function FieldReportsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {(r.profiles as any)?.full_name || "Ukendt"} · {r.cases ? `Sag ${(r.cases as any)?.case_number}` : "Generel"} · {r.created_at?.split("T")[0]}
+                      {(r.profiles as any)?.full_name || "Ukendt"} · {r.cases ? formatCaseLabel(r.cases as any) : "Generel"} · {r.created_at?.split("T")[0]}
                     </p>
                   </div>
                 </div>
