@@ -22,11 +22,16 @@ const EMPLOYEE_TITLES = [
   { value: "Svend", label: "Svend" },
   { value: "Elinstallatør", label: "Elinstallatør" },
   { value: "Aut. elinstallatør", label: "Autoriseret elinstallatør" },
-  { value: "Ejer / Aut. elinstallatør", label: "Ejer / Autoriseret elinstallatør" },
   { value: "Arbejdsmand", label: "Arbejdsmand" },
   { value: "Leder", label: "Leder" },
   { value: "Kontor", label: "Kontor / administration" },
   { value: "Andet", label: "Andet" },
+] as const;
+
+const COMPANY_TITLES = [
+  { value: "Medarbejder", label: "Medarbejder" },
+  { value: "Ejer", label: "Ejer" },
+  { value: "Medejer", label: "Medejer" },
 ] as const;
 
 const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
@@ -34,12 +39,27 @@ const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
   "Svend": ["Uddannelsesbevis", "Svendebevis", "Ansættelseskontrakt"],
   "Elinstallatør": ["Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
   "Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Ansættelseskontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
-  "Ejer / Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Direktørkontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
   "Arbejdsmand": ["Ansættelseskontrakt"],
   "Leder": ["Ansættelseskontrakt"],
   "Kontor": ["Ansættelseskontrakt"],
   "Andet": ["Ansættelseskontrakt"],
 };
+
+// Extra certs based on company title (Ejer/Medejer)
+const EXTRA_CERTS_BY_COMPANY_TITLE: Record<string, string[]> = {
+  "Ejer": ["Direktørkontrakt"],
+  "Medejer": ["Direktørkontrakt"],
+};
+
+function getCertificatesForEmployee(roleLabel: string, companyTitle: string): string[] {
+  const base = CERTIFICATES_BY_TITLE[roleLabel] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"];
+  const extra = EXTRA_CERTS_BY_COMPANY_TITLE[companyTitle] || [];
+  // Replace Ansættelseskontrakt with Direktørkontrakt for Ejer/Medejer if present
+  if (extra.includes("Direktørkontrakt") && base.includes("Ansættelseskontrakt")) {
+    return [...base.filter(c => c !== "Ansættelseskontrakt"), ...extra];
+  }
+  return [...base, ...extra];
+}
 
 async function callManageEmployee(body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
