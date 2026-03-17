@@ -172,7 +172,7 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                     <>
                       <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground flex-1 truncate">
-                        {selectedCase.case_number}{selectedCase.customer ? ` – ${selectedCase.customer}` : ""}
+                        {formatCaseLabel(selectedCase)}
                       </span>
                     </>
                   ) : (
