@@ -198,7 +198,6 @@ export default function CustomersPage() {
                 ...prev,
                 ...editForm,
                 name: editForm.customer_type === "Erhverv" ? editForm.company_name : editForm.name,
-                customer_number: editForm.customer_number,
               }
             : prev,
         );
