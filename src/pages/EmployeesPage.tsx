@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle } from "lucide-react";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle, Plus, GraduationCap, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,8 @@ export default function EmployeesPage() {
 
   // Edit state
   const [editEmployee, setEditEmployee] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "", education_plan: "" });
+  const [customCertName, setCustomCertName] = useState("");
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
   const [editCropOpen, setEditCropOpen] = useState(false);
@@ -61,11 +62,13 @@ export default function EmployeesPage() {
         full_name: editEmployee.full_name || "",
         phone: editEmployee.phone || "",
         role_label: editEmployee.role_label || "",
+        education_plan: editEmployee.education_plan || "",
       });
       setEditAvatarPreview(editEmployee.avatar_url || null);
       setEditAvatarFile(null);
       setShowPasswordChange(false);
       setNewPassword("");
+      setCustomCertName("");
     }
   }, [editEmployee]);
 
@@ -126,8 +129,9 @@ export default function EmployeesPage() {
         full_name: editForm.full_name,
         phone: editForm.phone || null,
         role_label: editForm.role_label || null,
+        education_plan: editForm.education_plan || null,
         avatar_url,
-      }).eq("user_id", editEmployee.user_id);
+      } as any).eq("user_id", editEmployee.user_id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -401,7 +405,7 @@ export default function EmployeesPage() {
         }}
       />
       <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading font-bold text-lg">Rediger medarbejder</DialogTitle>
           </DialogHeader>
@@ -455,61 +459,125 @@ export default function EmployeesPage() {
               </div>
             </div>
 
+            {/* Education plan */}
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap size={14} className="text-primary" />
+                <p className="text-sm font-semibold text-card-foreground">Uddannelsesplaner</p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">Beskriv medarbejderens nuværende og fremtidige uddannelsesplaner</p>
+              <textarea
+                value={editForm.education_plan}
+                onChange={(e) => setEditForm({ ...editForm, education_plan: e.target.value })}
+                placeholder="Fx: Er i gang med svende-prøve forår 2026. Planlagt elinstallatør-uddannelse 2027..."
+                className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+              />
+            </div>
+
             {/* Certificates section */}
             {editEmployee && (
               <div className="rounded-xl border border-border bg-muted/30 p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <FileText size={14} className="text-primary" />
                   <p className="text-sm font-semibold text-card-foreground">Certifikater & beviser</p>
                 </div>
-                <div className="space-y-2">
-                  {(editEmployee.isAdmin
-                    ? ["Svendebevis som elektriker", "Uddannelsesbevis som elektriker", "Uddannelsesbevis som elinstallatør", "Bevis for bestået autorisationsprøve"]
-                    : ["Uddannelsesbevis", "Svendebevis", "Lærlingekontrakt"]
-                  ).map(certName => {
-                    const existing = editEmployee.certificates?.find((c: any) => c.certificate_name === certName);
-                    return (
-                      <div key={certName} className="flex items-center justify-between rounded-lg bg-background px-3 py-2.5 border border-border/50">
-                        <div className="flex items-center gap-2">
-                          {existing?.file_url ? (
-                            <CheckCircle2 size={14} className="text-success" />
-                          ) : (
-                            <XCircle size={14} className="text-muted-foreground/40" />
+                <p className="text-xs text-muted-foreground mb-3">Upload uddannelsesbeviser, svendebevis, ansættelseskontrakt m.m.</p>
+
+                {/* Existing certificates */}
+                <div className="space-y-2 mb-3">
+                  {(editEmployee.certificates?.length || 0) === 0 && (
+                    <p className="text-xs text-muted-foreground/60 text-center py-3">Ingen dokumenter uploadet endnu</p>
+                  )}
+                  {editEmployee.certificates?.map((cert: any) => (
+                    <div key={cert.id} className="flex items-center justify-between rounded-lg bg-background px-3 py-2.5 border border-border/50">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{cert.certificate_name}</p>
+                          {cert.uploaded_at && (
+                            <p className="text-[10px] text-muted-foreground">Uploadet {format(new Date(cert.uploaded_at), "d. MMM yyyy", { locale: da })}</p>
                           )}
-                          <div>
-                            <p className="text-xs font-medium text-foreground">{certName}</p>
-                            {existing?.uploaded_at && (
-                              <p className="text-[10px] text-muted-foreground">Uploadet {format(new Date(existing.uploaded_at), "d. MMM yyyy", { locale: da })}</p>
-                            )}
-                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {existing?.file_url && (
-                            <a href={existing.file_url} target="_blank" rel="noopener" className="text-[11px] text-primary hover:underline">Se</a>
-                          )}
-                          <label className="flex items-center gap-1 text-[11px] font-medium text-primary cursor-pointer hover:underline">
-                            <Upload size={11} /> Upload
-                            <input type="file" accept=".pdf,image/*" className="hidden" onChange={async (e) => {
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {cert.file_url && (
+                          <a href={cert.file_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                            <Download size={11} /> Se
+                          </a>
+                        )}
+                        <button type="button" onClick={async () => {
+                          if (!confirm(`Slet "${cert.certificate_name}"?`)) return;
+                          await supabase.from("employee_certificates").delete().eq("id", cert.id);
+                          queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+                          toast.success("Dokument slettet");
+                        }} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quick upload predefined types */}
+                <div className="mb-3">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Hurtig upload</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt", "Lærlingekontrakt", "Autorisationsprøve", "Elinstallatørbevis"].map(name => {
+                      const exists = editEmployee.certificates?.some((c: any) => c.certificate_name === name);
+                      return (
+                        <label key={name} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-colors border ${exists ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
+                          {exists ? <CheckCircle2 size={11} /> : <Upload size={11} />}
+                          {name}
+                          {!exists && (
+                            <input type="file" accept=".pdf,image/*,.doc,.docx" className="hidden" onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const path = `certificates/${editEmployee.user_id}/${certName.replace(/\s/g, "_")}_${Date.now()}.${file.name.split(".").pop()}`;
+                              const path = `certificates/${editEmployee.user_id}/${name.replace(/\s/g, "_")}_${Date.now()}.${file.name.split(".").pop()}`;
                               const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
                               if (upErr) { toast.error("Upload fejlede"); return; }
                               const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
-                              if (existing) {
-                                await supabase.from("employee_certificates").update({ file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() }).eq("id", existing.id);
-                              } else {
-                                await supabase.from("employee_certificates").insert({ user_id: editEmployee.user_id, certificate_name: certName, file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
-                              }
+                              await supabase.from("employee_certificates").insert({ user_id: editEmployee.user_id, certificate_name: name, file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
                               queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
-                              toast.success(`${certName} uploadet`);
+                              toast.success(`${name} uploadet`);
                               e.target.value = "";
                             }} />
-                          </label>
-                        </div>
-                      </div>
-                    );
-                  })}
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom upload */}
+                <div className="rounded-lg border border-dashed border-border p-3">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Upload andet dokument</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={customCertName}
+                      onChange={(e) => setCustomCertName(e.target.value)}
+                      placeholder="Dokumentnavn..."
+                      className="rounded-lg h-9 text-xs flex-1"
+                    />
+                    <label className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${customCertName.trim() ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                      <Upload size={12} /> Upload
+                      {customCertName.trim() && (
+                        <input type="file" accept=".pdf,image/*,.doc,.docx" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !customCertName.trim()) return;
+                          const cName = customCertName.trim();
+                          const path = `certificates/${editEmployee.user_id}/${cName.replace(/\s/g, "_")}_${Date.now()}.${file.name.split(".").pop()}`;
+                          const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
+                          if (upErr) { toast.error("Upload fejlede"); return; }
+                          const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+                          await supabase.from("employee_certificates").insert({ user_id: editEmployee.user_id, certificate_name: cName, file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
+                          queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+                          setCustomCertName("");
+                          toast.success(`${cName} uploadet`);
+                          e.target.value = "";
+                        }} />
+                      )}
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
