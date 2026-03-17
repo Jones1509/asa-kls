@@ -605,10 +605,11 @@ export default function CustomersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-card-foreground">{getCustomerNameLabel(customer)}</p>
+                    <p className="text-sm font-semibold text-card-foreground">
+                      <span className="mr-2 text-xs font-medium text-muted-foreground">{customer.customer_number || "—"}</span>
+                      {getCustomerNameLabel(customer)}
+                    </p>
                     <Badge variant={getCustomerTypeBadgeVariant(customer.customer_type)}>{customer.customer_type || "Privat"}</Badge>
-                    {customer.customer_number && <Badge variant="outline">#{customer.customer_number}</Badge>}
-                  </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{customer.address || "Ingen adresse"}</p>
                   <p className="mt-1 text-xs text-muted-foreground/80">
                     {customer.customer_type === "Erhverv" && customer.contact_person ? `${customer.contact_person} · ` : ""}
