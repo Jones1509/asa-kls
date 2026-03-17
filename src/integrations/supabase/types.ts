@@ -770,6 +770,10 @@ export type Database = {
     }
     Functions: {
       cleanup_old_records: { Args: never; Returns: undefined }
+      generate_invoice_number: {
+        Args: { target_created_at?: string }
+        Returns: string
+      }
       generate_next_customer_number: { Args: never; Returns: string }
       has_role: {
         Args: {
