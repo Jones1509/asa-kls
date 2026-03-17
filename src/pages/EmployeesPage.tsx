@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff } from "lucide-react";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,8 @@ import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { da } from "date-fns/locale";
 
 async function callManageEmployee(body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
