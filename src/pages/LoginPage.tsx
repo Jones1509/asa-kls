@@ -230,7 +230,7 @@ export default function LoginPage() {
 
             <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
               {isAdminMode ? "Admin Login" : "Velkommen tilbage!"}
-                ? "Opret konto"
+                </h1>
                 : isAdminMode
                 ? "Admin Login"
                 : "Velkommen tilbage!"}
