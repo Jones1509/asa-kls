@@ -276,12 +276,14 @@ export default function InvoicesPage() {
         customerLabel: string;
         customerNumberLabel: string;
         customerNumberValue: number;
+        firstInvoiceDate: number;
         cases: Map<
           string,
           {
             caseId: string;
             caseNumber: string;
             caseLabel: string;
+            firstInvoiceDate: number;
             invoices: InvoiceWithCase[];
           }
         >;
@@ -295,6 +297,7 @@ export default function InvoicesPage() {
       const caseNumber = caseData?.case_number || "";
       const customerNumberLabel = caseNumber.split("-").slice(0, 2).join("-");
       const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
+      const invoiceDate = new Date(invoice.created_at).getTime();
 
       if (!grouped.has(customerKey)) {
         grouped.set(customerKey, {
@@ -302,33 +305,49 @@ export default function InvoicesPage() {
           customerLabel,
           customerNumberLabel,
           customerNumberValue: getCustomerSortValue(caseNumber),
+          firstInvoiceDate: invoiceDate,
           cases: new Map(),
         });
       }
 
       const customerGroup = grouped.get(customerKey)!;
+      customerGroup.firstInvoiceDate = Math.min(customerGroup.firstInvoiceDate, invoiceDate);
+
       if (!customerGroup.cases.has(invoice.case_id)) {
         customerGroup.cases.set(invoice.case_id, {
           caseId: invoice.case_id,
           caseNumber,
           caseLabel,
+          firstInvoiceDate: invoiceDate,
           invoices: [],
         });
       }
 
-      customerGroup.cases.get(invoice.case_id)!.invoices.push(invoice);
+      const caseGroup = customerGroup.cases.get(invoice.case_id)!;
+      caseGroup.firstInvoiceDate = Math.min(caseGroup.firstInvoiceDate, invoiceDate);
+      caseGroup.invoices.push(invoice);
     });
 
     return Array.from(grouped.values())
       .sort((a, b) => {
+        if (a.firstInvoiceDate !== b.firstInvoiceDate) {
+          return sortOrder === "newest" ? b.firstInvoiceDate - a.firstInvoiceDate : a.firstInvoiceDate - b.firstInvoiceDate;
+        }
+
         if (a.customerNumberValue !== b.customerNumberValue) return a.customerNumberValue - b.customerNumberValue;
         return collator.compare(a.customerLabel, b.customerLabel);
       })
       .map((customerGroup) => ({
         ...customerGroup,
-        cases: Array.from(customerGroup.cases.values()).sort((a, b) => getCaseSortValue(a.caseNumber) - getCaseSortValue(b.caseNumber)),
+        cases: Array.from(customerGroup.cases.values()).sort((a, b) => {
+          if (a.firstInvoiceDate !== b.firstInvoiceDate) {
+            return sortOrder === "newest" ? b.firstInvoiceDate - a.firstInvoiceDate : a.firstInvoiceDate - b.firstInvoiceDate;
+          }
+
+          return getCaseSortValue(a.caseNumber) - getCaseSortValue(b.caseNumber);
+        }),
       }));
-  }, [casesById, filteredInvoices]);
+  }, [casesById, filteredInvoices, sortOrder]);
 
   const chartData = useMemo(() => {
     const grouped = new Map<string, { label: string; amount: number; sortValue: number }>();
