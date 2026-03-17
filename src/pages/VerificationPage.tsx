@@ -187,7 +187,7 @@ export default function VerificationPage() {
             <div>
               <h2 className="text-lg font-heading font-bold text-card-foreground">{f.form_type}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(f.profiles as any)?.full_name} · Sag {(f.cases as any)?.case_number} · {f.form_date}
+                  {(f.profiles as any)?.full_name} · {formatCaseLabel(f.cases as any, "Sag –")} · {f.form_date}
               </p>
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${cfg.color}`}>
