@@ -22,6 +22,7 @@ const EMPLOYEE_TITLES = [
   { value: "Svend", label: "Svend" },
   { value: "Elinstallatør", label: "Elinstallatør" },
   { value: "Aut. elinstallatør", label: "Autoriseret elinstallatør" },
+  { value: "Ejer / Aut. elinstallatør", label: "Ejer / Autoriseret elinstallatør" },
   { value: "Arbejdsmand", label: "Arbejdsmand" },
   { value: "Leder", label: "Leder" },
   { value: "Kontor", label: "Kontor / administration" },
@@ -29,10 +30,11 @@ const EMPLOYEE_TITLES = [
 ] as const;
 
 const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
-  "Lærling": ["Lærlingekontrakt", "Uddannelsesbevis"],
-  "Svend": ["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt"],
-  "Elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
-  "Aut. elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Bevis for bestået autorisationsprøve", "Ansættelseskontrakt"],
+  "Lærling": ["Lærlingekontrakt", "Ansættelseskontrakt"],
+  "Svend": ["Uddannelsesbevis", "Svendebevis", "Ansættelseskontrakt"],
+  "Elinstallatør": ["Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
+  "Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Ansættelseskontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
+  "Ejer / Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Direktørkontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
   "Arbejdsmand": ["Ansættelseskontrakt"],
   "Leder": ["Ansættelseskontrakt"],
   "Kontor": ["Ansættelseskontrakt"],
