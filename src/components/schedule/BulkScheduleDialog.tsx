@@ -12,12 +12,13 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
+import { formatCaseLabel } from "@/lib/case-format";
 
 const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7];
 const DAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
 
 type Employee = { user_id: string; full_name: string };
-type Case = { id: string; case_number: string; customer?: string };
+type Case = { id: string; case_number: string; customer?: string; case_description?: string };
 
 interface Props {
   open: boolean;

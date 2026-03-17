@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { formatCaseLabel } from "@/lib/case-format";
 import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {

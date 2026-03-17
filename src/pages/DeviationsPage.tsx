@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { AlertOctagon, Plus, Pencil, CheckCircle2, AlertTriangle, Calendar, User, Briefcase } from "lucide-react";
+import { formatCaseLabel } from "@/lib/case-format";
 import { format, differenceInDays } from "date-fns";
 import { da } from "date-fns/locale";
 

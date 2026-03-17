@@ -11,9 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
+import { formatCaseLabel } from "@/lib/case-format";
 
 interface Employee { user_id: string; full_name: string; avatar_url?: string }
-interface Case { id: string; case_number: string; customer?: string }
+interface Case { id: string; case_number: string; customer?: string; case_description?: string }
 
 interface Props {
   open: boolean;
