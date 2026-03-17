@@ -443,8 +443,8 @@ export default function CompanyPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <span className={`h-2 w-2 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-foreground truncate">{inst.name}</p>
-                        {inst.serial_number && <p className="text-[11px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
+                        <p className="text-[14px] font-bold text-foreground truncate">{inst.name}</p>
+                        {inst.serial_number && <p className="text-[12px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5 flex-shrink-0">
