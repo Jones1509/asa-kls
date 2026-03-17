@@ -444,10 +444,8 @@ export default function InvoicesPage() {
   }, [appliedFilters.month, appliedFilters.year, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
-    if (appliedFilters.year === "all" && appliedFilters.month === "all") return "Alle fakturaer";
-    if (appliedFilters.month !== "all" && appliedFilters.year === "all") return `${MONTHS[Number(appliedFilters.month)]} · alle år`;
     if (appliedFilters.month !== "all") return `${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`;
-    return appliedFilters.year;
+    return appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
   }, [appliedFilters]);
 
   const periodTotals = useMemo(() => {
