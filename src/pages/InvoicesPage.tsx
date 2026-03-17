@@ -648,11 +648,9 @@ export default function InvoicesPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
             <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
+              {appliedFilters.month !== "all"
                 ? "Udvikling dag for dag i den valgte måned"
-                : appliedFilters.year !== "all"
-                  ? "Udvikling måned for måned i det valgte år"
-                  : "Udvikling måned for måned for alle fakturaer"}
+                : `Udvikling måned for måned i ${appliedFilters.year === "all" ? CURRENT_YEAR : appliedFilters.year}`}
             </p>
           </div>
         </div>
