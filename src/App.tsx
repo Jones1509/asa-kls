@@ -20,6 +20,7 @@ import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import CompanyPage from "./pages/CompanyPage";
 import DeviationsPage from "./pages/DeviationsPage";
+import CustomersPage from "./pages/CustomersPage";
 
 const queryClient = new QueryClient();
 
