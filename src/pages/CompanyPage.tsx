@@ -70,6 +70,36 @@ export default function CompanyPage() {
   const authExpiry = authDoc?.expiry_date ? new Date(authDoc.expiry_date) : null;
   const authDaysLeft = authExpiry ? differenceInDays(authExpiry, new Date()) : null;
 
+  const klsDoc = companyDocs?.find(d => d.document_type === "kls_haandbog");
+
+  // Upload KLS handbook
+  const uploadKls = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `company/kls_haandbog_${Date.now()}.${file.name.split(".").pop()}`;
+      const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+
+      if (klsDoc) {
+        await supabase.from("company_documents").update({ file_url: urlData.publicUrl, document_name: file.name, uploaded_at: new Date().toISOString() }).eq("id", klsDoc.id);
+      } else {
+        await supabase.from("company_documents").insert({ document_type: "kls_haandbog", document_name: file.name, file_url: urlData.publicUrl, created_by: user!.id });
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["company_documents"] }); toast.success("KLS-håndbog uploadet"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteKls = useMutation({
+    mutationFn: async () => {
+      if (!klsDoc) return;
+      const { error } = await supabase.from("company_documents").delete().eq("id", klsDoc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["company_documents"] }); toast.success("KLS-håndbog slettet"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Upload authorization doc
   const uploadAuth = useMutation({
     mutationFn: async (e: React.FormEvent<HTMLFormElement>) => {
