@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -126,7 +127,7 @@ export default function EmployeesPage() {
       const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
       if (!profs) return [];
       const [{ data: assignments }, { data: roles }, { data: timeData }, { data: certs }] = await Promise.all([
-        supabase.from("case_assignments").select("user_id, cases(case_number, address)"),
+        supabase.from("case_assignments").select("user_id, cases(case_number, customer, case_description, address)"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("time_entries").select("user_id, hours"),
         supabase.from("employee_certificates").select("*"),
@@ -334,7 +335,7 @@ export default function EmployeesPage() {
                     {e.assignments.slice(0, 2).map((a: any, j: number) => (
                       <div key={j} className="rounded-xl bg-muted/50 px-3 py-2 border border-border/50">
                         <p className="text-xs font-semibold text-card-foreground flex items-center gap-1.5">
-                          <Briefcase size={11} className="text-primary" /> Sag {a.cases?.case_number}
+                          <Briefcase size={11} className="text-primary" /> {formatCaseLabel(a.cases as any, "Ingen sag")}
                         </p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <MapPin size={10} className="text-muted-foreground/50" /> {a.cases?.address || "–"}

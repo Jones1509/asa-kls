@@ -148,7 +148,7 @@ function CaseFormFields({
             setF({
               ...f,
               customer_id: e.target.value,
-              customer: selected?.name || "",
+              customer: selected ? getCustomerDisplayName(selected) : "",
             });
           }}
           className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
@@ -290,7 +290,7 @@ export default function CasesPage() {
       setForm((prev) => ({
         ...prev,
         customer_id: selectedCustomer.id,
-        customer: selectedCustomer.name,
+        customer: getCustomerDisplayName(selectedCustomer),
       }));
       setOpen(true);
     }
