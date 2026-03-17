@@ -42,14 +42,14 @@ function UploadZone({ onFile, accept, label, loading }: { onFile: (f: File) => v
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className={`relative cursor-pointer rounded-xl border-2 border-dashed py-8 px-6 text-center transition-all duration-200 ${
+      className={`relative cursor-pointer rounded-[10px] border-2 border-dashed py-4 px-6 text-center transition-all duration-200 ${
         dragging
           ? "border-primary/60 bg-primary/[0.03]"
-          : "border-border/60 bg-muted/20 hover:border-primary/30 hover:bg-primary/[0.02]"
+          : "border-border/60 bg-[hsl(210_20%_98%)] hover:border-primary/30 hover:bg-primary/[0.02]"
       }`}
     >
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
-      <CloudUpload size={24} className="mx-auto text-muted-foreground/30 mb-2" />
+      <CloudUpload size={20} className="mx-auto text-muted-foreground/30 mb-1" />
       <p className="text-[13px] font-medium text-muted-foreground/70">{loading ? "Uploader..." : label}</p>
       <p className="text-[11px] text-muted-foreground/40 mt-0.5">Træk og slip eller klik for at vælge fil</p>
     </div>
@@ -72,7 +72,7 @@ function StatusPill({ status, text }: { status: "ok" | "warning" | "error" | "no
   };
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${styles[status]}`}>
-      <span className={`h-2 w-2 rounded-full ${dotStyles[status]}`} />
+      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${dotStyles[status]}`} />
       {text}
     </span>
   );
@@ -87,11 +87,11 @@ function SectionCard({ icon: Icon, iconColor, title, subtitle, action, children,
       className="rounded-2xl border border-border/60 bg-card"
     >
       <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Icon size={18} className={iconColor || "text-primary"} strokeWidth={1.8} />
+        <div className="flex items-center gap-2.5">
+          <Icon size={20} className={`flex-shrink-0 ${iconColor || "text-primary"}`} strokeWidth={1.8} />
           <div>
-            <h2 className="text-[15px] font-bold text-foreground">{title}</h2>
-            <p className="text-[12px] text-muted-foreground/60">{subtitle}</p>
+            <h2 className="text-[15px] font-bold leading-tight text-foreground">{title}</h2>
+            <p className="text-[12px] leading-tight text-muted-foreground/60">{subtitle}</p>
           </div>
         </div>
         {action}
@@ -291,7 +291,7 @@ export default function CompanyPage() {
         <SectionCard icon={Shield} title="Autorisation" subtitle="Autorisationsbevis fra Sikkerhedsstyrelsen" delay={0.05}>
           {authDoc?.file_url ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/40 bg-[hsl(210_20%_98%)] px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText size={16} className="text-primary/60 flex-shrink-0" />
                   <div className="min-w-0">
@@ -336,7 +336,7 @@ export default function CompanyPage() {
         <SectionCard icon={BookOpen} title="KLS-håndbog" subtitle="Virksomhedens kvalitetsledelses-håndbog" delay={0.1}>
           {klsDoc?.file_url ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/40 bg-[hsl(210_20%_98%)] px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText size={16} className="text-primary/60 flex-shrink-0" />
                   <div className="min-w-0">
@@ -384,18 +384,18 @@ export default function CompanyPage() {
         >
           <div className="flex items-center gap-10 mb-5">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-0.5">Seneste audit</p>
-              <p className="text-[15px] font-bold text-foreground tabular-nums">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 mb-1">Seneste audit</p>
+              <p className="text-[15px] font-bold leading-tight text-foreground tabular-nums">
                 {lastAuditDate ? format(lastAuditDate, "d. MMM yyyy", { locale: da }) : "Aldrig gennemført"}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-0.5">Næste audit</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 mb-1">Næste audit</p>
               <div className="flex items-center gap-2">
-                <p className="text-[15px] font-bold text-foreground tabular-nums">
+                <p className="text-[15px] font-bold leading-tight text-foreground tabular-nums">
                   {nextAuditDate ? format(nextAuditDate, "d. MMM yyyy", { locale: da }) : "–"}
                 </p>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full leading-none ${
                   auditStatus === "ok" ? "bg-success/10 text-success" :
                   auditStatus === "warning" ? "bg-warning/10 text-warning" :
                   "bg-destructive/10 text-destructive"
@@ -441,10 +441,10 @@ export default function CompanyPage() {
                 return (
                   <div key={inst.id} className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3.5 hover:border-border transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
+                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-foreground truncate">{inst.name}</p>
-                        {inst.serial_number && <p className="text-[11px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
+                        <p className="text-[14px] font-bold text-foreground truncate">{inst.name}</p>
+                        {inst.serial_number && <p className="text-[12px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5 flex-shrink-0">
@@ -452,7 +452,7 @@ export default function CompanyPage() {
                         <p className="text-[11px] text-muted-foreground/50">
                           {inst.next_calibration ? format(new Date(inst.next_calibration), "d. MMM yyyy", { locale: da }) : "–"}
                         </p>
-                        <span className={`text-[10px] font-semibold ${status === "red" ? "text-destructive" : status === "yellow" ? "text-warning" : "text-success"}`}>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full leading-none ${status === "red" ? "bg-destructive/10 text-destructive" : status === "yellow" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
                           {status === "red" ? "Overskredet" : status === "yellow" ? "Snart" : "OK"}
                         </span>
                       </div>
