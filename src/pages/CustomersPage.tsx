@@ -310,6 +310,7 @@ export default function CustomersPage() {
       if (!caseForm.address?.trim()) throw new Error("Indtast adresse");
 
       const { error } = await supabase.from("cases").insert([{
+        case_number: caseForm.case_number || "",
         customer_id: caseForm.customer_id,
         customer: caseForm.customer,
         case_description: caseForm.case_description.trim(),
