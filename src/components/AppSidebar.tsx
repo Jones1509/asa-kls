@@ -28,8 +28,8 @@ interface AppSidebarProps {
 
 const adminLinks = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
-  { to: "/cases", icon: Briefcase, label: "Sager", section: "Oversigt" },
-  { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Oversigt" },
+  { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Økonomi" },
+  { to: "/cases", icon: Briefcase, label: "Sager", section: "Planlægning" },
   { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
