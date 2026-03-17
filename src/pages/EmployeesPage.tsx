@@ -455,6 +455,65 @@ export default function EmployeesPage() {
               </div>
             </div>
 
+            {/* Certificates section */}
+            {editEmployee && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText size={14} className="text-primary" />
+                  <p className="text-sm font-semibold text-card-foreground">Certifikater & beviser</p>
+                </div>
+                <div className="space-y-2">
+                  {(editEmployee.isAdmin
+                    ? ["Svendebevis som elektriker", "Uddannelsesbevis som elektriker", "Uddannelsesbevis som elinstallatør", "Bevis for bestået autorisationsprøve"]
+                    : ["Uddannelsesbevis", "Svendebevis", "Lærlingekontrakt"]
+                  ).map(certName => {
+                    const existing = editEmployee.certificates?.find((c: any) => c.certificate_name === certName);
+                    return (
+                      <div key={certName} className="flex items-center justify-between rounded-lg bg-background px-3 py-2.5 border border-border/50">
+                        <div className="flex items-center gap-2">
+                          {existing?.file_url ? (
+                            <CheckCircle2 size={14} className="text-success" />
+                          ) : (
+                            <XCircle size={14} className="text-muted-foreground/40" />
+                          )}
+                          <div>
+                            <p className="text-xs font-medium text-foreground">{certName}</p>
+                            {existing?.uploaded_at && (
+                              <p className="text-[10px] text-muted-foreground">Uploadet {format(new Date(existing.uploaded_at), "d. MMM yyyy", { locale: da })}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {existing?.file_url && (
+                            <a href={existing.file_url} target="_blank" rel="noopener" className="text-[11px] text-primary hover:underline">Se</a>
+                          )}
+                          <label className="flex items-center gap-1 text-[11px] font-medium text-primary cursor-pointer hover:underline">
+                            <Upload size={11} /> Upload
+                            <input type="file" accept=".pdf,image/*" className="hidden" onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const path = `certificates/${editEmployee.user_id}/${certName.replace(/\s/g, "_")}_${Date.now()}.${file.name.split(".").pop()}`;
+                              const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
+                              if (upErr) { toast.error("Upload fejlede"); return; }
+                              const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+                              if (existing) {
+                                await supabase.from("employee_certificates").update({ file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() }).eq("id", existing.id);
+                              } else {
+                                await supabase.from("employee_certificates").insert({ user_id: editEmployee.user_id, certificate_name: certName, file_url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
+                              }
+                              queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
+                              toast.success(`${certName} uploadet`);
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Password change section */}
             <div className="rounded-xl border border-border bg-muted/30 p-4">
               <div className="flex items-center justify-between">
