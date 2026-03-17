@@ -4,7 +4,6 @@ import {
   Briefcase,
   Calendar,
   Clock,
-  FileText,
   ClipboardCheck,
   FolderOpen,
   MessageSquare,
@@ -12,7 +11,6 @@ import {
   LogOut,
   Receipt,
   Radio,
-  User,
   Building2,
   AlertOctagon,
 } from "lucide-react";
