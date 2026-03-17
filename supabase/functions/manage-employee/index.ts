@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
     // --- CREATE ---
     if (action === "create") {
-      const { email, password, full_name, phone, role_label, make_admin } = body;
+      const { email, password, full_name, phone, role_label, company_title, make_admin } = body;
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
         full_name: full_name || "",
         phone: phone || null,
         role_label: role_label || null,
+        company_title: company_title || "Medarbejder",
       }, { onConflict: "user_id" });
 
       if (profileError) throw profileError;

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle, Plus, GraduationCap, Download } from "lucide-react";
+import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle, Plus, GraduationCap, Download, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,11 +22,16 @@ const EMPLOYEE_TITLES = [
   { value: "Svend", label: "Svend" },
   { value: "Elinstallatør", label: "Elinstallatør" },
   { value: "Aut. elinstallatør", label: "Autoriseret elinstallatør" },
-  { value: "Ejer / Aut. elinstallatør", label: "Ejer / Autoriseret elinstallatør" },
   { value: "Arbejdsmand", label: "Arbejdsmand" },
   { value: "Leder", label: "Leder" },
   { value: "Kontor", label: "Kontor / administration" },
   { value: "Andet", label: "Andet" },
+] as const;
+
+const COMPANY_TITLES = [
+  { value: "Medarbejder", label: "Medarbejder" },
+  { value: "Ejer", label: "Ejer" },
+  { value: "Medejer", label: "Medejer" },
 ] as const;
 
 const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
@@ -34,12 +39,27 @@ const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
   "Svend": ["Uddannelsesbevis", "Svendebevis", "Ansættelseskontrakt"],
   "Elinstallatør": ["Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
   "Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Ansættelseskontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
-  "Ejer / Aut. elinstallatør": ["Bevis for bestået autorisationsprøve", "Bestået uddannelse som elinstallatør", "Direktørkontrakt", "Faglig ansvarlighedsgodkendelse fra Sikkerhedsstyrelsen"],
   "Arbejdsmand": ["Ansættelseskontrakt"],
   "Leder": ["Ansættelseskontrakt"],
   "Kontor": ["Ansættelseskontrakt"],
   "Andet": ["Ansættelseskontrakt"],
 };
+
+// Extra certs based on company title (Ejer/Medejer)
+const EXTRA_CERTS_BY_COMPANY_TITLE: Record<string, string[]> = {
+  "Ejer": ["Direktørkontrakt"],
+  "Medejer": ["Direktørkontrakt"],
+};
+
+function getCertificatesForEmployee(roleLabel: string, companyTitle: string): string[] {
+  const base = CERTIFICATES_BY_TITLE[roleLabel] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"];
+  const extra = EXTRA_CERTS_BY_COMPANY_TITLE[companyTitle] || [];
+  // Replace Ansættelseskontrakt with Direktørkontrakt for Ejer/Medejer if present
+  if (extra.includes("Direktørkontrakt") && base.includes("Ansættelseskontrakt")) {
+    return [...base.filter(c => c !== "Ansættelseskontrakt"), ...extra];
+  }
+  return [...base, ...extra];
+}
 
 async function callManageEmployee(body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -59,7 +79,7 @@ export default function EmployeesPage() {
 
   // Edit state
   const [editEmployee, setEditEmployee] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "", education_plan: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "", company_title: "Medarbejder", education_plan: "" });
   const [customCertName, setCustomCertName] = useState("");
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
@@ -77,6 +97,7 @@ export default function EmployeesPage() {
     full_name: "",
     phone: "",
     role_label: "",
+    company_title: "Medarbejder",
     make_admin: false,
   });
   const [showCreatePw, setShowCreatePw] = useState(false);
@@ -87,6 +108,7 @@ export default function EmployeesPage() {
         full_name: editEmployee.full_name || "",
         phone: editEmployee.phone || "",
         role_label: editEmployee.role_label || "",
+        company_title: editEmployee.company_title || "Medarbejder",
         education_plan: editEmployee.education_plan || "",
       });
       setEditAvatarPreview(editEmployee.avatar_url || null);
@@ -154,6 +176,7 @@ export default function EmployeesPage() {
         full_name: editForm.full_name,
         phone: editForm.phone || null,
         role_label: editForm.role_label || null,
+        company_title: editForm.company_title || "Medarbejder",
         education_plan: editForm.education_plan || null,
         avatar_url,
       } as any).eq("user_id", editEmployee.user_id);
@@ -187,7 +210,7 @@ export default function EmployeesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles_with_roles"] });
       setShowCreate(false);
-      setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false });
+      setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", company_title: "Medarbejder", make_admin: false });
       toast.success("Medarbejder oprettet og kan nu logge ind");
     },
     onError: (e: any) => toast.error(e.message),
@@ -282,7 +305,14 @@ export default function EmployeesPage() {
                     <Pencil size={13} />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{e.role_label || "Medarbejder"}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-xs text-muted-foreground">{e.role_label || "Medarbejder"}</p>
+                  {e.company_title && e.company_title !== "Medarbejder" && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning flex-shrink-0">
+                      <Building2 size={9} /> {e.company_title}
+                    </span>
+                  )}
+                </div>
 
                 <div className="mt-2.5 space-y-1">
                   <p className="text-xs text-muted-foreground/70 flex items-center gap-1.5">
@@ -347,7 +377,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* ── Create Employee Dialog ── */}
-      <Dialog open={showCreate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false }); } }}>
+      <Dialog open={showCreate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", company_title: "Medarbejder", make_admin: false }); } }}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="font-heading font-bold text-lg flex items-center gap-2">
@@ -380,6 +410,20 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel i virksomheden</Label>
+              <Select value={createForm.company_title} onValueChange={(v) => setCreateForm({ ...createForm, company_title: v })}>
+                <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                  <SelectValue placeholder="Vælg..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMPANY_TITLES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
@@ -499,6 +543,19 @@ export default function EmployeesPage() {
                   </Select>
                 </div>
               </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel i virksomheden</Label>
+                <Select value={editForm.company_title} onValueChange={(v) => setEditForm({ ...editForm, company_title: v })}>
+                  <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                    <SelectValue placeholder="Vælg..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMPANY_TITLES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Education plan */}
@@ -566,7 +623,7 @@ export default function EmployeesPage() {
                     Påkrævede dokumenter {editForm.role_label ? `for ${editForm.role_label.toLowerCase()}` : ""}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {(CERTIFICATES_BY_TITLE[editForm.role_label] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"]).map(name => {
+                    {getCertificatesForEmployee(editForm.role_label, editForm.company_title).map(name => {
                       const exists = editEmployee.certificates?.some((c: any) => c.certificate_name === name);
                       return (
                         <label key={name} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-colors border ${exists ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
