@@ -642,6 +642,94 @@ export default function InvoicesPage() {
       </Dialog>
 
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
+            <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                ? "Udvikling dag for dag i den valgte måned"
+                : appliedFilters.year !== "all"
+                  ? "Udvikling måned for måned i det valgte år"
+                  : "Udvikling måned for måned for alle fakturaer"}
+            </p>
+          </div>
+        </div>
+
+        <div className="h-[220px] w-full">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={appliedFilters.month !== "all" ? 10 : 20}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={48}
+                  tickFormatter={(value) => `${Number(value).toLocaleString("da-DK")}`}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatCurrency(Number(value)), "Beløb"]}
+                  labelFormatter={(label) =>
+                    appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                      ? `${label}. ${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`
+                      : label
+                  }
+                  contentStyle={{
+                    borderRadius: 16,
+                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "hsl(var(--background))",
+                    color: "hsl(var(--foreground))",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  connectNulls
+                  dot={{ r: 2, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 1.5 }}
+                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
+              Ingen data at vise i grafen endnu
+            </div>
+          )}
+        </div>
+      </motion.section>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {[
+          { label: "Faktureret", value: formatCurrency(periodTotals.totalAmount), meta: `${periodTotals.count} fakturaer`, icon: Receipt, tone: "text-card-foreground" },
+          { label: "Sendt", value: formatCurrency(periodTotals.byStatus.Sendt.amount), meta: `${periodTotals.byStatus.Sendt.count} fakturaer`, icon: TrendingUp, tone: "text-info" },
+          { label: "Betalt", value: formatCurrency(periodTotals.byStatus.Betalt.amount), meta: `${periodTotals.byStatus.Betalt.count} fakturaer`, icon: CheckCircle2, tone: "text-success" },
+          { label: "Aktiv visning", value: periodSummary, meta: sortOrder === "newest" ? "Nyeste først" : "Ældste først", icon: sortOrder === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
+        ].map((card) => (
+          <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-2xl bg-muted ${card.tone}`}>
+                <card.icon size={15} />
+              </div>
+            </div>
+            <p className={`font-heading text-2xl font-bold tracking-tight ${card.tone}`}>{card.value}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">{card.meta}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
             <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/8 text-primary">
@@ -736,94 +824,6 @@ export default function InvoicesPage() {
               </Button>
             </div>
           </div>
-        </div>
-      </motion.section>
-
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {[
-          { label: "Faktureret", value: formatCurrency(periodTotals.totalAmount), meta: `${periodTotals.count} fakturaer`, icon: Receipt, tone: "text-card-foreground" },
-          { label: "Sendt", value: formatCurrency(periodTotals.byStatus.Sendt.amount), meta: `${periodTotals.byStatus.Sendt.count} fakturaer`, icon: TrendingUp, tone: "text-info" },
-          { label: "Betalt", value: formatCurrency(periodTotals.byStatus.Betalt.amount), meta: `${periodTotals.byStatus.Betalt.count} fakturaer`, icon: CheckCircle2, tone: "text-success" },
-          { label: "Aktiv visning", value: periodSummary, meta: sortOrder === "newest" ? "Nyeste først" : "Ældste først", icon: sortOrder === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
-        ].map((card) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
-              <div className={`flex h-8 w-8 items-center justify-center rounded-2xl bg-muted ${card.tone}`}>
-                <card.icon size={15} />
-              </div>
-            </div>
-            <p className={`font-heading text-2xl font-bold tracking-tight ${card.tone}`}>{card.value}</p>
-            <p className="mt-1.5 text-xs text-muted-foreground">{card.meta}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
-            <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
-                ? "Udvikling dag for dag i den valgte måned"
-                : appliedFilters.year !== "all"
-                  ? "Udvikling måned for måned i det valgte år"
-                  : "Udvikling måned for måned for alle fakturaer"}
-            </p>
-          </div>
-        </div>
-
-        <div className="h-[220px] w-full">
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  interval="preserveStartEnd"
-                  minTickGap={appliedFilters.month !== "all" ? 10 : 20}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                  tickFormatter={(value) => `${Number(value).toLocaleString("da-DK")}`}
-                />
-                <Tooltip
-                  formatter={(value: number) => [formatCurrency(Number(value)), "Beløb"]}
-                  labelFormatter={(label) =>
-                    appliedFilters.year !== "all" && appliedFilters.month !== "all"
-                      ? `${label}. ${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`
-                      : label
-                  }
-                  contentStyle={{
-                    borderRadius: 16,
-                    border: "1px solid hsl(var(--border))",
-                    backgroundColor: "hsl(var(--background))",
-                    color: "hsl(var(--foreground))",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="amount"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  connectNulls
-                  dot={{ r: 2, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 1.5 }}
-                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
-              Ingen data at vise i grafen endnu
-            </div>
-          )}
         </div>
       </motion.section>
 
