@@ -172,7 +172,7 @@ export default function FieldReportsPage() {
             <div>
               <h2 className="text-lg font-heading font-bold text-card-foreground">{r.subject}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(r.profiles as any)?.full_name} · {r.cases ? `Sag ${(r.cases as any)?.case_number}` : "Generel"} · {r.created_at?.split("T")[0]}
+                {(r.profiles as any)?.full_name} · {r.cases ? formatCaseLabel(r.cases as any) : "Generel"} · {r.created_at?.split("T")[0]}
               </p>
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${cfg.color}`}>
