@@ -37,7 +37,7 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
 
   const caseOptions = (cases || []).map(c => ({
     value: c.id,
-    label: c.case_number,
+    label: c.display_label || c.case_number,
     sublabel: c.customer,
   }));
 

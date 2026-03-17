@@ -211,9 +211,9 @@ export function WeeklyTimesheet({
                     className="absolute left-0.5 right-0.5 rounded-md bg-gradient-to-br from-primary/15 to-primary/8 border border-primary/20 px-1 py-0.5 overflow-hidden z-10"
                     style={{ top: `${top}px`, height: `${height}px`, minHeight: '20px' }}
                   >
-                    <p className="text-[9px] font-bold text-foreground truncate">
-                      {(entry.cases as any)?.case_number || "–"}
-                    </p>
+                      <p className="text-[9px] font-bold text-foreground truncate">
+                        {entry.cases?.customer ? `${entry.cases.case_number} (${entry.cases.customer})` : (entry.cases as any)?.case_number || "–"}
+                      </p>
                     {height > 28 && (
                       <div className="flex items-center gap-0.5">
                         <Clock size={7} className="text-primary shrink-0" />
