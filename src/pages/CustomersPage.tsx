@@ -21,6 +21,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Receipt,
   Search,
   Trash2,
   User,
