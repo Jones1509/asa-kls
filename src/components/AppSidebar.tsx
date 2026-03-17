@@ -47,12 +47,12 @@ const employeeLinks = [
   { to: "/cases", icon: Briefcase, label: "Mine sager", section: "Oversigt" },
   { to: "/schedule", icon: Calendar, label: "Min plan", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timer", section: "Planlægning" },
-  { to: "/reports", icon: FileText, label: "Rapporter", section: "Kommunikation" },
-  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "Kommunikation" },
-  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "Kommunikation" },
-  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "Kommunikation" },
-  { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "KLS Dokumenter" },
-  { to: "/chat", icon: MessageSquare, label: "Chat", section: "KLS Dokumenter" },
+  { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "Kommunikation" },
+  { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
+  { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
+  { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
+  { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
 ];
 
 export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarProps) {
