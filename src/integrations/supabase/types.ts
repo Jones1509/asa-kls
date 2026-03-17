@@ -70,6 +70,7 @@ export type Database = {
       cases: {
         Row: {
           address: string
+          case_description: string | null
           case_number: string
           created_at: string
           created_by: string | null
@@ -84,6 +85,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          case_description?: string | null
           case_number: string
           created_at?: string
           created_by?: string | null
@@ -98,6 +100,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          case_description?: string | null
           case_number?: string
           created_at?: string
           created_by?: string | null
@@ -183,8 +186,11 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          company_name: string | null
+          contact_person: string | null
           created_at: string
           created_by: string
+          customer_type: string
           email: string | null
           id: string
           name: string
@@ -194,8 +200,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          company_name?: string | null
+          contact_person?: string | null
           created_at?: string
           created_by: string
+          customer_type?: string
           email?: string | null
           id?: string
           name: string
@@ -205,8 +214,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          company_name?: string | null
+          contact_person?: string | null
           created_at?: string
           created_by?: string
+          customer_type?: string
           email?: string | null
           id?: string
           name?: string
