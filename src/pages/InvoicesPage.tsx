@@ -757,7 +757,6 @@ export default function InvoicesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle år</SelectItem>
                     {availableYears.map((year) => (
                       <SelectItem key={year} value={String(year)}>{year}</SelectItem>
                     ))}
