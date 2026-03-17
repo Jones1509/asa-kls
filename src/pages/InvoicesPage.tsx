@@ -111,6 +111,10 @@ function getInvoiceSortTimestamp(invoice: InvoiceWithCase) {
   return new Date(`${getInvoiceSortDate(invoice)}T12:00:00`).getTime();
 }
 
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 function getCustomerKey(caseItem?: CaseOption | null) {
   return caseItem?.customer_id || caseItem?.customer || caseItem?.id || "";
 }
@@ -364,43 +368,77 @@ export default function InvoicesPage() {
   }, [casesById, filteredInvoices, sortOrder]);
 
   const chartData = useMemo(() => {
-    const grouped = new Map<string, { label: string; amount: number; sortValue: number }>();
-    const useDailyView = appliedFilters.month !== "all";
+    const grouped = new Map<string, { name: string; amount: number; sortValue: number }>();
+    const selectedYear = appliedFilters.year !== "all" ? Number(appliedFilters.year) : null;
+    const selectedMonth = appliedFilters.month !== "all" ? Number(appliedFilters.month) : null;
 
-    filteredInvoices.forEach((invoice) => {
-      const createdAt = new Date(invoice.created_at);
-      const amount = Number(invoice.amount) || 0;
+    if (selectedYear !== null && selectedMonth !== null) {
+      const totalDays = getDaysInMonth(selectedYear, selectedMonth);
 
-      if (useDailyView) {
-        const key = getCreatedDate(invoice);
-        const sortValue = new Date(`${key}T12:00:00`).getTime();
-        const label = chartDateFormatter.format(new Date(`${key}T12:00:00`));
+      for (let day = 1; day <= totalDays; day += 1) {
+        const date = new Date(selectedYear, selectedMonth, day);
+        const key = `${selectedYear}-${selectedMonth}-${day}`;
+        grouped.set(key, {
+          name: String(day),
+          amount: 0,
+          sortValue: date.getTime(),
+        });
+      }
+
+      filteredInvoices.forEach((invoice) => {
+        const sortDate = new Date(`${getInvoiceSortDate(invoice)}T12:00:00`);
+        if (sortDate.getFullYear() !== selectedYear || sortDate.getMonth() !== selectedMonth) return;
+
+        const key = `${selectedYear}-${selectedMonth}-${sortDate.getDate()}`;
+        const current = grouped.get(key);
+        if (!current) return;
+
+        grouped.set(key, {
+          ...current,
+          amount: current.amount + (Number(invoice.amount) || 0),
+        });
+      });
+    } else if (selectedYear !== null) {
+      for (let month = 0; month < 12; month += 1) {
+        const date = new Date(selectedYear, month, 1);
+        const key = `${selectedYear}-${month}`;
+        grouped.set(key, {
+          name: MONTHS[month],
+          amount: 0,
+          sortValue: date.getTime(),
+        });
+      }
+
+      filteredInvoices.forEach((invoice) => {
+        const sortDate = new Date(`${getInvoiceSortDate(invoice)}T12:00:00`);
+        if (sortDate.getFullYear() !== selectedYear) return;
+
+        const key = `${selectedYear}-${sortDate.getMonth()}`;
+        const current = grouped.get(key);
+        if (!current) return;
+
+        grouped.set(key, {
+          ...current,
+          amount: current.amount + (Number(invoice.amount) || 0),
+        });
+      });
+    } else {
+      filteredInvoices.forEach((invoice) => {
+        const sortDate = new Date(`${getInvoiceSortDate(invoice)}T12:00:00`);
+        const amount = Number(invoice.amount) || 0;
+        const key = `${sortDate.getFullYear()}-${sortDate.getMonth()}`;
         const current = grouped.get(key);
 
         grouped.set(key, {
-          label,
+          name: `${MONTHS[sortDate.getMonth()]} ${sortDate.getFullYear()}`,
           amount: (current?.amount || 0) + amount,
-          sortValue,
+          sortValue: new Date(sortDate.getFullYear(), sortDate.getMonth(), 1).getTime(),
         });
-        return;
-      }
-
-      const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
-      const sortValue = new Date(createdAt.getFullYear(), createdAt.getMonth(), 1).getTime();
-      const label = `${MONTHS[createdAt.getMonth()]} ${createdAt.getFullYear()}`;
-      const current = grouped.get(key);
-
-      grouped.set(key, {
-        label,
-        amount: (current?.amount || 0) + amount,
-        sortValue,
       });
-    });
+    }
 
-    return Array.from(grouped.values())
-      .sort((a, b) => a.sortValue - b.sortValue)
-      .map((item) => ({ name: item.label, amount: item.amount }));
-  }, [appliedFilters.month, filteredInvoices]);
+    return Array.from(grouped.values()).sort((a, b) => a.sortValue - b.sortValue);
+  }, [appliedFilters.month, appliedFilters.year, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
     if (appliedFilters.year === "all" && appliedFilters.month === "all") return "Alle fakturaer";
@@ -727,7 +765,11 @@ export default function InvoicesPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
             <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {appliedFilters.month === "all" ? "Udvikling pr. måned" : "Udvikling pr. dag i den valgte måned"}
+              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                ? "Udvikling dag for dag i den valgte måned"
+                : appliedFilters.year !== "all"
+                  ? "Udvikling måned for måned i det valgte år"
+                  : "Udvikling måned for måned for alle fakturaer"}
             </p>
           </div>
         </div>
@@ -737,7 +779,14 @@ export default function InvoicesPage() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={appliedFilters.month !== "all" ? 10 : 20}
+                />
                 <YAxis
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
@@ -747,6 +796,11 @@ export default function InvoicesPage() {
                 />
                 <Tooltip
                   formatter={(value: number) => [formatCurrency(Number(value)), "Beløb"]}
+                  labelFormatter={(label) =>
+                    appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                      ? `${label}. ${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`
+                      : label
+                  }
                   contentStyle={{
                     borderRadius: 16,
                     border: "1px solid hsl(var(--border))",
@@ -759,8 +813,9 @@ export default function InvoicesPage() {
                   dataKey="amount"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                  connectNulls
+                  dot={{ r: 2, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 1.5 }}
+                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
