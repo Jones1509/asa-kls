@@ -309,7 +309,7 @@ export default function FieldReportsPage() {
             </select>
             <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)} className="h-9 rounded-xl border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring outline-none">
               <option value="alle">Alle sager</option>
-              {cases?.map(c => <option key={c.id} value={c.id}>{c.case_number}</option>)}
+              {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
             </select>
           </div>
         )}
