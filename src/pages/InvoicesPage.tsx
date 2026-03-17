@@ -22,6 +22,8 @@ import {
   AlertCircle,
   ArrowDownAZ,
   ArrowUpAZ,
+  Briefcase,
+  Building2,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -46,6 +48,7 @@ const statusConfig: Record<string, { className: string; icon: any; variant: "sec
 const MONTHS = ["Januar", "Februar", "Marts", "April", "Maj", "Juni", "Juli", "August", "September", "Oktober", "November", "December"];
 const statuses = ["Udkast", "Sendt", "Betalt", "Forfalden"];
 const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
+const collator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
 const danishDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
 const chartDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short" });
 
@@ -100,6 +103,23 @@ function getCreatedDate(invoice: InvoiceWithCase) {
   return invoice.created_at.split("T")[0];
 }
 
+function getCustomerKey(caseItem?: CaseOption | null) {
+  return caseItem?.customer_id || caseItem?.customer || caseItem?.id || "";
+}
+
+function getCustomerSortValue(caseNumber?: string | null) {
+  if (!caseNumber) return Number.MAX_SAFE_INTEGER;
+  const match = caseNumber.match(/K-(\d+)/i);
+  return match ? Number.parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+function getCaseSortValue(caseNumber?: string | null) {
+  if (!caseNumber) return Number.MAX_SAFE_INTEGER;
+  const match = caseNumber.match(/K-(\d+)-(\d+)/i);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  return Number.parseInt(match[1], 10) * 1000 + Number.parseInt(match[2], 10);
+}
+
 export default function InvoicesPage() {
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
@@ -112,6 +132,8 @@ export default function InvoicesPage() {
   const [draftFilters, setDraftFilters] = useState<SearchFilters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(defaultFilters);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
+  const [expandedCases, setExpandedCases] = useState<Record<string, boolean>>({});
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -246,6 +268,68 @@ export default function InvoicesPage() {
     });
   }, [appliedFilters, invoices, sortOrder]);
 
+  const groupedInvoices = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        customerKey: string;
+        customerLabel: string;
+        customerNumberLabel: string;
+        customerNumberValue: number;
+        cases: Map<
+          string,
+          {
+            caseId: string;
+            caseNumber: string;
+            caseLabel: string;
+            invoices: InvoiceWithCase[];
+          }
+        >;
+      }
+    >();
+
+    filteredInvoices.forEach((invoice) => {
+      const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
+      const customerKey = getCustomerKey(caseData) || invoice.customer || invoice.case_id;
+      const customerLabel = caseData?.customer || invoice.customer || "Ukendt kunde";
+      const caseNumber = caseData?.case_number || "";
+      const customerNumberLabel = caseNumber.split("-").slice(0, 2).join("-");
+      const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
+
+      if (!grouped.has(customerKey)) {
+        grouped.set(customerKey, {
+          customerKey,
+          customerLabel,
+          customerNumberLabel,
+          customerNumberValue: getCustomerSortValue(caseNumber),
+          cases: new Map(),
+        });
+      }
+
+      const customerGroup = grouped.get(customerKey)!;
+      if (!customerGroup.cases.has(invoice.case_id)) {
+        customerGroup.cases.set(invoice.case_id, {
+          caseId: invoice.case_id,
+          caseNumber,
+          caseLabel,
+          invoices: [],
+        });
+      }
+
+      customerGroup.cases.get(invoice.case_id)!.invoices.push(invoice);
+    });
+
+    return Array.from(grouped.values())
+      .sort((a, b) => {
+        if (a.customerNumberValue !== b.customerNumberValue) return a.customerNumberValue - b.customerNumberValue;
+        return collator.compare(a.customerLabel, b.customerLabel);
+      })
+      .map((customerGroup) => ({
+        ...customerGroup,
+        cases: Array.from(customerGroup.cases.values()).sort((a, b) => getCaseSortValue(a.caseNumber) - getCaseSortValue(b.caseNumber)),
+      }));
+  }, [casesById, filteredInvoices]);
+
   const chartData = useMemo(() => {
     const grouped = new Map<string, { label: string; amount: number; sortValue: number }>();
     const useDailyView = appliedFilters.month !== "all";
@@ -265,7 +349,6 @@ export default function InvoicesPage() {
           amount: (current?.amount || 0) + amount,
           sortValue,
         });
-
         return;
       }
 
@@ -283,25 +366,13 @@ export default function InvoicesPage() {
 
     return Array.from(grouped.values())
       .sort((a, b) => a.sortValue - b.sortValue)
-      .map((item) => ({
-        name: item.label,
-        amount: item.amount,
-      }));
+      .map((item) => ({ name: item.label, amount: item.amount }));
   }, [appliedFilters.month, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
-    if (appliedFilters.year === "all" && appliedFilters.month === "all") {
-      return "Alle fakturaer";
-    }
-
-    if (appliedFilters.month !== "all" && appliedFilters.year === "all") {
-      return `${MONTHS[Number(appliedFilters.month)]} · alle år`;
-    }
-
-    if (appliedFilters.month !== "all") {
-      return `${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`;
-    }
-
+    if (appliedFilters.year === "all" && appliedFilters.month === "all") return "Alle fakturaer";
+    if (appliedFilters.month !== "all" && appliedFilters.year === "all") return `${MONTHS[Number(appliedFilters.month)]} · alle år`;
+    if (appliedFilters.month !== "all") return `${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`;
     return appliedFilters.year;
   }, [appliedFilters]);
 
@@ -329,11 +400,15 @@ export default function InvoicesPage() {
 
   const applySearch = () => {
     setAppliedFilters(draftFilters);
+    setExpandedCustomers({});
+    setExpandedCases({});
   };
 
   const resetAllFilters = () => {
     setDraftFilters(defaultFilters);
     setAppliedFilters(defaultFilters);
+    setExpandedCustomers({});
+    setExpandedCases({});
   };
 
   const handleCaseSelect = (caseId: string, isEdit = false) => {
@@ -360,6 +435,14 @@ export default function InvoicesPage() {
       status: invoice.status,
     });
     setEditOpen(true);
+  };
+
+  const toggleCustomer = (customerKey: string) => {
+    setExpandedCustomers((prev) => ({ ...prev, [customerKey]: !prev[customerKey] }));
+  };
+
+  const toggleCase = (caseId: string) => {
+    setExpandedCases((prev) => ({ ...prev, [caseId]: !prev[caseId] }));
   };
 
   return (
@@ -487,32 +570,32 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-              <CalendarDays size={18} />
+            <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+              <CalendarDays size={16} />
             </div>
-            <h2 className="font-heading text-2xl font-bold tracking-tight text-card-foreground">Søg enkelt i fakturaer</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vælg år og måned, og tryk på <span className="font-semibold text-foreground">Søg</span>. Nulstil viser alle fakturaer igen, og sortering styres separat.
+            <h2 className="font-heading text-xl font-bold tracking-tight text-card-foreground">Søg enkelt i fakturaer</h2>
+            <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+              Vælg år og måned, tryk på <span className="font-semibold text-foreground">Søg</span>, og behold sortering separat.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-muted/20 px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Viser</p>
-            <p className="mt-1 font-heading text-lg font-bold text-card-foreground">{periodSummary}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer · {sortOrder === "newest" ? "nyeste først" : "ældste først"}</p>
+            <p className="mt-1 font-heading text-base font-bold text-card-foreground">{periodSummary}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{periodTotals.count} fakturaer · {sortOrder === "newest" ? "nyeste først" : "ældste først"}</p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="rounded-2xl border border-border bg-muted/15 p-4">
-            <div className="grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px]">
+          <div className="rounded-2xl border border-border bg-muted/15 p-3.5">
+            <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
                 <Select value={draftFilters.year} onValueChange={(value) => setDraftFilters((current) => ({ ...current, year: value }))}>
-                  <SelectTrigger className="rounded-xl bg-background">
+                  <SelectTrigger className="h-10 rounded-xl bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -527,7 +610,7 @@ export default function InvoicesPage() {
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
                 <Select value={draftFilters.month} onValueChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}>
-                  <SelectTrigger className="rounded-xl bg-background">
+                  <SelectTrigger className="h-10 rounded-xl bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -540,91 +623,88 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-sm font-medium text-card-foreground">Søgningen opdaterer først, når du trykker på Søg</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {hasPendingChanges ? "Du har nye valg, som endnu ikke er søgt på." : "Du ser resultaterne for dine nuværende valg."}
+                <p className="text-sm font-medium text-card-foreground">Resultatet opdateres først, når du trykker på Søg</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {hasPendingChanges ? "Du har ændret filtrene." : "Du ser de aktive resultater."}
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button type="button" variant="outline" className="h-11 rounded-xl px-6" onClick={resetAllFilters}>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" size="sm" variant="outline" className="h-10 rounded-xl px-4" onClick={resetAllFilters}>
                   Nulstil
                 </Button>
-                <Button type="button" className="h-11 rounded-xl px-6 shadow-card" onClick={applySearch}>
-                  <Search size={16} /> Søg
+                <Button type="button" size="sm" className="h-10 rounded-xl px-4 shadow-card" onClick={applySearch}>
+                  <Search size={15} /> Søg
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+          <div className="rounded-2xl border border-border bg-card p-3.5 shadow-card">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sortering</p>
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-2.5 flex flex-col gap-2">
               <Button
                 type="button"
+                size="sm"
                 variant={sortOrder === "newest" ? "default" : "outline"}
                 className="justify-start rounded-xl"
                 onClick={() => setSortOrder("newest")}
               >
-                <ArrowDownAZ size={16} /> Nyeste først
+                <ArrowDownAZ size={15} /> Nyeste først
               </Button>
               <Button
                 type="button"
+                size="sm"
                 variant={sortOrder === "oldest" ? "default" : "outline"}
                 className="justify-start rounded-xl"
                 onClick={() => setSortOrder("oldest")}
               >
-                <ArrowUpAZ size={16} /> Ældste først
+                <ArrowUpAZ size={15} /> Ældste først
               </Button>
             </div>
           </div>
         </div>
       </motion.section>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[
           { label: "Faktureret", value: formatCurrency(periodTotals.totalAmount), meta: `${periodTotals.count} fakturaer`, icon: Receipt, tone: "text-card-foreground" },
           { label: "Sendt", value: formatCurrency(periodTotals.byStatus.Sendt.amount), meta: `${periodTotals.byStatus.Sendt.count} fakturaer`, icon: TrendingUp, tone: "text-info" },
           { label: "Betalt", value: formatCurrency(periodTotals.byStatus.Betalt.amount), meta: `${periodTotals.byStatus.Betalt.count} fakturaer`, icon: CheckCircle2, tone: "text-success" },
           { label: "Aktiv visning", value: periodSummary, meta: sortOrder === "newest" ? "Nyeste først" : "Ældste først", icon: sortOrder === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
         ].map((card) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-5 shadow-card">
-            <div className="mb-5 flex items-center justify-between">
+          <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-muted ${card.tone}`}>
-                <card.icon size={18} />
+              <div className={`flex h-8 w-8 items-center justify-center rounded-2xl bg-muted ${card.tone}`}>
+                <card.icon size={15} />
               </div>
             </div>
-            <p className={`font-heading text-3xl font-bold tracking-tight ${card.tone}`}>{card.value}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{card.meta}</p>
+            <p className={`font-heading text-2xl font-bold tracking-tight ${card.tone}`}>{card.value}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">{card.meta}</p>
           </motion.div>
         ))}
       </div>
 
-      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
-        <div className="mb-4 flex items-start justify-between gap-4">
+      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-card">
+        <div className="mb-3 flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
-            <h3 className="mt-1 font-heading text-xl font-bold text-card-foreground">Fakturakurve</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
               {appliedFilters.month === "all" ? "Udvikling pr. måned" : "Udvikling pr. dag i den valgte måned"}
             </p>
           </div>
         </div>
 
-        <div className="h-[280px] w-full">
+        <div className="h-[220px] w-full">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
                 <YAxis
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
@@ -647,7 +727,7 @@ export default function InvoicesPage() {
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
                   dot={false}
-                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -659,14 +739,14 @@ export default function InvoicesPage() {
         </div>
       </motion.section>
 
-      <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
+      <div className="mb-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
         <p className="text-sm font-medium text-card-foreground">Resultater for: {periodSummary}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Sortering: {sortOrder === "newest" ? "nyeste først" : "ældste først"}.</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Sortering: {sortOrder === "newest" ? "nyeste først" : "ældste først"}.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {isLoading && [1, 2, 3].map((item) => (
-          <div key={item} className="animate-pulse rounded-2xl border border-border bg-card p-5">
+          <div key={item} className="animate-pulse rounded-2xl border border-border bg-card p-4">
             <div className="space-y-2">
               <div className="h-4 w-40 rounded bg-muted" />
               <div className="h-3 w-56 rounded bg-muted" />
@@ -674,71 +754,155 @@ export default function InvoicesPage() {
           </div>
         ))}
 
-        {filteredInvoices.map((invoice, index) => {
-          const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
-          const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
-          const config = statusConfig[invoice.status] || statusConfig.Udkast;
-          const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "Betalt";
+        {groupedInvoices.map((customerGroup, customerIndex) => {
+          const customerInvoiceCount = customerGroup.cases.reduce((sum, caseGroup) => sum + caseGroup.invoices.length, 0);
+          const isCustomerExpanded = !!expandedCustomers[customerGroup.customerKey];
 
           return (
             <motion.div
-              key={invoice.id}
+              key={customerGroup.customerKey}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.02 }}
-              className={`rounded-2xl border bg-card p-5 shadow-card ${isOverdue ? "border-destructive/30" : "border-border"}`}
+              transition={{ delay: customerIndex * 0.02 }}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-heading text-lg font-bold text-card-foreground">{invoice.invoice_number}</p>
-                    {isOverdue && <span className="text-[10px] font-bold uppercase text-destructive">Forfalden</span>}
+              <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10">
+                    <Building2 size={15} className="text-primary" />
                   </div>
-
-                  <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
-                    <p><span className="font-medium text-card-foreground">Kunde:</span> {invoice.customer || "-"}</p>
-                    <p><span className="font-medium text-card-foreground">Sag:</span> {caseLabel}</p>
-                  </div>
-
-                  {invoice.description && <p className="mt-3 text-sm text-muted-foreground">{invoice.description}</p>}
-
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>Oprettet: {formatDanishDate(getCreatedDate(invoice))}</span>
-                    {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
-                    {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {customerGroup.customerNumberLabel ? `${customerGroup.customerNumberLabel} · ${customerGroup.customerLabel}` : customerGroup.customerLabel}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {customerInvoiceCount} {customerInvoiceCount === 1 ? "faktura" : "fakturaer"} fordelt på {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-start gap-3 lg:items-end">
-                  <p className="font-heading text-xl font-bold text-card-foreground">{Number(invoice.amount).toLocaleString("da-DK")} kr</p>
-                  {role === "admin" ? (
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={invoice.status}
-                        onChange={(e) => updateStatus.mutate({ id: invoice.id, status: e.target.value })}
-                        className={`rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold outline-none ${config.className}`}
-                      >
-                        {statuses.map((status) => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => openEdit(invoice)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <Badge variant={config.variant} className={config.className}>{invoice.status}</Badge>
-                  )}
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isCustomerExpanded ? "secondary" : "outline"}
+                  className="gap-2 rounded-xl"
+                  onClick={() => toggleCustomer(customerGroup.customerKey)}
+                >
+                  <Briefcase size={14} />
+                  {isCustomerExpanded ? "Skjul sager" : "Vis sager"}
+                </Button>
               </div>
+
+              {isCustomerExpanded && (
+                <div className="border-t border-border bg-muted/10 px-4 py-3">
+                  <div className="space-y-2.5">
+                    {customerGroup.cases.map((caseGroup) => {
+                      const caseAmount = caseGroup.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+                      const isCaseExpanded = !!expandedCases[caseGroup.caseId];
+
+                      return (
+                        <div key={caseGroup.caseId} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                          <div className="flex flex-col gap-3 p-3.5 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+                                <Briefcase size={14} className="text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">{caseGroup.caseLabel}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-start gap-2 lg:items-end">
+                              <div className="text-left lg:text-right">
+                                <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
+                                <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isCaseExpanded ? "secondary" : "outline"}
+                                className="gap-2 rounded-xl"
+                                onClick={() => toggleCase(caseGroup.caseId)}
+                              >
+                                <Receipt size={13} />
+                                {isCaseExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseGroup.invoices.length})`}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {isCaseExpanded && (
+                            <div className="border-t border-border bg-muted/10 p-2.5">
+                              <div className="space-y-2">
+                                {caseGroup.invoices.map((invoice) => {
+                                  const config = statusConfig[invoice.status] || statusConfig.Udkast;
+                                  const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "Betalt";
+
+                                  return (
+                                    <div key={invoice.id} className={`rounded-xl border bg-card p-3 ${isOverdue ? "border-destructive/30" : "border-border"}`}>
+                                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+                                            <Receipt size={14} className="text-primary" />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <p className="font-heading text-sm font-bold text-card-foreground">{invoice.invoice_number}</p>
+                                              {isOverdue && <span className="text-[10px] font-bold uppercase text-destructive">Forfalden</span>}
+                                            </div>
+                                            {invoice.description && <p className="mt-1 text-xs text-muted-foreground">{invoice.description}</p>}
+                                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                                              <span>Oprettet: {formatDanishDate(getCreatedDate(invoice))}</span>
+                                              {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
+                                              {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-2.5">
+                                          <div className="text-left lg:text-right">
+                                            <p className="font-heading text-sm font-bold text-card-foreground">{Number(invoice.amount).toLocaleString("da-DK")} kr</p>
+                                          </div>
+                                          {role === "admin" ? (
+                                            <div className="flex items-center gap-2">
+                                              <select
+                                                value={invoice.status}
+                                                onChange={(e) => updateStatus.mutate({ id: invoice.id, status: e.target.value })}
+                                                className={`rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold outline-none ${config.className}`}
+                                              >
+                                                {statuses.map((status) => (
+                                                  <option key={status} value={status}>{status}</option>
+                                                ))}
+                                              </select>
+                                              <button
+                                                onClick={() => openEdit(invoice)}
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                              >
+                                                <Pencil size={14} />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <Badge variant={config.variant} className={config.className}>{invoice.status}</Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </motion.div>
           );
         })}
 
-        {!isLoading && filteredInvoices.length === 0 && (
+        {!isLoading && groupedInvoices.length === 0 && (
           <div className="py-16 text-center">
             <Receipt size={32} className="mx-auto mb-3 text-muted-foreground/20" />
             <p className="text-sm font-medium text-muted-foreground">Ingen fakturaer fundet for den valgte periode</p>
