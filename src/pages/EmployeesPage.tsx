@@ -75,16 +75,18 @@ export default function EmployeesPage() {
     queryFn: async () => {
       const { data: profs } = await supabase.from("profiles").select("*").order("full_name");
       if (!profs) return [];
-      const [{ data: assignments }, { data: roles }, { data: timeData }] = await Promise.all([
+      const [{ data: assignments }, { data: roles }, { data: timeData }, { data: certs }] = await Promise.all([
         supabase.from("case_assignments").select("user_id, cases(case_number, address)"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("time_entries").select("user_id, hours"),
+        supabase.from("employee_certificates").select("*"),
       ]);
       return profs.map((p) => ({
         ...p,
         assignments: assignments?.filter((a) => a.user_id === p.user_id) || [],
         isAdmin: roles?.some((r) => r.user_id === p.user_id && r.role === "admin") || false,
         totalHours: Math.round((timeData?.filter(t => t.user_id === p.user_id).reduce((s, t) => s + Number(t.hours), 0) || 0) * 10) / 10,
+        certificates: certs?.filter(c => c.user_id === p.user_id) || [],
       }));
     },
   });
