@@ -30,17 +30,6 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    if (isSignUp) {
-      const { error } = await signUp(email, password, fullName);
-      setLoading(false);
-      if (error) {
-        setError(error.message);
-      } else {
-        setError("Tjek din email for bekræftelseslink.");
-      }
-      return;
-    }
-
     const { error } = await signIn(email, password);
 
     if (error) {
