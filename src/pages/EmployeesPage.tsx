@@ -305,7 +305,14 @@ export default function EmployeesPage() {
                     <Pencil size={13} />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{e.role_label || "Medarbejder"}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-xs text-muted-foreground">{e.role_label || "Medarbejder"}</p>
+                  {e.company_title && e.company_title !== "Medarbejder" && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning flex-shrink-0">
+                      <Building2 size={9} /> {e.company_title}
+                    </span>
+                  )}
+                </div>
 
                 <div className="mt-2.5 space-y-1">
                   <p className="text-xs text-muted-foreground/70 flex items-center gap-1.5">
