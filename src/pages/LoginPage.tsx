@@ -230,67 +230,13 @@ export default function LoginPage() {
 
             <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
               {isAdminMode ? "Admin Login" : "Velkommen tilbage!"}
-                </h1>
-                : isAdminMode
-                ? "Admin Login"
-                : "Velkommen tilbage!"}
             </h1>
 
-            {!isAdminMode && (
-              <p className="text-center text-sm mb-8 text-white/40">
-                {isSignUp ? (
-                  <>
-                    Har du allerede en konto?{" "}
-                    <button
-                      onClick={() => {
-                        setIsSignUp(false);
-                        setError("");
-                      }}
-                      className="bg-transparent border-none cursor-pointer font-semibold hover:underline text-primary"
-                    >
-                      Log ind
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Har du ikke en konto endnu?{" "}
-                    <button
-                      onClick={() => {
-                        setIsSignUp(true);
-                        setError("");
-                      }}
-                      className="bg-transparent border-none cursor-pointer font-semibold hover:underline text-primary"
-                    >
-                      Opret konto
-                    </button>
-                  </>
-                )}
-              </p>
-            )}
-            {isAdminMode && (
-              <p className="text-center text-sm mb-8 text-white/40">
-                Log ind med din administrator-konto
-              </p>
-            )}
+            <p className="text-center text-sm mb-8 text-white/40">
+              {isAdminMode ? "Log ind med din administrator-konto" : "Log ind med dine oplysninger"}
+            </p>
 
             <form onSubmit={handleLogin} className="flex flex-col gap-5">
-              {isSignUp && (
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Fulde navn"
-                    required
-                    className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]"
-                  />
-                  <User
-                    size={16}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25"
-                  />
-                </div>
-              )}
-
               <div className="relative">
                 <input
                   type="email"
@@ -325,13 +271,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div
-                  className={`text-sm rounded-xl px-4 py-3 ${
-                    error.includes("Tjek")
-                      ? "bg-success/15 text-success/80 border border-success/20"
-                      : "bg-destructive/15 text-destructive/80 border border-destructive/20"
-                  }`}
-                >
+                <div className="text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">
                   {error}
                 </div>
               )}
@@ -344,10 +284,8 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 size={16} className="animate-spin" />
-                    {isSignUp ? "Opretter..." : "Logger ind..."}
+                    Logger ind...
                   </span>
-                ) : isSignUp ? (
-                  "Opret konto"
                 ) : (
                   "Log ind"
                 )}
