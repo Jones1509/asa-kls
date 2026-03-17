@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export default function FieldReportsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("field_reports")
-        .select("*, cases(case_number), profiles!field_reports_user_id_fkey(full_name)")
+        .select("*, cases(case_number, customer), profiles!field_reports_user_id_fkey(full_name)")
         .order("created_at", { ascending: false });
       return data || [];
     },
@@ -171,7 +172,7 @@ export default function FieldReportsPage() {
             <div>
               <h2 className="text-lg font-heading font-bold text-card-foreground">{r.subject}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(r.profiles as any)?.full_name} · {r.cases ? `Sag ${(r.cases as any)?.case_number}` : "Generel"} · {r.created_at?.split("T")[0]}
+                {(r.profiles as any)?.full_name} · {r.cases ? formatCaseLabel(r.cases as any) : "Generel"} · {r.created_at?.split("T")[0]}
               </p>
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${cfg.color}`}>
@@ -233,7 +234,7 @@ export default function FieldReportsPage() {
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag / Lokation (valgfrit)</Label>
                 <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
                   <option value="">Ingen specifik sag</option>
-                  {cases?.map(c => <option key={c.id} value={c.id}>{c.case_number} — {c.customer}</option>)}
+                  {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
                 </select>
                 {!form.case_id && (
                   <Input value={form.location_text} onChange={(e) => setForm({ ...form, location_text: e.target.value })} placeholder="Angiv lokation hvis ikke tilknyttet en sag..." className="mt-2 rounded-xl" />
@@ -308,7 +309,7 @@ export default function FieldReportsPage() {
             </select>
             <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)} className="h-9 rounded-xl border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring outline-none">
               <option value="alle">Alle sager</option>
-              {cases?.map(c => <option key={c.id} value={c.id}>{c.case_number}</option>)}
+              {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
             </select>
           </div>
         )}
@@ -342,7 +343,7 @@ export default function FieldReportsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {(r.profiles as any)?.full_name || "Ukendt"} · {r.cases ? `Sag ${(r.cases as any)?.case_number}` : "Generel"} · {r.created_at?.split("T")[0]}
+                      {(r.profiles as any)?.full_name || "Ukendt"} · {r.cases ? formatCaseLabel(r.cases as any) : "Generel"} · {r.created_at?.split("T")[0]}
                     </p>
                   </div>
                 </div>

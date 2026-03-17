@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { format, startOfWeek } from "date-fns";
@@ -53,7 +54,7 @@ export default function TimeTrackingPage() {
   const { data: entries, isLoading } = useQuery({
     queryKey: ["time_entries", user?.id, isAdmin],
     queryFn: async () => {
-      let query = supabase.from("time_entries").select("*, cases(case_number)").order("date", { ascending: false }).limit(500);
+      let query = supabase.from("time_entries").select("*, cases(case_number, customer)").order("date", { ascending: false }).limit(500);
       if (!isAdmin) query = query.eq("user_id", user!.id);
       const { data } = await query;
       return data || [];
@@ -218,7 +219,7 @@ export default function TimeTrackingPage() {
           {isAdmin && (
             <TimeTrackingPdfExport
               entries={filteredEntries}
-              cases={cases || []}
+              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
               profileMap={profileMap || {}}
               isAdmin={isAdmin}
             />
@@ -227,7 +228,7 @@ export default function TimeTrackingPage() {
           {isAdmin && employees && (
             <BulkTimeEntryDialog
               employees={employees}
-              cases={cases || []}
+              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
               onSubmit={(entries) => bulkCreateEntries.mutate(entries)}
               isPending={bulkCreateEntries.isPending}
             />
@@ -297,7 +298,7 @@ export default function TimeTrackingPage() {
       <div className="mb-6">
         <QuickEntryForm
           form={form} setForm={setForm} isAdmin={isAdmin}
-          employees={employees || []} cases={cases || []}
+          employees={employees || []} cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
           onSubmit={() => createEntry.mutate()} isPending={createEntry.isPending}
         />
       </div>

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -163,8 +164,8 @@ export default function DocumentationPage() {
         </button>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-heading font-bold text-foreground">{selectedCase.case_number}</h2>
-            <p className="text-sm text-muted-foreground">{selectedCase.customer}</p>
+            <h2 className="text-xl font-heading font-bold text-foreground">{formatCaseLabel(selectedCase)}</h2>
+            <p className="text-sm text-muted-foreground">Sagsmappe</p>
           </div>
           {role === "admin" && (
             <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
@@ -276,7 +277,7 @@ export default function DocumentationPage() {
         {/* Upload dialog */}
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
-            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Upload dokument til {selectedCase.case_number}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Upload dokument til {formatCaseLabel(selectedCase)}</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); uploadDoc.mutate(); }} className="space-y-4">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel</Label>
@@ -360,8 +361,8 @@ export default function DocumentationPage() {
                   <FolderOpen size={18} className="text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-card-foreground">{c.case_number}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.customer}</p>
+                  <p className="text-sm font-semibold text-card-foreground">{formatCaseLabel(c)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">Sagsmappe</p>
                   <p className="text-[11px] text-muted-foreground/50 mt-2">
                     {count} {count === 1 ? "dokument" : "dokumenter"}
                   </p>

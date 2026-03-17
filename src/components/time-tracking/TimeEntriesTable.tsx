@@ -15,7 +15,7 @@ interface Entry {
   hours: number;
   notes: string | null;
   user_id: string;
-  cases?: { case_number: string } | null;
+  cases?: { case_number: string; customer?: string | null } | null;
 }
 
 interface TimeEntriesTableProps {
@@ -136,9 +136,9 @@ export function TimeEntriesTable({
                     </td>
                   )}
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-xs font-semibold text-card-foreground">
-                      {(e.cases as any)?.case_number || "–"}
-                    </span>
+                      <span className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-xs font-semibold text-card-foreground">
+                        {e.cases?.customer ? `${e.cases.case_number} (${e.cases.customer})` : (e.cases as any)?.case_number || "–"}
+                      </span>
                   </td>
 
                   {editId === e.id ? (

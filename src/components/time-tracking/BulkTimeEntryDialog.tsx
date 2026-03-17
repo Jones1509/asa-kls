@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 interface BulkTimeEntryDialogProps {
   employees: { user_id: string; full_name: string }[];
-  cases: { id: string; case_number: string; customer?: string }[];
+  cases: { id: string; case_number: string; customer?: string; display_label?: string }[];
   onSubmit: (entries: { user_id: string; case_id: string; date: string; start_time: string; end_time: string; lunch_break: boolean; notes: string }[]) => void;
   isPending: boolean;
 }
@@ -37,7 +37,7 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
 
   const caseOptions = (cases || []).map(c => ({
     value: c.id,
-    label: c.case_number,
+    label: c.display_label || c.case_number,
     sublabel: c.customer,
   }));
 

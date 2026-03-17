@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -74,7 +75,7 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, cases(case_number)");
+      const { data } = await supabase.from("invoices").select("*, cases(case_number, customer)");
       return (data || []).sort((a, b) => {
         const numA = parseInt(a.invoice_number, 10);
         const numB = parseInt(b.invoice_number, 10);
@@ -237,7 +238,7 @@ export default function InvoicesPage() {
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
                 <select value={form.case_id} onChange={(e) => handleCaseSelect(e.target.value)} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
                   <option value="">Vælg sag...</option>
-                  {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number} – {c.customer}</option>)}
+                  {cases?.map((c) => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -268,7 +269,7 @@ export default function InvoicesPage() {
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag</Label>
               <select value={editForm.case_id} onChange={(e) => handleCaseSelect(e.target.value, true)} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
                 <option value="">Vælg sag...</option>
-                {cases?.map((c) => <option key={c.id} value={c.id}>{c.case_number} – {c.customer}</option>)}
+                {cases?.map((c) => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -418,7 +419,7 @@ export default function InvoicesPage() {
                       <p className="text-sm font-semibold text-card-foreground">Faktura #{inv.invoice_number}</p>
                       {isOverdue && <span className="text-[10px] font-bold text-destructive uppercase">Forfalden</span>}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · Sag {(inv.cases as any)?.case_number || "–"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · {formatCaseLabel(inv.cases as any, "Sag –")}</p>
                     {inv.description && <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-1">{inv.description}</p>}
                   </div>
                 </div>

@@ -16,7 +16,7 @@ interface QuickEntryFormProps {
   setForm: (form: any) => void;
   isAdmin: boolean;
   employees: { user_id: string; full_name: string }[];
-  cases: { id: string; case_number: string; customer?: string }[];
+  cases: { id: string; case_number: string; customer?: string; display_label?: string }[];
   onSubmit: () => void;
   isPending: boolean;
 }
@@ -30,7 +30,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
 
   const caseOptions = (cases || []).map(c => ({
     value: c.id,
-    label: c.case_number,
+    label: c.display_label || c.case_number,
     sublabel: c.customer,
   }));
 

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -186,7 +187,7 @@ export default function VerificationPage() {
             <div>
               <h2 className="text-lg font-heading font-bold text-card-foreground">{f.form_type}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {(f.profiles as any)?.full_name} · Sag {(f.cases as any)?.case_number} · {f.form_date}
+                  {(f.profiles as any)?.full_name} · {formatCaseLabel(f.cases as any, "Sag –")} · {f.form_date}
               </p>
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${cfg.color}`}>
@@ -275,7 +276,7 @@ export default function VerificationPage() {
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag / Kunde</Label>
                 <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
                   <option value="">Vælg sag...</option>
-                  {cases?.map(c => <option key={c.id} value={c.id}>{c.case_number} — {c.customer}</option>)}
+                  {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
                 </select>
               </div>
               <div>
@@ -402,7 +403,7 @@ export default function VerificationPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {(f.profiles as any)?.full_name || "–"} · Sag {(f.cases as any)?.case_number || "–"} · {f.form_date}
+                      {(f.profiles as any)?.full_name || "–"} · {formatCaseLabel(f.cases as any, "Sag –")} · {f.form_date}
                     </p>
                   </div>
                 </div>

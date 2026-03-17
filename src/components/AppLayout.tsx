@@ -17,11 +17,11 @@ export function AppLayout() {
   const { data: notifData } = useQuery({
     queryKey: ["notifications_count"],
     queryFn: async () => {
-      const [{ count: unreadReports }, { count: newReports }] = await Promise.all([
-        supabase.from("field_reports").select("*", { count: "exact", head: true }).eq("is_read", false),
-        supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "Ny"),
-      ]);
-      return { unreadFieldReports: unreadReports || 0, newReports: newReports || 0 };
+      const { count: unreadReports } = await supabase
+        .from("field_reports")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false);
+      return { unreadFieldReports: unreadReports || 0, newReports: 0 };
     },
     enabled: role === "admin",
     refetchInterval: 30000,
