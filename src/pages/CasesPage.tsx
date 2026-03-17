@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/PageHeader";
 import { AssignEmployeesDialog } from "@/components/cases/AssignEmployeesDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { formatCaseLabel } from "@/lib/case-format";
+import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -15,6 +16,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+type CustomerType = "Privat" | "Erhverv";
+
 const statusColors: Record<string, string> = {
   Aktiv: "bg-success/10 text-success border border-success/20",
   Afsluttet: "bg-muted text-muted-foreground border border-border",
@@ -22,9 +25,12 @@ const statusColors: Record<string, string> = {
 };
 
 const statusOptions = ["Aktiv", "Planlagt", "Afsluttet"];
+const customerTypeOptions: CustomerType[] = ["Privat", "Erhverv"];
+const caseFilters = ["alle", "igangværende", "afsluttet"] as const;
 
 const emptyCaseForm = {
   case_number: "",
+  case_description: "",
   customer: "",
   customer_id: "",
   address: "",
@@ -35,12 +41,36 @@ const emptyCaseForm = {
 };
 
 const emptyCustomerForm = {
+  customer_type: "Privat" as CustomerType,
   name: "",
+  company_name: "",
+  contact_person: "",
   address: "",
   phone: "",
   email: "",
   notes: "",
 };
+
+function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
+  const isBusiness = form.customer_type === "Erhverv";
+  const displayName = isBusiness ? form.company_name.trim() : form.name.trim();
+
+  return {
+    created_by: userId,
+    customer_type: form.customer_type,
+    name: displayName,
+    company_name: isBusiness ? form.company_name.trim() || null : null,
+    contact_person: isBusiness ? form.contact_person.trim() || null : null,
+    address: form.address.trim() || null,
+    phone: form.phone.trim() || null,
+    email: form.email.trim() || null,
+    notes: form.notes.trim() || null,
+  };
+}
+
+function getCaseStatusLabel(status: string) {
+  return status === "Afsluttet" ? "Afsluttet" : "Igangværende";
+}
 
 function CaseFormFields({
   f,
@@ -57,7 +87,7 @@ function CaseFormFields({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sagsnummer</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsnummer</Label>
           <Input
             value={f.case_number}
             onChange={(e) => setF({ ...f, case_number: e.target.value })}
@@ -67,7 +97,7 @@ function CaseFormFields({
           />
         </div>
         <div>
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
           <select
             value={f.status}
             onChange={(e) => setF({ ...f, status: e.target.value })}
@@ -83,8 +113,19 @@ function CaseFormFields({
       </div>
 
       <div>
+        <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsbeskrivelse</Label>
+        <Input
+          value={f.case_description}
+          onChange={(e) => setF({ ...f, case_description: e.target.value })}
+          placeholder="El-installation køkken"
+          className="mt-1.5 rounded-xl"
+          required
+        />
+      </div>
+
+      <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kunde</Label>
           <button type="button" onClick={onCreateCustomer} className="text-[11px] font-semibold text-primary hover:underline">
             + Ny kunde
           </button>
@@ -96,12 +137,13 @@ function CaseFormFields({
             setF({
               ...f,
               customer_id: e.target.value,
-              customer: selected?.name || f.customer,
+              customer: selected?.name || "",
             });
           }}
           className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
+          required
         >
-          <option value="">Ingen tilknyttet kunde</option>
+          <option value="">Vælg kunde...</option>
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
               {customer.name}
@@ -111,22 +153,7 @@ function CaseFormFields({
       </div>
 
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kundenavn</Label>
-        <Input
-          value={f.customer}
-          onChange={(e) => setF({ ...f, customer: e.target.value })}
-          placeholder="Dansk Bygge A/S"
-          className="mt-1.5 rounded-xl"
-          required
-          disabled={!!f.customer_id}
-        />
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          {f.customer_id ? "Kundenavn kommer fra den valgte kunde." : "Kan bruges til eksisterende eller manuelle sager uden kundeprofil."}
-        </p>
-      </div>
-
-      <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Adresse</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
         <Input
           value={f.address}
           onChange={(e) => setF({ ...f, address: e.target.value })}
@@ -137,18 +164,19 @@ function CaseFormFields({
       </div>
 
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Detaljer</Label>
         <Textarea
           value={f.description || ""}
           onChange={(e) => setF({ ...f, description: e.target.value })}
           className="mt-1.5 rounded-xl"
           rows={3}
+          placeholder="Ekstra noter om sagen"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Startdato</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Startdato</Label>
           <Input
             type="date"
             value={f.start_date || ""}
@@ -157,7 +185,7 @@ function CaseFormFields({
           />
         </div>
         <div>
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Slutdato</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slutdato</Label>
           <Input
             type="date"
             value={f.end_date || ""}
@@ -185,7 +213,7 @@ export default function CasesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("alle");
+  const [statusFilter, setStatusFilter] = useState<(typeof caseFilters)[number]>("alle");
 
   const [form, setForm] = useState(emptyCaseForm);
   const [editForm, setEditForm] = useState<any>(null);
@@ -206,7 +234,7 @@ export default function CasesPage() {
   const { data: customers } = useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("id, name").order("name");
+      const { data, error } = await supabase.from("customers").select("id, name, customer_type, company_name, contact_person").order("name");
       if (error) throw error;
       return data || [];
     },
@@ -268,6 +296,7 @@ export default function CasesPage() {
         ...form,
         customer_id: form.customer_id || null,
         customer: form.customer,
+        case_description: form.case_description,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         created_by: user?.id,
@@ -290,6 +319,7 @@ export default function CasesPage() {
         .from("cases")
         .update({
           case_number: editForm.case_number,
+          case_description: editForm.case_description,
           customer: editForm.customer,
           customer_id: editForm.customer_id || null,
           address: editForm.address,
@@ -361,16 +391,14 @@ export default function CasesPage() {
 
   const createCustomer = useMutation({
     mutationFn: async () => {
+      if (!user?.id) throw new Error("Du skal være logget ind");
+      const payload = getCustomerPayload(customerForm, user.id);
+      if (!payload.name) throw new Error(customerForm.customer_type === "Erhverv" ? "Indtast firmanavn" : "Indtast navn");
+      if (customerForm.customer_type === "Erhverv" && !payload.contact_person) throw new Error("Indtast kontaktperson");
+
       const { data, error } = await supabase
         .from("customers")
-        .insert({
-          ...customerForm,
-          address: customerForm.address || null,
-          phone: customerForm.phone || null,
-          email: customerForm.email || null,
-          notes: customerForm.notes || null,
-          created_by: user!.id,
-        })
+        .insert(payload)
         .select("id, name")
         .single();
       if (error) throw error;
@@ -391,24 +419,29 @@ export default function CasesPage() {
   });
 
   const filtered = cases?.filter((caseItem: any) => {
+    const query = search.toLowerCase();
     const matchSearch =
-      caseItem.case_number.toLowerCase().includes(search.toLowerCase()) ||
-      caseItem.customer.toLowerCase().includes(search.toLowerCase()) ||
-      caseItem.address.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "alle" || caseItem.status === statusFilter;
+      caseItem.case_number?.toLowerCase().includes(query) ||
+      caseItem.case_description?.toLowerCase().includes(query) ||
+      caseItem.customer?.toLowerCase().includes(query) ||
+      caseItem.address?.toLowerCase().includes(query);
+
+    const matchStatus =
+      statusFilter === "alle" ||
+      (statusFilter === "afsluttet" ? caseItem.status === "Afsluttet" : caseItem.status !== "Afsluttet");
+
     return matchSearch && matchStatus;
   });
 
   const counts = {
     alle: cases?.length || 0,
-    Aktiv: cases?.filter((caseItem: any) => caseItem.status === "Aktiv").length || 0,
-    Planlagt: cases?.filter((caseItem: any) => caseItem.status === "Planlagt").length || 0,
-    Afsluttet: cases?.filter((caseItem: any) => caseItem.status === "Afsluttet").length || 0,
+    igangværende: cases?.filter((caseItem: any) => caseItem.status !== "Afsluttet").length || 0,
+    afsluttet: cases?.filter((caseItem: any) => caseItem.status === "Afsluttet").length || 0,
   };
 
   return (
     <div>
-      <PageHeader title="Sager" description={`${counts.alle} sager i alt · ${counts.Aktiv} aktive`}>
+      <PageHeader title="Sager" description={`${counts.alle} sager i alt · ${counts.igangværende} igangværende`}>
         {role === "admin" && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -426,10 +459,15 @@ export default function CasesPage() {
                   createCase.mutate();
                 }}
               >
-                <CaseFormFields f={form} setF={setForm} customers={customers || []} onCreateCustomer={() => {
-                  setCustomerDialogTarget("create");
-                  setCustomerDialogOpen(true);
-                }} />
+                <CaseFormFields
+                  f={form}
+                  setF={setForm}
+                  customers={customers || []}
+                  onCreateCustomer={() => {
+                    setCustomerDialogTarget("create");
+                    setCustomerDialogOpen(true);
+                  }}
+                />
                 <div className="flex justify-end gap-2 pt-5">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
                     Annuller
@@ -444,23 +482,32 @@ export default function CasesPage() {
         )}
       </PageHeader>
 
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Søg sager..." className="h-11 rounded-xl pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
-          {(["alle", "Aktiv", "Planlagt", "Afsluttet"] as const).map((status) => (
+          {caseFilters.map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === status ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === status ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {status === "alle" ? "Alle" : status} ({counts[status]})
+              {status === "alle" ? "Alle" : status === "igangværende" ? "Igangværende" : "Afsluttet"} ({counts[status]})
             </button>
           ))}
         </div>
       </div>
+
+      {!isLoading && (
+        <div className="mb-3 hidden grid-cols-[140px_minmax(0,1fr)_minmax(180px,220px)_120px] gap-4 px-5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:grid">
+          <span>Sagsnr</span>
+          <span>Sagsbeskrivelse</span>
+          <span>Kunde</span>
+          <span>Status</span>
+        </div>
+      )}
 
       {isLoading && (
         <div className="space-y-3">
@@ -490,29 +537,30 @@ export default function CasesPage() {
                 transition={{ delay: index * 0.03 }}
                 className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:shadow-elevated"
               >
-                <div className="flex cursor-pointer items-center justify-between p-5" onClick={() => setExpandedId(isExpanded ? null : caseItem.id)}>
-                  <div className="flex min-w-0 flex-1 items-center gap-4">
-                    <span className="whitespace-nowrap text-sm font-bold text-card-foreground">{caseItem.case_number}</span>
+                <div className="cursor-pointer p-5" onClick={() => setExpandedId(isExpanded ? null : caseItem.id)}>
+                  <div className="grid gap-3 lg:grid-cols-[140px_minmax(0,1fr)_minmax(180px,220px)_120px_auto] lg:items-center lg:gap-4">
+                    <div className="text-sm font-bold text-card-foreground">{caseItem.case_number}</div>
                     <div className="min-w-0">
-                      <span className="block truncate text-sm text-card-foreground">{caseItem.description || caseItem.address}</span>
-                      {caseItem.customer && (
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{caseItem.customer}</span>
-                      )}
+                      <p className="truncate text-sm font-semibold text-card-foreground">{getCaseTitle(caseItem, "Ingen sagsbeskrivelse")}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{caseItem.address}</p>
                     </div>
-                    <span className="hidden items-center gap-1.5 truncate text-xs text-muted-foreground md:flex">
-                      <MapPin size={12} className="flex-shrink-0 text-muted-foreground/50" /> {caseItem.address}
-                    </span>
-                  </div>
-                  <div className="ml-3 flex flex-shrink-0 items-center gap-3">
-                    {role === "admin" && caseAssignments.length > 0 && (
-                      <span className="hidden items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground sm:inline-flex">
-                        <Users size={10} /> {caseAssignments.length}
-                      </span>
-                    )}
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusColors[caseItem.status] || ""}`}>
-                      {caseItem.status}
-                    </span>
-                    <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-card-foreground">
+                        <Building2 size={14} className="text-primary" />
+                        <span className="truncate">{caseItem.customer || "Ingen kunde"}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Badge variant={caseItem.status === "Afsluttet" ? "secondary" : "default"}>{getCaseStatusLabel(caseItem.status)}</Badge>
+                    </div>
+                    <div className="flex items-center justify-end gap-3">
+                      {role === "admin" && caseAssignments.length > 0 && (
+                        <span className="hidden items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground sm:inline-flex">
+                          <Users size={10} /> {caseAssignments.length}
+                        </span>
+                      )}
+                      <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </div>
                   </div>
                 </div>
 
@@ -528,10 +576,8 @@ export default function CasesPage() {
                       <div className="border-t border-border px-5 pb-5 pt-4">
                         <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                           <div>
-                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Adresse</p>
-                            <p className="flex items-center gap-1.5 text-sm text-card-foreground">
-                              <MapPin size={13} className="text-muted-foreground/50" /> {caseItem.address}
-                            </p>
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Sagslabel</p>
+                            <p className="text-sm font-medium text-card-foreground">{formatCaseLabel(caseItem)}</p>
                           </div>
                           <div>
                             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Periode</p>
@@ -539,21 +585,24 @@ export default function CasesPage() {
                               {caseItem.start_date || "–"} → {caseItem.end_date || "–"}
                             </p>
                           </div>
-                        </div>
-
-                        {caseItem.customer && (
-                          <div className="mb-4">
+                          <div>
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Adresse</p>
+                            <p className="flex items-center gap-1.5 text-sm text-card-foreground">
+                              <MapPin size={13} className="text-muted-foreground/50" /> {caseItem.address}
+                            </p>
+                          </div>
+                          <div>
                             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Kunde</p>
                             <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-card-foreground">
                               <Building2 size={14} className="text-primary" />
-                              {caseItem.customer}
+                              {caseItem.customer || "Ingen kunde"}
                             </div>
                           </div>
-                        )}
+                        </div>
 
                         {caseItem.description && (
                           <div className="mb-4">
-                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Beskrivelse</p>
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Detaljer</p>
                             <p className="text-sm leading-relaxed text-card-foreground">{caseItem.description}</p>
                           </div>
                         )}
@@ -687,10 +736,15 @@ export default function CasesPage() {
                 updateCase.mutate();
               }}
             >
-              <CaseFormFields f={editForm} setF={setEditForm} customers={customers || []} onCreateCustomer={() => {
-                setCustomerDialogTarget("edit");
-                setCustomerDialogOpen(true);
-              }} />
+              <CaseFormFields
+                f={editForm}
+                setF={setEditForm}
+                customers={customers || []}
+                onCreateCustomer={() => {
+                  setCustomerDialogTarget("edit");
+                  setCustomerDialogOpen(true);
+                }}
+              />
               <div className="flex justify-end gap-2 pt-5">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="rounded-xl">
                   Annuller
@@ -717,9 +771,39 @@ export default function CasesPage() {
             className="space-y-4"
           >
             <div>
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
-              <Input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundetype</Label>
+              <div className="mt-1.5 flex gap-2 rounded-xl bg-muted/40 p-1">
+                {customerTypeOptions.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setCustomerForm((prev) => ({ ...prev, customer_type: type }))}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${customerForm.customer_type === type ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {customerForm.customer_type === "Erhverv" ? (
+              <>
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Virksomhedsnavn</Label>
+                  <Input value={customerForm.company_name} onChange={(e) => setCustomerForm({ ...customerForm, company_name: e.target.value })} className="mt-1.5 rounded-xl" required />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontaktperson</Label>
+                  <Input value={customerForm.contact_person} onChange={(e) => setCustomerForm({ ...customerForm, contact_person: e.target.value })} className="mt-1.5 rounded-xl" required />
+                </div>
+              </>
+            ) : (
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Navn</Label>
+                <Input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} className="mt-1.5 rounded-xl" required />
+              </div>
+            )}
+
             <div>
               <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
               <Input value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })} className="mt-1.5 rounded-xl" />
