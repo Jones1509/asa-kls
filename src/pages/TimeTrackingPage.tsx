@@ -298,7 +298,7 @@ export default function TimeTrackingPage() {
       <div className="mb-6">
         <QuickEntryForm
           form={form} setForm={setForm} isAdmin={isAdmin}
-          employees={employees || []} cases={cases || []}
+          employees={employees || []} cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
           onSubmit={() => createEntry.mutate()} isPending={createEntry.isPending}
         />
       </div>

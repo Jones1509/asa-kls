@@ -361,8 +361,8 @@ export default function DocumentationPage() {
                   <FolderOpen size={18} className="text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-card-foreground">{c.case_number}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.customer}</p>
+                  <p className="text-sm font-semibold text-card-foreground">{formatCaseLabel(c)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">Sagsmappe</p>
                   <p className="text-[11px] text-muted-foreground/50 mt-2">
                     {count} {count === 1 ? "dokument" : "dokumenter"}
                   </p>

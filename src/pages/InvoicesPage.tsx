@@ -419,7 +419,7 @@ export default function InvoicesPage() {
                       <p className="text-sm font-semibold text-card-foreground">Faktura #{inv.invoice_number}</p>
                       {isOverdue && <span className="text-[10px] font-bold text-destructive uppercase">Forfalden</span>}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · Sag {(inv.cases as any)?.case_number || "–"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · {formatCaseLabel(inv.cases as any, "Sag –")}</p>
                     {inv.description && <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-1">{inv.description}</p>}
                   </div>
                 </div>
