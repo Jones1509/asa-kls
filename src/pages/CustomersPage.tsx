@@ -530,7 +530,7 @@ export default function CustomersPage() {
 
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
-                <Input value={form.customer_number} onChange={(e) => setForm({ ...form, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+                <Input value={selectedCustomer.customer_number || "Tildeles automatisk"} readOnly className="mt-1.5 rounded-xl text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
