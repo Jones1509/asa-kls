@@ -39,7 +39,7 @@ const adminLinks = [
   { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS & Kvalitet" },
   { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS & Kvalitet" },
   { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS & Kvalitet" },
-  { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
+  { to: "/employees", icon: Users, label: "Medarbejdere", section: "KLS & Kvalitet" },
 ];
 
 const employeeLinks = [
