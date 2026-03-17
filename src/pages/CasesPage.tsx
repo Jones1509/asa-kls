@@ -290,7 +290,7 @@ export default function CasesPage() {
       setForm((prev) => ({
         ...prev,
         customer_id: selectedCustomer.id,
-        customer: selectedCustomer.name,
+        customer: getCustomerDisplayName(selectedCustomer),
       }));
       setOpen(true);
     }

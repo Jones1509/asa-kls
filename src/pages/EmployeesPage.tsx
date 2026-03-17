@@ -335,7 +335,7 @@ export default function EmployeesPage() {
                     {e.assignments.slice(0, 2).map((a: any, j: number) => (
                       <div key={j} className="rounded-xl bg-muted/50 px-3 py-2 border border-border/50">
                         <p className="text-xs font-semibold text-card-foreground flex items-center gap-1.5">
-                          <Briefcase size={11} className="text-primary" /> Sag {a.cases?.case_number}
+                          <Briefcase size={11} className="text-primary" /> {formatCaseLabel(a.cases as any, "Ingen sag")}
                         </p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <MapPin size={10} className="text-muted-foreground/50" /> {a.cases?.address || "–"}
