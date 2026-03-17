@@ -51,6 +51,7 @@ const employeeLinks = [
   { to: "/reports", icon: FileText, label: "Rapporter", section: "KLS Dokumenter" },
   { to: "/verification", icon: ClipboardCheck, label: "Kontrolskemaer", section: "KLS Dokumenter" },
   { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS Dokumenter" },
+  { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS Dokumenter" },
   { to: "/field-reports", icon: Radio, label: "Feltrapport", section: "Kommunikation" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
 ];
