@@ -42,14 +42,14 @@ function UploadZone({ onFile, accept, label, loading }: { onFile: (f: File) => v
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className={`relative cursor-pointer rounded-xl border-2 border-dashed py-8 px-6 text-center transition-all duration-200 ${
+      className={`relative cursor-pointer rounded-[10px] border-2 border-dashed py-4 px-6 text-center transition-all duration-200 ${
         dragging
           ? "border-primary/60 bg-primary/[0.03]"
-          : "border-border/60 bg-muted/20 hover:border-primary/30 hover:bg-primary/[0.02]"
+          : "border-border/60 bg-[hsl(210_20%_98%)] hover:border-primary/30 hover:bg-primary/[0.02]"
       }`}
     >
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
-      <CloudUpload size={24} className="mx-auto text-muted-foreground/30 mb-2" />
+      <CloudUpload size={20} className="mx-auto text-muted-foreground/30 mb-1" />
       <p className="text-[13px] font-medium text-muted-foreground/70">{loading ? "Uploader..." : label}</p>
       <p className="text-[11px] text-muted-foreground/40 mt-0.5">Træk og slip eller klik for at vælge fil</p>
     </div>
