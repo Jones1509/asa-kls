@@ -1,6 +1,5 @@
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { PageHeader } from "@/components/PageHeader";
-import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -35,14 +34,14 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 const statusConfig: Record<string, { className: string; icon: any; variant: "secondary" | "destructive" | "outline" | "default" }> = {
   Udkast: { className: "bg-muted text-muted-foreground", icon: Clock, variant: "secondary" },
-  Sendt: { className: "bg-info/10 text-info border border-info/20", icon: Receipt, variant: "outline" },
-  Betalt: { className: "bg-success/10 text-success border border-success/20", icon: CheckCircle2, variant: "outline" },
-  Forfalden: { className: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertCircle, variant: "destructive" },
+  Sendt: { className: "border border-info/20 bg-info/10 text-info", icon: Receipt, variant: "outline" },
+  Betalt: { className: "border border-success/20 bg-success/10 text-success", icon: CheckCircle2, variant: "outline" },
+  Forfalden: { className: "border border-destructive/20 bg-destructive/10 text-destructive", icon: AlertCircle, variant: "destructive" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
@@ -139,11 +138,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-elevated text-xs">
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5 text-xs shadow-elevated">
       <p className="mb-1.5 font-semibold text-card-foreground">{label}</p>
       {payload.map((item: any) => (
         <div key={item.name} className="flex items-center gap-2">
-          <div className="h-2 w-2 flex-shrink-0 rounded-sm" style={{ backgroundColor: item.fill }} />
+          <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: item.fill }} />
           <span className="text-muted-foreground">{item.name}:</span>
           <span className="font-semibold text-card-foreground">{Number(item.value).toLocaleString("da-DK")} kr</span>
         </div>
@@ -410,21 +409,9 @@ export default function InvoicesPage() {
       }));
   }, [casesById, filteredInvoices]);
 
-  const totals = useMemo(() => {
-    const totalAmount = (invoices || []).reduce((sum, invoice) => sum + Number(invoice.amount), 0);
-    const paidAmount = (invoices || []).filter((invoice) => invoice.status === "Betalt").reduce((sum, invoice) => sum + Number(invoice.amount), 0);
-    return { totalAmount, paidAmount, pendingAmount: totalAmount - paidAmount };
-  }, [invoices]);
-
   const periodSummary = useMemo(() => {
-    if (periodView === "year") {
-      return `${selectedYear}`;
-    }
-
-    if (periodView === "month") {
-      return `${MONTHS[Number(selectedMonth)]} ${selectedYear}`;
-    }
-
+    if (periodView === "year") return `${selectedYear}`;
+    if (periodView === "month") return `${MONTHS[Number(selectedMonth)]} ${selectedYear}`;
     return getWeekOptionLabel(selectedYear, Number(selectedWeek));
   }, [periodView, selectedMonth, selectedWeek, selectedYear]);
 
@@ -451,6 +438,37 @@ export default function InvoicesPage() {
       byStatus,
     };
   }, [periodInvoices]);
+
+  const summaryCards = [
+    {
+      label: "Faktureret",
+      value: formatCurrency(periodTotals.totalAmount),
+      meta: `${periodTotals.count} fakturaer`,
+      icon: Receipt,
+      tone: "text-card-foreground",
+    },
+    {
+      label: "Betalt",
+      value: formatCurrency(periodTotals.byStatus.Betalt.amount),
+      meta: `${periodTotals.byStatus.Betalt.count} fakturaer`,
+      icon: CheckCircle2,
+      tone: "text-success",
+    },
+    {
+      label: "Sendt",
+      value: formatCurrency(periodTotals.byStatus.Sendt.amount),
+      meta: `${periodTotals.byStatus.Sendt.count} fakturaer`,
+      icon: TrendingUp,
+      tone: "text-info",
+    },
+    {
+      label: "Kræver opfølgning",
+      value: formatCurrency(periodTotals.pendingAmount),
+      meta: `${periodTotals.byStatus.Forfalden.count} forfaldne · ${periodTotals.byStatus.Udkast.count} udkast`,
+      icon: AlertCircle,
+      tone: "text-warning",
+    },
+  ];
 
   const hasSearch = search.trim().length > 0;
 
@@ -493,7 +511,7 @@ export default function InvoicesPage() {
       <PageHeader title="Fakturaer & Ordrer" description={`${invoices?.length || 0} fakturaer`}>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+            <Button size="sm" className="gap-2 rounded-xl shadow-card">
               <Plus size={16} /> Ny faktura
             </Button>
           </DialogTrigger>
@@ -534,7 +552,7 @@ export default function InvoicesPage() {
               </div>
               <div className="flex justify-end gap-2 pt-3">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuller</Button>
-                <Button type="submit" disabled={createInvoice.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                <Button type="submit" disabled={createInvoice.isPending} className="rounded-xl shadow-card">
                   {createInvoice.isPending ? "Opretter..." : "Gem faktura"}
                 </Button>
               </div>
@@ -604,7 +622,7 @@ export default function InvoicesPage() {
               </Button>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="rounded-xl">Annuller</Button>
-                <Button type="submit" disabled={updateInvoice.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+                <Button type="submit" disabled={updateInvoice.isPending} className="rounded-xl shadow-card">
                   {updateInvoice.isPending ? "Gemmer..." : "Gem ændringer"}
                 </Button>
               </div>
@@ -613,218 +631,175 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <CalendarDays size={18} />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Direktøroverblik</p>
-                <h2 className="font-heading text-xl font-bold text-card-foreground">Vælg periode og se præcis hvilke fakturaer der hører til</h2>
-              </div>
+      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+              <CalendarDays size={18} />
             </div>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              Filtrér på år, måned eller uge og få hurtigt overblik over hvilke fakturaer der er sendt, betalt, udkast eller forfaldne i den valgte periode.
+            <h2 className="font-heading text-2xl font-bold tracking-tight text-card-foreground">Enkelt overblik over fakturaer i valgt periode</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Vælg periode, filtrér på status og få et rent overblik over hvad der er sendt, betalt og stadig mangler opfølgning.
             </p>
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Valgt periode</p>
             <p className="mt-1 font-heading text-lg font-bold text-card-foreground">{periodSummary}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer i perioden</p>
+            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer</p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)] xl:items-start">
-          <div className="rounded-2xl border border-border bg-background/50 p-4">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Periodevisning</p>
-            <Tabs value={periodView} onValueChange={(value) => setPeriodView(value as PeriodView)}>
-              <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-muted/60 p-1">
-                <TabsTrigger value="year" className="rounded-xl py-2">År</TabsTrigger>
-                <TabsTrigger value="month" className="rounded-xl py-2">Måned</TabsTrigger>
-                <TabsTrigger value="week" className="rounded-xl py-2">Uge</TabsTrigger>
-              </TabsList>
-            </Tabs>
+        <div className="mt-6 rounded-2xl border border-border bg-muted/15 p-4">
+          <Tabs value={periodView} onValueChange={(value) => setPeriodView(value as PeriodView)}>
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-background p-1 shadow-card sm:w-[360px]">
+              <TabsTrigger value="year" className="rounded-xl py-2">År</TabsTrigger>
+              <TabsTrigger value="month" className="rounded-xl py-2">Måned</TabsTrigger>
+              <TabsTrigger value="week" className="rounded-xl py-2">Uge</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
+              <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
+                <SelectTrigger className="rounded-xl bg-background">
+                  <SelectValue placeholder="Vælg år" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {periodView === "month" && (
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
-                <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Vælg år" />
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="rounded-xl bg-background">
+                    <SelectValue placeholder="Vælg måned" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableYears.map((year) => (
-                      <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                    {MONTHS.map((month, index) => (
+                      <SelectItem key={month} value={String(index)}>{month}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+            )}
 
-              {periodView === "month" && (
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Vælg måned" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONTHS.map((month, index) => (
-                        <SelectItem key={month} value={String(index)}>{month}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {periodView === "week" && (
-                <div className="space-y-1.5 md:col-span-2 xl:col-span-2">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Uge</Label>
-                  <Select value={selectedWeek} onValueChange={setSelectedWeek}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Vælg uge" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableWeeks.map((week) => (
-                        <SelectItem key={week.value} value={week.value}>{week.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-muted/20 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Periodesummer</p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-card px-4 py-3 shadow-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Faktureret</p>
-                <p className="mt-1 font-heading text-lg font-bold text-card-foreground">{formatCurrency(periodTotals.totalAmount)}</p>
+            {periodView === "week" && (
+              <div className="space-y-1.5 md:col-span-2 xl:col-span-2">
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Uge</Label>
+                <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+                  <SelectTrigger className="rounded-xl bg-background">
+                    <SelectValue placeholder="Vælg uge" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableWeeks.map((week) => (
+                      <SelectItem key={week.value} value={week.value}>{week.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="rounded-xl bg-card px-4 py-3 shadow-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Udestående</p>
-                <p className="mt-1 font-heading text-lg font-bold text-warning">{formatCurrency(periodTotals.pendingAmount)}</p>
-              </div>
+            )}
+
+            <div className="space-y-1.5 xl:col-start-4">
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="rounded-xl bg-background">
+                  <SelectValue placeholder="Alle statusser" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alle">Alle statusser</SelectItem>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
-      </motion.div>
+      </motion.section>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard
-          title="Fakturaer i perioden"
-          value={periodTotals.count}
-          icon={<Receipt size={18} />}
-          description={formatCurrency(periodTotals.totalAmount)}
-        />
-        <StatCard
-          title="Sendt"
-          value={periodTotals.byStatus.Sendt.count}
-          icon={<Receipt size={18} />}
-          description={formatCurrency(periodTotals.byStatus.Sendt.amount)}
-        />
-        <StatCard
-          title="Betalt"
-          value={periodTotals.byStatus.Betalt.count}
-          icon={<CheckCircle2 size={18} />}
-          description={formatCurrency(periodTotals.byStatus.Betalt.amount)}
-          trend="up"
-          trendValue="Indbetalt i valgt periode"
-        />
-        <StatCard
-          title="Forfalden"
-          value={periodTotals.byStatus.Forfalden.count}
-          icon={<AlertCircle size={18} />}
-          description={formatCurrency(periodTotals.byStatus.Forfalden.amount)}
-          trend="down"
-          trendValue="Kræver opfølgning"
-        />
-        <StatCard
-          title="Udkast"
-          value={periodTotals.byStatus.Udkast.count}
-          icon={<Clock size={18} />}
-          description={formatCurrency(periodTotals.byStatus.Udkast.amount)}
-        />
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-5 shadow-card"
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-muted ${card.tone}`}>
+                <card.icon size={18} />
+              </div>
+            </div>
+            <p className={`font-heading text-3xl font-bold tracking-tight ${card.tone}`}>{card.value}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{card.meta}</p>
+          </motion.div>
+        ))}
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-6 rounded-2xl border border-border bg-card p-6 shadow-card">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <TrendingUp size={16} className="text-primary" />
-            </div>
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-card">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Søg på fakturanummer, kunde eller sag..."
+              className="h-11 rounded-xl border-0 bg-muted/40 pl-10 shadow-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {statuses.map((status) => {
+              const item = periodTotals.byStatus[status];
+              return (
+                <div key={status} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="font-semibold text-foreground">{status}:</span> {item.count}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {periodView === "year" && (
+        <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-2xl border border-border bg-card p-6 shadow-card">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <p className="font-heading text-sm font-bold text-card-foreground">Årsanalyse</p>
-              <p className="text-xs text-muted-foreground">{yearTotals.count} fakturaer · {yearTotals.betalt.toLocaleString("da-DK")} kr betalt i {selectedYear}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Årsanalyse</p>
+              <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Betalt vs. udestående i {selectedYear}</h3>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-card-foreground">{formatCurrency(yearTotals.total)}</p>
+              <p className="text-xs text-muted-foreground">{yearTotals.count} fakturaer i alt</p>
             </div>
           </div>
-          <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
-            {availableYears.map((year) => (
-              <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${selectedYear === year ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {year}
-              </button>
-            ))}
+
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData} barSize={18} barGap={6}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.35)", radius: 8 }} />
+                <Bar dataKey="Betalt" fill="hsl(var(--success))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Udestående" fill="hsl(var(--warning))" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-
-        <div className="mb-5 grid grid-cols-3 gap-3">
-          {[
-            { label: "Faktureret", value: yearTotals.total, color: "text-card-foreground" },
-            { label: "Betalt ind", value: yearTotals.betalt, color: "text-success" },
-            { label: "Udestående", value: yearTotals.udestående, color: "text-warning" },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-muted/30 px-4 py-3">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</p>
-              <p className={`font-heading text-base font-bold ${stat.color}`}>{stat.value.toLocaleString("da-DK")} kr</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData} barSize={14} barGap={3}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)", radius: 6 }} />
-              <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
-              <Bar dataKey="Betalt" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Udestående" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
-
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-sm flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Søg på fakturanummer, kunde eller sag..." className="h-11 rounded-xl pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="flex flex-wrap gap-1 rounded-xl bg-muted/50 p-1">
-          {["alle", ...statuses].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === status ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {status === "alle" ? "Alle" : status}
-            </button>
-          ))}
-        </div>
-      </div>
+        </motion.section>
+      )}
 
       <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
-        <p className="text-sm font-medium text-card-foreground">Viser nu fakturaer for {periodSummary}.</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Du kan kombinere periodevalg med søgning og statusfilter for hurtigt at finde præcis de fakturaer du vil se som direktøroverblik.
-        </p>
+        <p className="text-sm font-medium text-card-foreground">Viser fakturaer for {periodSummary}.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Strukturen er stadig kunde → sag → faktura, men med et renere og mere fokuseret overblik.</p>
       </div>
 
       <div className="space-y-3">
@@ -849,7 +824,7 @@ export default function InvoicesPage() {
               transition={{ delay: customerIndex * 0.03 }}
               className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
             >
-              <div className="border-b border-border bg-muted/20 px-5 py-2.5">
+              <div className="border-b border-border bg-muted/20 px-5 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kunde</p>
               </div>
 
@@ -864,24 +839,16 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-start gap-3 lg:items-end">
-                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                    <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                      {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={isCustomerExpanded ? "secondary" : "default"}
-                      className="gap-2 rounded-xl"
-                      onClick={() => toggleCustomer(customerGroup.customerKey)}
-                    >
-                      <Briefcase size={14} />
-                      {isCustomerExpanded ? "Skjul sager" : "Vis sager"}
-                    </Button>
-                  </div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Først kunde, derefter sag og til sidst fakturaer.</p>
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isCustomerExpanded ? "secondary" : "outline"}
+                  className="gap-2 rounded-xl"
+                  onClick={() => toggleCustomer(customerGroup.customerKey)}
+                >
+                  <Briefcase size={14} />
+                  {isCustomerExpanded ? "Skjul sager" : "Vis sager"}
+                </Button>
               </div>
 
               {isCustomerExpanded && (
@@ -893,58 +860,45 @@ export default function InvoicesPage() {
 
                       return (
                         <div key={caseGroup.caseId} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                          <div className="border-b border-border bg-muted/20 px-4 py-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sag</p>
-                          </div>
-
-                          <div className="p-4">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                              <div className="flex min-w-0 items-start gap-3">
-                                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                                  <Briefcase size={15} className="text-primary" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
-                                  <p className="mt-0.5 text-sm text-muted-foreground">{caseGroup.caseLabel}</p>
-                                </div>
+                          <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                                <Briefcase size={15} className="text-primary" />
                               </div>
-
-                              <div className="flex flex-col items-start gap-3 lg:items-end">
-                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                                  <div className="text-right">
-                                    <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
-                                    <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={isCaseExpanded ? "secondary" : "outline"}
-                                    className="gap-2 rounded-xl"
-                                    onClick={() => toggleCase(caseGroup.caseId)}
-                                  >
-                                    <Receipt size={14} />
-                                    {isCaseExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseGroup.invoices.length})`}
-                                  </Button>
-                                </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground">{caseGroup.caseLabel}</p>
                               </div>
+                            </div>
+
+                            <div className="flex flex-col items-start gap-3 lg:items-end">
+                              <div className="text-left lg:text-right">
+                                <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
+                                <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isCaseExpanded ? "secondary" : "outline"}
+                                className="gap-2 rounded-xl"
+                                onClick={() => toggleCase(caseGroup.caseId)}
+                              >
+                                <Receipt size={14} />
+                                {isCaseExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseGroup.invoices.length})`}
+                              </Button>
                             </div>
                           </div>
 
                           {isCaseExpanded && (
                             <div className="border-t border-border bg-muted/10 p-3">
-                              <div className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fakturaer</p>
-                                <p className="mt-1 text-xs text-muted-foreground">Her vises kun fakturaer knyttet til den valgte sag i den valgte periode.</p>
-                              </div>
-
                               <div className="space-y-3">
                                 {caseGroup.invoices.map((invoice) => {
                                   const config = statusConfig[invoice.status] || statusConfig.Udkast;
                                   const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "Betalt";
 
                                   return (
-                                    <div key={invoice.id} className={`rounded-xl border bg-card p-4 transition-all ${isOverdue ? "border-destructive/30" : "border-border"}`}>
-                                      <div className="flex items-start justify-between gap-4">
+                                    <div key={invoice.id} className={`rounded-xl border bg-card p-4 ${isOverdue ? "border-destructive/30" : "border-border"}`}>
+                                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div className="flex min-w-0 items-start gap-3">
                                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                                             <Receipt size={16} className="text-primary" />
@@ -964,7 +918,7 @@ export default function InvoicesPage() {
                                         </div>
 
                                         <div className="flex items-start gap-3">
-                                          <div className="text-right">
+                                          <div className="text-left lg:text-right">
                                             <p className="font-heading text-base font-bold text-card-foreground">{Number(invoice.amount).toLocaleString("da-DK")} kr</p>
                                           </div>
                                           {role === "admin" ? (
@@ -980,7 +934,7 @@ export default function InvoicesPage() {
                                               </select>
                                               <button
                                                 onClick={() => openEdit(invoice)}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                                               >
                                                 <Pencil size={14} />
                                               </button>
