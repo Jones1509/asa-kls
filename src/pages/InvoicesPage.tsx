@@ -111,6 +111,10 @@ function getInvoiceSortTimestamp(invoice: InvoiceWithCase) {
   return new Date(`${getInvoiceSortDate(invoice)}T12:00:00`).getTime();
 }
 
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 function getCustomerKey(caseItem?: CaseOption | null) {
   return caseItem?.customer_id || caseItem?.customer || caseItem?.id || "";
 }
