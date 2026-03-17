@@ -770,6 +770,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_records: { Args: never; Returns: undefined }
+      generate_next_customer_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
