@@ -51,6 +51,7 @@ const emptyForm = { case_id: "", invoice_number: "", customer: "", description: 
 const collator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
 const danishDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
 const chartDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short" });
+const CURRENT_YEAR = new Date().getFullYear();
 
 type CaseOption = {
   id: string;
@@ -82,7 +83,7 @@ type SearchFilters = {
 type SortOrder = "newest" | "oldest";
 
 const defaultFilters: SearchFilters = {
-  year: "all",
+  year: String(CURRENT_YEAR),
   month: "all",
 };
 
