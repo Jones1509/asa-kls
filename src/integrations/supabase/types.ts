@@ -74,6 +74,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer: string
+          customer_id: string | null
           description: string | null
           end_date: string | null
           id: string
@@ -87,6 +88,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer: string
+          customer_id?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -100,6 +102,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer?: string
+          customer_id?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -107,7 +110,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_messages: {
         Row: {
@@ -166,6 +177,42 @@ export type Database = {
           id?: string
           updated_at?: string
           uploaded_at?: string | null
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
