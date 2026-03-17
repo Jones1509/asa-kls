@@ -129,8 +129,9 @@ export default function EmployeesPage() {
         full_name: editForm.full_name,
         phone: editForm.phone || null,
         role_label: editForm.role_label || null,
+        education_plan: editForm.education_plan || null,
         avatar_url,
-      }).eq("user_id", editEmployee.user_id);
+      } as any).eq("user_id", editEmployee.user_id);
       if (error) throw error;
     },
     onSuccess: () => {
