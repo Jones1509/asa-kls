@@ -225,6 +225,7 @@ export default function CasesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<(typeof caseFilters)[number]>("alle");
+  const [pendingFocusCaseId, setPendingFocusCaseId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyCaseForm);
   const [editForm, setEditForm] = useState<any>(null);
@@ -296,11 +297,23 @@ export default function CasesPage() {
     }
 
     if (state.focusCaseId) {
-      setExpandedId(state.focusCaseId);
+      setPendingFocusCaseId(state.focusCaseId);
     }
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (!pendingFocusCaseId || !cases) return;
+
+    const matchedCase = cases.find((caseItem: any) => caseItem.id === pendingFocusCaseId);
+    if (!matchedCase) return;
+
+    setExpandedId(null);
+    setEditForm({ ...matchedCase, customer_id: matchedCase.customer_id || "" });
+    setEditOpen(true);
+    setPendingFocusCaseId(null);
+  }, [cases, pendingFocusCaseId]);
 
   const getCaseAssignments = (caseId: string) => assignments?.filter((assignment: any) => assignment.case_id === caseId) || [];
 
