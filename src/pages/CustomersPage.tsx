@@ -121,6 +121,18 @@ function matchesQuery(values: Array<string | null | undefined>, query: string) {
   return values.some((value) => value?.toLowerCase().includes(query));
 }
 
+const invoiceCollator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
+const invoiceDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
+
+function formatInvoiceDate(dateString?: string | null) {
+  if (!dateString) return "";
+
+  const date = new Date(`${dateString}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateString;
+
+  return invoiceDateFormatter.format(date);
+}
+
 export default function CustomersPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -136,6 +148,7 @@ export default function CustomersPage() {
   const [caseForm, setCaseForm] = useState<any>(emptyCaseForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
+  const [expandedInvoiceCases, setExpandedInvoiceCases] = useState<Record<string, boolean>>({});
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers"],
@@ -158,6 +171,18 @@ export default function CustomersPage() {
     },
   });
 
+  const { data: invoices } = useQuery({
+    queryKey: ["customer-case-invoices"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, case_id, customer, amount, due_date, description, status, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const customerCasesMap = useMemo(() => {
     const grouped: Record<string, any[]> = {};
 
@@ -173,6 +198,21 @@ export default function CustomersPage() {
 
     return grouped;
   }, [cases]);
+
+  const invoicesByCaseMap = useMemo(() => {
+    const grouped: Record<string, any[]> = {};
+
+    (invoices || []).forEach((invoice: any) => {
+      if (!grouped[invoice.case_id]) grouped[invoice.case_id] = [];
+      grouped[invoice.case_id].push(invoice);
+    });
+
+    Object.keys(grouped).forEach((caseId) => {
+      grouped[caseId] = grouped[caseId].sort((a, b) => invoiceCollator.compare(a.invoice_number || "", b.invoice_number || ""));
+    });
+
+    return grouped;
+  }, [invoices]);
 
   const filteredCustomers = useMemo<CustomerWithCases[]>(() => {
     const query = search.toLowerCase().trim();
