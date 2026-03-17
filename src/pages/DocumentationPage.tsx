@@ -277,7 +277,7 @@ export default function DocumentationPage() {
         {/* Upload dialog */}
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
-            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Upload dokument til {selectedCase.case_number}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Upload dokument til {formatCaseLabel(selectedCase)}</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); uploadDoc.mutate(); }} className="space-y-4">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Titel</Label>
