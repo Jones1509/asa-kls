@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
     // --- CREATE ---
     if (action === "create") {
-      const { email, password, full_name, phone, role_label, make_admin } = body;
+      const { email, password, full_name, phone, role_label, company_title, make_admin } = body;
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
