@@ -623,7 +623,7 @@ export default function EmployeesPage() {
                     Påkrævede dokumenter {editForm.role_label ? `for ${editForm.role_label.toLowerCase()}` : ""}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {(CERTIFICATES_BY_TITLE[editForm.role_label] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"]).map(name => {
+                    {getCertificatesForEmployee(editForm.role_label, editForm.company_title).map(name => {
                       const exists = editEmployee.certificates?.some((c: any) => c.certificate_name === name);
                       return (
                         <label key={name} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-colors border ${exists ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
