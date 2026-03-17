@@ -34,7 +34,8 @@ export default function EmployeesPage() {
 
   // Edit state
   const [editEmployee, setEditEmployee] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", role_label: "", education_plan: "" });
+  const [customCertName, setCustomCertName] = useState("");
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
   const [editCropOpen, setEditCropOpen] = useState(false);
