@@ -243,13 +243,13 @@ export default function CustomersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {selectedCustomer.customer_number && (
+                      <span className="text-xs font-medium text-muted-foreground">{selectedCustomer.customer_number}</span>
+                    )}
                     <h2 className="text-xl font-heading font-bold text-card-foreground">{getCustomerNameLabel(selectedCustomer)}</h2>
                     <Badge variant={getCustomerTypeBadgeVariant(selectedCustomer.customer_type)}>
                       {selectedCustomer.customer_type || "Privat"}
                     </Badge>
-                    {selectedCustomer.customer_number && (
-                      <Badge variant="outline">#{selectedCustomer.customer_number}</Badge>
-                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {caseCounts[selectedCustomer.id] || 0} {(caseCounts[selectedCustomer.id] || 0) === 1 ? "sag" : "sager"}
