@@ -39,7 +39,6 @@ function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
   return {
     created_by: userId,
     customer_type: form.customer_type,
-    customer_number: form.customer_number.trim() || null,
     name: displayName,
     company_name: isBusiness ? form.company_name.trim() || null : null,
     contact_person: isBusiness ? form.contact_person.trim() || null : null,
