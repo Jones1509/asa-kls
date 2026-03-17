@@ -27,17 +27,18 @@ interface AppSidebarProps {
 
 const adminLinks = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
+  { to: "/customers", icon: Contact, label: "Kunder", section: "Oversigt" },
+  { to: "/cases", icon: Briefcase, label: "Sager", section: "Oversigt" },
   { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Økonomi" },
-  { to: "/cases", icon: Briefcase, label: "Sager", section: "Planlægning" },
   { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
   { to: "/chat", icon: MessageSquare, label: "Chat", section: "Kommunikation" },
-  { to: "/company", icon: Building2, label: "KLS Dokumentation", section: "KLS & Kvalitet" },
   { to: "/verification", icon: ClipboardCheck, label: "Verifikationsskemaer", section: "KLS & Kvalitet" },
   { to: "/field-reports", icon: Radio, label: "Feltrapporter", section: "KLS & Kvalitet" },
   { to: "/documentation", icon: FolderOpen, label: "Dokumentation", section: "KLS & Kvalitet" },
   { to: "/deviations", icon: AlertOctagon, label: "Afvigelser", section: "KLS & Kvalitet" },
-  { to: "/employees", icon: Users, label: "Medarbejdere", section: "KLS & Kvalitet" },
+  { to: "/company", icon: Building2, label: "KLS Dokumentation", section: "KLS & Kvalitet" },
+  { to: "/employees", icon: Users, label: "Medarbejdere", section: "Administration" },
 ];
 
 const employeeLinks = [
