@@ -127,7 +127,7 @@ export default function DeviationsPage() {
                     <p className="text-sm font-semibold text-foreground">{dev.description.length > 120 ? dev.description.slice(0, 120) + "..." : dev.description}</p>
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar size={11} /> {format(new Date(dev.deviation_date), "d. MMM yyyy", { locale: da })}</span>
-                      {(dev.cases as any)?.case_number && <span className="flex items-center gap-1"><Briefcase size={11} /> Sag {(dev.cases as any).case_number}</span>}
+                      {(dev.cases as any)?.case_number && <span className="flex items-center gap-1"><Briefcase size={11} /> {formatCaseLabel(dev.cases as any)}</span>}
                       {responsible && <span className="flex items-center gap-1"><User size={11} /> {responsible.full_name}</span>}
                     </div>
                     {overdue && (
