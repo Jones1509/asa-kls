@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { differenceInDays, differenceInMonths, addMonths, format } from "date-fns";
+import { da } from "date-fns/locale";
 
 const container = {
   hidden: { opacity: 0 },
