@@ -442,35 +442,35 @@ export default function CompanyPage() {
               {sortedInstruments.map(inst => {
                 const status = getCalibrationStatus(inst.next_calibration);
                 return (
-                  <div key={inst.id} className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3.5 hover:border-border transition-colors">
+                  <div key={inst.id} className="group flex items-center justify-between rounded-xl border border-border/50 bg-card p-4 hover:border-border/80 hover:bg-muted/10 transition-all duration-150">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
+                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${status === "red" ? "bg-destructive" : status === "yellow" ? "bg-warning" : status === "green" ? "bg-success" : "bg-muted-foreground/20"}`} />
                       <div className="min-w-0">
                         <p className="text-[14px] font-bold text-foreground truncate">{inst.name}</p>
-                        {inst.serial_number && <p className="text-[12px] text-muted-foreground/50">S/N: {inst.serial_number}</p>}
+                        {inst.serial_number && <p className="text-[12px] text-muted-foreground/40">S/N: {inst.serial_number}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2.5 flex-shrink-0">
-                      <div className="text-right mr-1">
-                        <p className="text-[11px] text-muted-foreground/50">
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] text-muted-foreground/50">
                           {inst.next_calibration ? format(new Date(inst.next_calibration), "d. MMM yyyy", { locale: da }) : "–"}
                         </p>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full leading-none ${status === "red" ? "bg-destructive/10 text-destructive" : status === "yellow" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
                           {status === "red" ? "Overskredet" : status === "yellow" ? "Snart" : "OK"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                         {inst.certificate_url && (
                           <a href={inst.certificate_url} target="_blank" rel="noopener" className="p-1.5 rounded-lg hover:bg-muted text-primary/60 transition-colors" title="Se certifikat">
                             <FileText size={13} />
                           </a>
                         )}
                         <button onClick={() => { setEditInstrument(inst); setInstrForm({ name: inst.name, serial_number: inst.serial_number || "", last_calibrated: inst.last_calibrated || "", next_calibration: inst.next_calibration || "", certificate_url: inst.certificate_url || "" }); setShowInstrument(true); }}
-                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-colors">
+                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground/30 hover:text-foreground transition-colors">
                           <Pencil size={13} />
                         </button>
                         <button onClick={() => deleteInstrument.mutate(inst.id)}
-                          className="p-1.5 rounded-lg hover:bg-destructive/5 text-muted-foreground/40 hover:text-destructive transition-colors">
+                          className="p-1.5 rounded-lg hover:bg-destructive/5 text-muted-foreground/30 hover:text-destructive transition-colors">
                           <Trash2 size={13} />
                         </button>
                       </div>
