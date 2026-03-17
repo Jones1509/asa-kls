@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,14 +10,13 @@ import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useState, useMemo } from "react";
-import { Switch } from "@/components/ui/switch";
 
 interface QuickEntryFormProps {
   form: { case_id: string; user_id: string; date: string; start_time: string; end_time: string; notes: string; lunch_break: boolean };
   setForm: (form: any) => void;
   isAdmin: boolean;
   employees: { user_id: string; full_name: string }[];
-  cases: { id: string; case_number: string; customer?: string; display_label?: string }[];
+  cases: { id: string; case_number: string; customer?: string; customer_id?: string; case_description?: string }[];
   onSubmit: () => void;
   isPending: boolean;
 }
@@ -27,12 +27,6 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
   const employeeOptions = [...(employees || [])]
     .sort((a, b) => a.full_name.localeCompare(b.full_name, "da"))
     .map(e => ({ value: e.user_id, label: e.full_name }));
-
-  const caseOptions = (cases || []).map(c => ({
-    value: c.id,
-    label: c.display_label || c.case_number,
-    sublabel: c.customer,
-  }));
 
   const formatTimeInput = (val: string) => {
     let raw = val.replace(/[^0-9:]/g, "");
@@ -51,7 +45,6 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
 
   const selectedDate = form.date ? new Date(form.date + "T00:00") : new Date();
 
-  // Calculate preview hours
   const previewHours = useMemo(() => {
     try {
       const [sh, sm] = form.start_time.split(":").map(Number);
@@ -73,7 +66,6 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
       </h3>
 
       <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
-        {/* Row 1: Employee + Case + Date */}
         <div className={cn("grid gap-3", isAdmin ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2")}>
           {isAdmin && (
             <div>
@@ -88,17 +80,16 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
               />
             </div>
           )}
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Sag</Label>
-            <SearchableSelect
-              options={caseOptions}
-              value={form.case_id}
-              onSelect={(v) => setForm({ ...form, case_id: v })}
-              placeholder="Søg sag..."
-              searchPlaceholder="Søg sagsnummer..."
-              className="w-full"
-            />
-          </div>
+          <CustomerCaseSelect
+            cases={(cases as any) || []}
+            value={form.case_id}
+            onChange={(caseId) => setForm({ ...form, case_id: caseId })}
+            customerLabel="Kunde"
+            caseLabel="Sag"
+            customerPlaceholder="Vælg kunde..."
+            casePlaceholder="Vælg sag..."
+            required
+          />
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Dato</Label>
             <Popover open={calOpen} onOpenChange={setCalOpen}>
@@ -126,7 +117,6 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </div>
         </div>
 
-        {/* Row 2: Start + End + Lunch + Note + Submit */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Start</Label>
@@ -190,7 +180,6 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </Button>
         </div>
 
-        {/* Hours preview */}
         {previewHours && (
           <div className="flex items-center gap-3 text-sm px-1">
             <span className="text-muted-foreground">
