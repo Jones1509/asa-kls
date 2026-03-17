@@ -610,6 +610,7 @@ export default function CustomersPage() {
                       {getCustomerNameLabel(customer)}
                     </p>
                     <Badge variant={getCustomerTypeBadgeVariant(customer.customer_type)}>{customer.customer_type || "Privat"}</Badge>
+                  </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{customer.address || "Ingen adresse"}</p>
                   <p className="mt-1 text-xs text-muted-foreground/80">
                     {customer.customer_type === "Erhverv" && customer.contact_person ? `${customer.contact_person} · ` : ""}
