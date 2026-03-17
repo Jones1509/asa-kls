@@ -27,8 +27,8 @@ interface AppSidebarProps {
 
 const adminLinks = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", section: "Oversigt" },
-  { to: "/customers", icon: Contact, label: "Kunder", section: "Oversigt" },
-  { to: "/cases", icon: Briefcase, label: "Sager", section: "Oversigt" },
+  { to: "/customers", icon: Contact, label: "Kunder", section: "Projekter" },
+  { to: "/cases", icon: Briefcase, label: "Sager", section: "Projekter" },
   { to: "/invoices", icon: Receipt, label: "Fakturaer", section: "Økonomi" },
   { to: "/schedule", icon: Calendar, label: "Kalender", section: "Planlægning" },
   { to: "/time-tracking", icon: Clock, label: "Timeregistrering", section: "Planlægning" },
