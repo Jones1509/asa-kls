@@ -273,13 +273,16 @@ export default function VerificationPage() {
           <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
             <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Udfyld verifikationsskema</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); createForm.mutate(); }} className="space-y-4">
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag / Kunde</Label>
-                <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all" required>
-                  <option value="">Vælg sag...</option>
-                  {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
-                </select>
-              </div>
+              <CustomerCaseSelect
+                cases={(cases as any) || []}
+                value={form.case_id}
+                onChange={(caseId) => setForm({ ...form, case_id: caseId })}
+                customerLabel="Kunde"
+                caseLabel="Sag"
+                customerPlaceholder="Vælg kunde..."
+                casePlaceholder="Vælg sag..."
+                required
+              />
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Skematype</Label>
                 <Input value={form.form_type} onChange={(e) => setForm({ ...form, form_type: e.target.value })} placeholder="Brandtætning, Isolering, EL-check..." className="mt-1.5 rounded-xl" required />

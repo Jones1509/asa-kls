@@ -232,11 +232,17 @@ export default function FieldReportsPage() {
                 <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Kort beskrivelse af observationen..." className="mt-1.5 rounded-xl" required />
               </div>
               <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sag / Lokation (valgfrit)</Label>
-                <select value={form.case_id} onChange={(e) => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
-                  <option value="">Ingen specifik sag</option>
-                  {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
-                </select>
+                <CustomerCaseSelect
+                  cases={(cases as any) || []}
+                  value={form.case_id}
+                  onChange={(caseId) => setForm({ ...form, case_id: caseId })}
+                  customerLabel="Kunde (valgfrit)"
+                  caseLabel="Sag (valgfrit)"
+                  allowEmptyCustomer
+                  emptyCustomerLabel="Ingen specifik kunde"
+                  allowEmptyCase
+                  emptyCaseLabel="Ingen specifik sag"
+                />
                 {!form.case_id && (
                   <Input value={form.location_text} onChange={(e) => setForm({ ...form, location_text: e.target.value })} placeholder="Angiv lokation hvis ikke tilknyttet en sag..." className="mt-2 rounded-xl" />
                 )}
