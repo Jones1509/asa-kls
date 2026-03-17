@@ -621,11 +621,11 @@ export default function InvoicesPage() {
               transition={{ delay: customerIndex * 0.03 }}
               className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
             >
-              <button
-                type="button"
-                onClick={() => toggleCustomer(customerGroup.customerKey)}
-                className="flex w-full items-start justify-between gap-4 p-5 text-left transition-colors hover:bg-muted/20"
-              >
+              <div className="border-b border-border bg-muted/20 px-5 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kunde</p>
+              </div>
+
+              <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex min-w-0 items-start gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
                     <Building2 size={18} className="text-primary" />
@@ -636,15 +636,25 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                    {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}
+                <div className="flex flex-col items-start gap-3 lg:items-end">
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <div className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+                      {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isCustomerExpanded ? "secondary" : "default"}
+                      className="gap-2 rounded-xl"
+                      onClick={() => toggleCustomer(customerGroup.customerKey)}
+                    >
+                      <Briefcase size={14} />
+                      {isCustomerExpanded ? "Skjul sager" : "Vis sager"}
+                    </Button>
                   </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground">
-                    {isCustomerExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  </div>
+                  <p className="text-[11px] font-medium text-muted-foreground">Først kunde, derefter sag og til sidst fakturaer.</p>
                 </div>
-              </button>
+              </div>
 
               {isCustomerExpanded && (
                 <div className="border-t border-border bg-muted/10 px-5 py-4">
@@ -654,35 +664,51 @@ export default function InvoicesPage() {
                       const isCaseExpanded = hasSearch || !!expandedCases[caseGroup.caseId];
 
                       return (
-                        <div key={caseGroup.caseId} className="overflow-hidden rounded-xl border border-border bg-card">
-                          <button
-                            type="button"
-                            onClick={() => toggleCase(caseGroup.caseId)}
-                            className="flex w-full items-start justify-between gap-4 p-4 text-left transition-colors hover:bg-muted/20"
-                          >
-                            <div className="flex min-w-0 items-start gap-3">
-                              <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                                <Briefcase size={15} className="text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">{caseGroup.caseLabel}</p>
-                              </div>
-                            </div>
+                        <div key={caseGroup.caseId} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                          <div className="border-b border-border bg-muted/20 px-4 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sag</p>
+                          </div>
 
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
-                                <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
+                          <div className="p-4">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                                  <Briefcase size={15} className="text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
+                                  <p className="mt-0.5 text-sm text-muted-foreground">{caseGroup.caseLabel}</p>
+                                </div>
                               </div>
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground">
-                                {isCaseExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+
+                              <div className="flex flex-col items-start gap-3 lg:items-end">
+                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                  <div className="text-right">
+                                    <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
+                                    <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={isCaseExpanded ? "secondary" : "outline"}
+                                    className="gap-2 rounded-xl"
+                                    onClick={() => toggleCase(caseGroup.caseId)}
+                                  >
+                                    <Receipt size={14} />
+                                    {isCaseExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseGroup.invoices.length})`}
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </button>
+                          </div>
 
                           {isCaseExpanded && (
                             <div className="border-t border-border bg-muted/10 p-3">
+                              <div className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fakturaer</p>
+                                <p className="mt-1 text-xs text-muted-foreground">Her vises kun fakturaer knyttet til den valgte sag.</p>
+                              </div>
+
                               <div className="space-y-3">
                                 {caseGroup.invoices.map((invoice) => {
                                   const config = statusConfig[invoice.status] || statusConfig.Udkast;
