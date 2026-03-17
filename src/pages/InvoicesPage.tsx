@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Receipt, Search, CheckCircle2, Clock, AlertCircle, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,14 +15,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-const statusConfig: Record<string, { color: string; icon: any }> = {
-  Udkast: { color: "bg-muted text-muted-foreground", icon: Clock },
-  Sendt: { color: "bg-info/10 text-info border border-info/20", icon: Receipt },
-  Betalt: { color: "bg-success/10 text-success border border-success/20", icon: CheckCircle2 },
-  Forfalden: { color: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertCircle },
+const statusConfig: Record<string, { className: string; icon: any; variant: "secondary" | "destructive" | "outline" | "default" }> = {
+  Udkast: { className: "bg-muted text-muted-foreground", icon: Clock, variant: "secondary" },
+  Sendt: { className: "bg-info/10 text-info border border-info/20", icon: Receipt, variant: "outline" },
+  Betalt: { className: "bg-success/10 text-success border border-success/20", icon: CheckCircle2, variant: "outline" },
+  Forfalden: { className: "bg-destructive/10 text-destructive border border-destructive/20", icon: AlertCircle, variant: "destructive" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
+
+const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
+
+const invoiceNumberFormatter = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
+const danishDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
+
+function formatDanishDate(dateString?: string | null) {
+  if (!dateString) return "";
+
+  const date = new Date(`${dateString}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateString;
+
+  return danishDateFormatter.format(date);
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -38,20 +53,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     </div>
   );
 };
-
-const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
-
-function getNextInvoiceNumber(invoices: any[]): string {
-  if (!invoices?.length) return "1";
-  const nums = invoices
-    .map((inv) => {
-      const match = inv.invoice_number.match(/(\d+)/);
-      return match ? parseInt(match[1], 10) : 0;
-    })
-    .filter((n) => !isNaN(n));
-  const max = nums.length ? Math.max(...nums) : 0;
-  return String(max + 1);
-}
 
 export default function InvoicesPage() {
   const { user, role } = useAuth();
@@ -76,19 +77,13 @@ export default function InvoicesPage() {
     queryKey: ["invoices"],
     queryFn: async () => {
       const { data } = await supabase.from("invoices").select("*, cases(case_number, customer, case_description)");
-      return (data || []).sort((a, b) => {
-        const numA = parseInt(a.invoice_number, 10);
-        const numB = parseInt(b.invoice_number, 10);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return a.invoice_number.localeCompare(b.invoice_number);
-      });
+      return (data || []).sort((a, b) => invoiceNumberFormatter.compare(a.invoice_number ?? "", b.invoice_number ?? ""));
     },
   });
 
-  // Revenue analytics
   const availableYears = useMemo(() => {
     if (!invoices?.length) return [new Date().getFullYear()];
-    const years = [...new Set(invoices.map(inv => new Date(inv.created_at).getFullYear()))].sort((a, b) => b - a);
+    const years = [...new Set(invoices.map((inv) => new Date(inv.created_at).getFullYear()))].sort((a, b) => b - a);
     if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
     return years;
   }, [invoices]);
@@ -97,30 +92,28 @@ export default function InvoicesPage() {
 
   const monthlyData = useMemo(() => {
     return MONTHS.map((month, idx) => {
-      const monthInvoices = (invoices || []).filter(inv => {
+      const monthInvoices = (invoices || []).filter((inv) => {
         const d = new Date(inv.created_at);
         return d.getFullYear() === selectedYear && d.getMonth() === idx;
       });
-      const betalt = monthInvoices.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
-      const udestående = monthInvoices.filter(i => i.status !== "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+      const betalt = monthInvoices.filter((i) => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+      const udestående = monthInvoices.filter((i) => i.status !== "Betalt").reduce((s, i) => s + Number(i.amount), 0);
       return { month, Betalt: betalt, Udestående: udestående };
     });
   }, [invoices, selectedYear]);
 
   const yearTotals = useMemo(() => {
-    const yearInvoices = (invoices || []).filter(inv => new Date(inv.created_at).getFullYear() === selectedYear);
+    const yearInvoices = (invoices || []).filter((inv) => new Date(inv.created_at).getFullYear() === selectedYear);
     const total = yearInvoices.reduce((s, i) => s + Number(i.amount), 0);
-    const betalt = yearInvoices.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
+    const betalt = yearInvoices.filter((i) => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0);
     return { total, betalt, udestående: total - betalt, count: yearInvoices.length };
   }, [invoices, selectedYear]);
 
   const createInvoice = useMutation({
     mutationFn: async () => {
-      const invoiceNum = form.invoice_number.trim() || getNextInvoiceNumber(invoices || []);
       const { error } = await supabase.from("invoices").insert({
         created_by: user!.id,
         case_id: form.case_id,
-        invoice_number: invoiceNum,
         customer: form.customer,
         description: form.description || null,
         amount: parseFloat(form.amount) || 0,
@@ -142,7 +135,6 @@ export default function InvoicesPage() {
       if (!editId) return;
       const updates: any = {
         case_id: editForm.case_id,
-        invoice_number: editForm.invoice_number,
         customer: editForm.customer,
         description: editForm.description || null,
         amount: parseFloat(editForm.amount) || 0,
@@ -189,22 +181,27 @@ export default function InvoicesPage() {
 
   const statuses = ["Udkast", "Sendt", "Betalt", "Forfalden"];
   const filtered = invoices?.filter((inv) => {
-    const matchSearch = inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer.toLowerCase().includes(search.toLowerCase());
+    const caseLabel = formatCaseLabel(inv.cases as any, "").toLowerCase();
+    const searchValue = search.toLowerCase();
+    const matchSearch =
+      (inv.invoice_number || "").toLowerCase().includes(searchValue) ||
+      (inv.customer || "").toLowerCase().includes(searchValue) ||
+      caseLabel.includes(searchValue) ||
+      (inv.description || "").toLowerCase().includes(searchValue);
     const matchStatus = statusFilter === "alle" || inv.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
   const totalAmount = invoices?.reduce((s, i) => s + Number(i.amount), 0) || 0;
-  const paidAmount = invoices?.filter(i => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0) || 0;
+  const paidAmount = invoices?.filter((i) => i.status === "Betalt").reduce((s, i) => s + Number(i.amount), 0) || 0;
   const pendingAmount = totalAmount - paidAmount;
 
   const handleCaseSelect = (caseId: string, isEdit = false) => {
-    const c = cases?.find(c => c.id === caseId);
+    const selectedCase = cases?.find((caseItem) => caseItem.id === caseId);
     if (isEdit) {
-      setEditForm({ ...editForm, case_id: caseId, customer: c?.customer || editForm.customer });
+      setEditForm((current) => ({ ...current, case_id: caseId, customer: selectedCase?.customer || "" }));
     } else {
-      setForm({ ...form, case_id: caseId, customer: c?.customer || form.customer });
+      setForm((current) => ({ ...current, case_id: caseId, customer: selectedCase?.customer || "" }));
     }
   };
 
@@ -221,8 +218,6 @@ export default function InvoicesPage() {
     });
     setEditOpen(true);
   };
-
-  const nextNum = getNextInvoiceNumber(invoices || []);
 
   return (
     <div>
@@ -244,11 +239,11 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
-                  <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder={nextNum} className="mt-1.5 rounded-xl" />
+                  <Input value="Tildeles automatisk" readOnly className="mt-1.5 rounded-xl bg-muted/40 text-muted-foreground" />
                 </div>
                 <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
               </div>
-              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={form.customer} readOnly className="mt-1.5 rounded-xl bg-muted/40 text-muted-foreground" required /></div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Forfaldsdato</Label><Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
               <div className="flex justify-end gap-2 pt-3">
@@ -260,7 +255,6 @@ export default function InvoicesPage() {
         </Dialog>
       </PageHeader>
 
-      {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Rediger faktura</DialogTitle></DialogHeader>
@@ -275,17 +269,17 @@ export default function InvoicesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fakturanummer</Label>
-                <Input value={editForm.invoice_number} onChange={(e) => setEditForm({ ...editForm, invoice_number: e.target.value })} className="mt-1.5 rounded-xl" required />
+                <Input value={editForm.invoice_number} readOnly className="mt-1.5 rounded-xl bg-muted/40 text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
                 <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className="mt-1.5 flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all">
-                  {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                  {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beløb (DKK)</Label><Input type="number" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} placeholder="0.00" className="mt-1.5 rounded-xl" required /></div>
             </div>
-            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} className="mt-1.5 rounded-xl" required /></div>
+            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kunde</Label><Input value={editForm.customer} readOnly className="mt-1.5 rounded-xl bg-muted/40 text-muted-foreground" required /></div>
             <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Forfaldsdato</Label><Input type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} className="mt-1.5 rounded-xl" /></div>
             <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse</Label><Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="mt-1.5 rounded-xl" rows={3} /></div>
             <div className="flex justify-between pt-3">
@@ -306,7 +300,6 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
           { label: "Total faktureret", value: `${totalAmount.toLocaleString("da-DK")} kr`, icon: Receipt, bg: "bg-primary/10", color: "text-primary" },
@@ -324,7 +317,6 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      {/* Revenue Analytics */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className="rounded-2xl border border-border bg-card p-6 shadow-card mb-6">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
@@ -339,7 +331,7 @@ export default function InvoicesPage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
-              {availableYears.map(year => (
+              {availableYears.map((year) => (
                 <button key={year} onClick={() => setSelectedYear(year)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedYear === year ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                   {year}
@@ -349,7 +341,6 @@ export default function InvoicesPage() {
           </div>
         </div>
 
-        {/* Year summary */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
             { label: "Faktureret", value: yearTotals.total, color: "text-card-foreground" },
@@ -378,7 +369,6 @@ export default function InvoicesPage() {
         </div>
       </motion.div>
 
-      {/* Filters */}
       <div className="mb-5 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -394,48 +384,46 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {/* Invoice list */}
       <div className="space-y-3">
-        {isLoading && [1, 2, 3].map(i => (
+        {isLoading && [1, 2, 3].map((i) => (
           <div key={i} className="rounded-2xl border border-border bg-card p-5 animate-pulse">
             <div className="flex items-center gap-4"><div className="h-11 w-11 rounded-2xl bg-muted" /><div className="space-y-2 flex-1"><div className="h-4 w-40 rounded bg-muted" /><div className="h-3 w-28 rounded bg-muted" /></div></div>
           </div>
         ))}
         {(filtered || []).map((inv, i) => {
           const config = statusConfig[inv.status] || statusConfig.Udkast;
-          const StatusIcon = config.icon;
           const isOverdue = inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== "Betalt";
 
           return (
             <motion.div key={inv.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
               className={`rounded-2xl border bg-card p-5 shadow-card hover:shadow-elevated transition-all ${isOverdue ? "border-destructive/30" : "border-border"}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4 min-w-0">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 flex-shrink-0">
                     <Receipt size={18} className="text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-card-foreground">Faktura #{inv.invoice_number}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-lg font-heading font-bold text-card-foreground">{inv.invoice_number}</p>
                       {isOverdue && <span className="text-[10px] font-bold text-destructive uppercase">Forfalden</span>}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{inv.customer} · {formatCaseLabel(inv.cases as any, "Sag –")}</p>
-                    {inv.description && <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-1">{inv.description}</p>}
+                    <p className="text-sm text-muted-foreground mt-0.5">{formatCaseLabel(inv.cases as any, inv.customer || "Sag –")}</p>
+                    {inv.description && <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">{inv.description}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-start gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-sm font-heading font-bold text-card-foreground">{Number(inv.amount).toLocaleString("da-DK")} kr</p>
-                    {inv.due_date && <p className="text-[11px] text-muted-foreground">Forfald: {inv.due_date}</p>}
+                    <p className="text-base font-heading font-bold text-card-foreground">{Number(inv.amount).toLocaleString("da-DK")} kr</p>
+                    {inv.due_date && <p className="text-[11px] text-muted-foreground">{formatDanishDate(inv.due_date)}</p>}
                   </div>
                   {role === "admin" ? (
                     <div className="flex items-center gap-2">
                       <select
                         value={inv.status}
                         onChange={(e) => updateStatus.mutate({ id: inv.id, status: e.target.value })}
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border-0 outline-none cursor-pointer ${config.color}`}
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border-0 outline-none cursor-pointer ${config.className}`}
                       >
-                        {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                       <button
                         onClick={() => openEdit(inv)}
@@ -445,7 +433,7 @@ export default function InvoicesPage() {
                       </button>
                     </div>
                   ) : (
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${config.color}`}>{inv.status}</span>
+                    <Badge variant={config.variant} className={config.className}>{inv.status}</Badge>
                   )}
                 </div>
               </div>
