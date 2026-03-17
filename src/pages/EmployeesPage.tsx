@@ -15,6 +15,29 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const EMPLOYEE_TITLES = [
+  { value: "Lærling", label: "Lærling" },
+  { value: "Svend", label: "Svend" },
+  { value: "Elinstallatør", label: "Elinstallatør" },
+  { value: "Aut. elinstallatør", label: "Autoriseret elinstallatør" },
+  { value: "Arbejdsmand", label: "Arbejdsmand" },
+  { value: "Leder", label: "Leder" },
+  { value: "Kontor", label: "Kontor / administration" },
+  { value: "Andet", label: "Andet" },
+] as const;
+
+const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
+  "Lærling": ["Lærlingekontrakt", "Uddannelsesbevis"],
+  "Svend": ["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt"],
+  "Elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Ansættelseskontrakt"],
+  "Aut. elinstallatør": ["Svendebevis", "Uddannelsesbevis", "Uddannelsesbevis som elinstallatør", "Bevis for bestået autorisationsprøve", "Ansættelseskontrakt"],
+  "Arbejdsmand": ["Ansættelseskontrakt"],
+  "Leder": ["Ansættelseskontrakt"],
+  "Kontor": ["Ansættelseskontrakt"],
+  "Andet": ["Ansættelseskontrakt"],
+};
 
 async function callManageEmployee(body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -344,8 +367,16 @@ export default function EmployeesPage() {
               </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling / titel</Label>
-                <Input value={createForm.role_label} onChange={(e) => setCreateForm({ ...createForm, role_label: e.target.value })}
-                  placeholder="Tekniker, Leder..." className="mt-1.5 rounded-xl h-11" />
+                <Select value={createForm.role_label} onValueChange={(v) => setCreateForm({ ...createForm, role_label: v })}>
+                  <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                    <SelectValue placeholder="Vælg titel..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYEE_TITLES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -454,7 +485,16 @@ export default function EmployeesPage() {
                 </div>
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling / titel</Label>
-                  <Input value={editForm.role_label} onChange={(e) => setEditForm({ ...editForm, role_label: e.target.value })} placeholder="Tekniker, Leder..." className="mt-1.5 rounded-xl h-11" />
+                  <Select value={editForm.role_label} onValueChange={(v) => setEditForm({ ...editForm, role_label: v })}>
+                    <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                      <SelectValue placeholder="Vælg titel..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYEE_TITLES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -518,11 +558,13 @@ export default function EmployeesPage() {
                   ))}
                 </div>
 
-                {/* Quick upload predefined types */}
+                {/* Quick upload predefined types based on title */}
                 <div className="mb-3">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Hurtig upload</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Påkrævede dokumenter {editForm.role_label ? `for ${editForm.role_label.toLowerCase()}` : ""}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Svendebevis", "Uddannelsesbevis", "Ansættelseskontrakt", "Lærlingekontrakt", "Autorisationsprøve", "Elinstallatørbevis"].map(name => {
+                    {(CERTIFICATES_BY_TITLE[editForm.role_label] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"]).map(name => {
                       const exists = editEmployee.certificates?.some((c: any) => c.certificate_name === name);
                       return (
                         <label key={name} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium cursor-pointer transition-colors border ${exists ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
