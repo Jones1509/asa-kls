@@ -37,7 +37,7 @@ export default function TimeTrackingPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active_time"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").eq("status", "Aktiv").order("case_number");
       return data || [];
     },
   });
