@@ -48,9 +48,10 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
   const filteredCases = useMemo(() => {
     if (!caseSearch.trim()) return cases;
     const q = caseSearch.toLowerCase();
-    return cases.filter((c) => 
-      c.case_number.toLowerCase().includes(q) || 
-      c.customer?.toLowerCase().includes(q)
+    return cases.filter((c) =>
+      c.case_number.toLowerCase().includes(q) ||
+      c.customer?.toLowerCase().includes(q) ||
+      c.case_description?.toLowerCase().includes(q)
     );
   }, [cases, caseSearch]);
 
