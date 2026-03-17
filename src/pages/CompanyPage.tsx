@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Shield, Upload, Calendar, CheckCircle2, XCircle, AlertTriangle, Plus, Pencil, Trash2, FileText, Wrench, ClipboardCheck } from "lucide-react";
+import { Shield, Upload, Calendar, CheckCircle2, XCircle, AlertTriangle, Plus, Pencil, Trash2, FileText, Wrench, ClipboardCheck, BookOpen, Download } from "lucide-react";
 import { format, differenceInDays, addMonths, differenceInMonths } from "date-fns";
 import { da } from "date-fns/locale";
 
