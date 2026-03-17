@@ -5,7 +5,7 @@ import { User, Shield, Mail, Eye, EyeOff, Loader2, KeyRound } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 
 export default function LoginPage() {
-  const { session, loading: authLoading, signIn, signUp } = useAuth();
+  const { session, loading: authLoading, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
