@@ -97,6 +97,7 @@ export default function EmployeesPage() {
     full_name: "",
     phone: "",
     role_label: "",
+    company_title: "Medarbejder",
     make_admin: false,
   });
   const [showCreatePw, setShowCreatePw] = useState(false);
