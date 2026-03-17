@@ -405,7 +405,7 @@ export default function EmployeesPage() {
         }}
       />
       <Dialog open={!!editEmployee} onOpenChange={(o) => !o && setEditEmployee(null)}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading font-bold text-lg">Rediger medarbejder</DialogTitle>
           </DialogHeader>
