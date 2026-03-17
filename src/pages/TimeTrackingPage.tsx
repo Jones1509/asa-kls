@@ -228,7 +228,7 @@ export default function TimeTrackingPage() {
           {isAdmin && employees && (
             <BulkTimeEntryDialog
               employees={employees}
-              cases={cases || []}
+              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
               onSubmit={(entries) => bulkCreateEntries.mutate(entries)}
               isPending={bulkCreateEntries.isPending}
             />
