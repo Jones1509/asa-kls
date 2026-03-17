@@ -164,8 +164,8 @@ export default function DocumentationPage() {
         </button>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-heading font-bold text-foreground">{selectedCase.case_number}</h2>
-            <p className="text-sm text-muted-foreground">{selectedCase.customer}</p>
+            <h2 className="text-xl font-heading font-bold text-foreground">{formatCaseLabel(selectedCase)}</h2>
+            <p className="text-sm text-muted-foreground">Sagsmappe</p>
           </div>
           {role === "admin" && (
             <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
