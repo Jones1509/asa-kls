@@ -145,10 +145,14 @@ export default function DocumentationPage() {
     },
   });
 
-  const filteredCases = cases?.filter(c =>
-    c.case_number.toLowerCase().includes(search.toLowerCase()) ||
-    c.customer.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCases = cases?.filter(c => {
+    if (c.customer === "ASA ApS") return false;
+
+    return (
+      c.case_number.toLowerCase().includes(search.toLowerCase()) ||
+      c.customer.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   // Case folder view
   if (selectedCase) {
