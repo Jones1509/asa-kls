@@ -51,6 +51,7 @@ const emptyForm = { case_id: "", invoice_number: "", customer: "", description: 
 const collator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
 const danishDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
 const chartDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short" });
+const CURRENT_YEAR = new Date().getFullYear();
 
 type CaseOption = {
   id: string;
@@ -82,7 +83,7 @@ type SearchFilters = {
 type SortOrder = "newest" | "oldest";
 
 const defaultFilters: SearchFilters = {
-  year: "all",
+  year: String(CURRENT_YEAR),
   month: "all",
 };
 
@@ -175,9 +176,9 @@ export default function InvoicesPage() {
   const casesById = useMemo(() => new Map((cases || []).map((caseItem) => [caseItem.id, caseItem])), [cases]);
 
   const availableYears = useMemo(() => {
-    if (!invoices?.length) return [new Date().getFullYear()];
-    const years = [...new Set(invoices.map((invoice) => new Date(invoice.created_at).getFullYear()))].sort((a, b) => b - a);
-    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+    if (!invoices?.length) return [CURRENT_YEAR];
+    const years = [...new Set(invoices.map((invoice) => new Date(`${getInvoiceSortDate(invoice)}T12:00:00`).getFullYear()))].sort((a, b) => b - a);
+    if (!years.includes(CURRENT_YEAR)) years.unshift(CURRENT_YEAR);
     return years;
   }, [invoices]);
 
@@ -262,12 +263,14 @@ export default function InvoicesPage() {
   });
 
   const filteredInvoices = useMemo(() => {
-    const result = (invoices || []).filter((invoice) => {
-      const createdAt = new Date(invoice.created_at);
-      const invoiceYear = createdAt.getFullYear();
-      const invoiceMonth = createdAt.getMonth();
+    const activeYear = appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
 
-      const matchesYear = appliedFilters.year === "all" || invoiceYear === Number(appliedFilters.year);
+    const result = (invoices || []).filter((invoice) => {
+      const sortDate = new Date(`${getInvoiceSortDate(invoice)}T12:00:00`);
+      const invoiceYear = sortDate.getFullYear();
+      const invoiceMonth = sortDate.getMonth();
+
+      const matchesYear = invoiceYear === Number(activeYear);
       const matchesMonth = appliedFilters.month === "all" || invoiceMonth === Number(appliedFilters.month);
 
       return matchesYear && matchesMonth;
@@ -441,10 +444,8 @@ export default function InvoicesPage() {
   }, [appliedFilters.month, appliedFilters.year, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
-    if (appliedFilters.year === "all" && appliedFilters.month === "all") return "Alle fakturaer";
-    if (appliedFilters.month !== "all" && appliedFilters.year === "all") return `${MONTHS[Number(appliedFilters.month)]} · alle år`;
     if (appliedFilters.month !== "all") return `${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`;
-    return appliedFilters.year;
+    return appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
   }, [appliedFilters]);
 
   const periodTotals = useMemo(() => {
@@ -647,11 +648,9 @@ export default function InvoicesPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
             <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
+              {appliedFilters.month !== "all"
                 ? "Udvikling dag for dag i den valgte måned"
-                : appliedFilters.year !== "all"
-                  ? "Udvikling måned for måned i det valgte år"
-                  : "Udvikling måned for måned for alle fakturaer"}
+                : `Udvikling måned for måned i ${appliedFilters.year === "all" ? CURRENT_YEAR : appliedFilters.year}`}
             </p>
           </div>
         </div>
@@ -758,7 +757,6 @@ export default function InvoicesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle år</SelectItem>
                     {availableYears.map((year) => (
                       <SelectItem key={year} value={String(year)}>{year}</SelectItem>
                     ))}
