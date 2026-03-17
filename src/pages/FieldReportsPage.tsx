@@ -41,7 +41,7 @@ export default function FieldReportsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description");
       return data || [];
     },
   });
@@ -60,7 +60,7 @@ export default function FieldReportsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("field_reports")
-        .select("*, cases(case_number, customer), profiles!field_reports_user_id_fkey(full_name)")
+        .select("*, cases(case_number, customer, case_description), profiles!field_reports_user_id_fkey(full_name)")
         .order("created_at", { ascending: false });
       return data || [];
     },

@@ -43,7 +43,7 @@ export default function VerificationPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description");
       return data || [];
     },
   });
@@ -53,7 +53,7 @@ export default function VerificationPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("verification_forms")
-        .select("*, cases(case_number, customer), profiles!verification_forms_user_id_fkey(full_name)")
+        .select("*, cases(case_number, customer, case_description), profiles!verification_forms_user_id_fkey(full_name)")
         .order("created_at", { ascending: false });
       return data || [];
     },

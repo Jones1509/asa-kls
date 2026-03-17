@@ -30,7 +30,7 @@ export default function DocumentationPage() {
   const { data: cases, isLoading: casesLoading } = useQuery({
     queryKey: ["cases_for_docs"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, status").order("case_number");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description, status").order("case_number");
       return data || [];
     },
   });

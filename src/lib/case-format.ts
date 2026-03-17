@@ -12,11 +12,11 @@ export function getCaseTitle(caseItem?: CaseLabelLike | null, fallback = "–") 
 
 export function formatCaseLabel(caseItem?: CaseLabelLike | null, fallback = "–") {
   const caseNumber = caseItem?.case_number?.trim();
+  const customer = caseItem?.customer?.trim();
   const caseTitle = caseItem?.case_description?.trim();
 
-  if (caseNumber && caseTitle) return `${caseNumber} · ${caseTitle}`;
-  if (caseNumber) return caseNumber;
-  if (caseTitle) return caseTitle;
+  const parts = [caseNumber, customer, caseTitle].filter(Boolean);
+  if (parts.length > 0) return parts.join(" · ");
 
   return fallback;
 }
