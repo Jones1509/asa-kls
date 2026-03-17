@@ -452,7 +452,7 @@ export default function CompanyPage() {
                         <p className="text-[11px] text-muted-foreground/50">
                           {inst.next_calibration ? format(new Date(inst.next_calibration), "d. MMM yyyy", { locale: da }) : "–"}
                         </p>
-                        <span className={`text-[10px] font-semibold ${status === "red" ? "text-destructive" : status === "yellow" ? "text-warning" : "text-success"}`}>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full leading-none ${status === "red" ? "bg-destructive/10 text-destructive" : status === "yellow" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
                           {status === "red" ? "Overskredet" : status === "yellow" ? "Snart" : "OK"}
                         </span>
                       </div>
