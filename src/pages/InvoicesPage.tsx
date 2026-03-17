@@ -765,7 +765,11 @@ export default function InvoicesPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
             <h3 className="mt-1 font-heading text-lg font-bold text-card-foreground">Fakturakurve</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {appliedFilters.month === "all" ? "Udvikling pr. måned" : "Udvikling pr. dag i den valgte måned"}
+              {appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                ? "Udvikling dag for dag i den valgte måned"
+                : appliedFilters.year !== "all"
+                  ? "Udvikling måned for måned i det valgte år"
+                  : "Udvikling måned for måned for alle fakturaer"}
             </p>
           </div>
         </div>
@@ -775,7 +779,14 @@ export default function InvoicesPage() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={appliedFilters.month !== "all" ? 10 : 20}
+                />
                 <YAxis
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
@@ -785,6 +796,11 @@ export default function InvoicesPage() {
                 />
                 <Tooltip
                   formatter={(value: number) => [formatCurrency(Number(value)), "Beløb"]}
+                  labelFormatter={(label) =>
+                    appliedFilters.year !== "all" && appliedFilters.month !== "all"
+                      ? `${label}. ${MONTHS[Number(appliedFilters.month)]} ${appliedFilters.year}`
+                      : label
+                  }
                   contentStyle={{
                     borderRadius: 16,
                     border: "1px solid hsl(var(--border))",
@@ -797,8 +813,9 @@ export default function InvoicesPage() {
                   dataKey="amount"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 4, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                  connectNulls
+                  dot={{ r: 2, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 1.5 }}
+                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
