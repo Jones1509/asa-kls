@@ -176,9 +176,9 @@ export default function InvoicesPage() {
   const casesById = useMemo(() => new Map((cases || []).map((caseItem) => [caseItem.id, caseItem])), [cases]);
 
   const availableYears = useMemo(() => {
-    if (!invoices?.length) return [new Date().getFullYear()];
-    const years = [...new Set(invoices.map((invoice) => new Date(invoice.created_at).getFullYear()))].sort((a, b) => b - a);
-    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+    if (!invoices?.length) return [CURRENT_YEAR];
+    const years = [...new Set(invoices.map((invoice) => new Date(`${getInvoiceSortDate(invoice)}T12:00:00`).getFullYear()))].sort((a, b) => b - a);
+    if (!years.includes(CURRENT_YEAR)) years.unshift(CURRENT_YEAR);
     return years;
   }, [invoices]);
 
@@ -263,12 +263,14 @@ export default function InvoicesPage() {
   });
 
   const filteredInvoices = useMemo(() => {
-    const result = (invoices || []).filter((invoice) => {
-      const createdAt = new Date(invoice.created_at);
-      const invoiceYear = createdAt.getFullYear();
-      const invoiceMonth = createdAt.getMonth();
+    const activeYear = appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
 
-      const matchesYear = appliedFilters.year === "all" || invoiceYear === Number(appliedFilters.year);
+    const result = (invoices || []).filter((invoice) => {
+      const sortDate = new Date(`${getInvoiceSortDate(invoice)}T12:00:00`);
+      const invoiceYear = sortDate.getFullYear();
+      const invoiceMonth = sortDate.getMonth();
+
+      const matchesYear = invoiceYear === Number(activeYear);
       const matchesMonth = appliedFilters.month === "all" || invoiceMonth === Number(appliedFilters.month);
 
       return matchesYear && matchesMonth;
