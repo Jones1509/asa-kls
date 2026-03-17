@@ -108,6 +108,7 @@ export default function EmployeesPage() {
         full_name: editEmployee.full_name || "",
         phone: editEmployee.phone || "",
         role_label: editEmployee.role_label || "",
+        company_title: editEmployee.company_title || "Medarbejder",
         education_plan: editEmployee.education_plan || "",
       });
       setEditAvatarPreview(editEmployee.avatar_url || null);
