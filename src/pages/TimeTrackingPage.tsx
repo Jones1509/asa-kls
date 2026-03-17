@@ -37,7 +37,7 @@ export default function TimeTrackingPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active_time"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").eq("status", "Aktiv").order("case_number");
       return data || [];
     },
   });
@@ -224,11 +224,10 @@ export default function TimeTrackingPage() {
               isAdmin={isAdmin}
             />
           )}
-          {/* Bulk entry */}
           {isAdmin && employees && (
             <BulkTimeEntryDialog
               employees={employees}
-              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
+              cases={(cases as any) || []}
               onSubmit={(entries) => bulkCreateEntries.mutate(entries)}
               isPending={bulkCreateEntries.isPending}
             />
@@ -298,7 +297,7 @@ export default function TimeTrackingPage() {
       <div className="mb-6">
         <QuickEntryForm
           form={form} setForm={setForm} isAdmin={isAdmin}
-          employees={employees || []} cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
+          employees={employees || []} cases={(cases as any) || []}
           onSubmit={() => createEntry.mutate()} isPending={createEntry.isPending}
         />
       </div>
