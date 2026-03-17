@@ -231,8 +231,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                   <option value="">Ingen sag</option>
                   {cases.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.case_number}
-                      {c.customer ? ` – ${c.customer}` : ""}
+                      {formatCaseLabel(c)}
                     </option>
                   ))}
                 </select>

@@ -498,10 +498,10 @@ export default function SchedulePage() {
                       style={{ top: `${top}px`, height: `${height}px`, minHeight: '28px' }}
                     >
                       <p className="text-[10px] font-bold text-foreground leading-tight truncate pr-8">
-                        {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "Ingen sag"}
+                        {formatCaseLabel((s.cases as any) || undefined, "Ingen sag")}
                       </p>
-                      {height > 40 && (s.cases as any)?.customer && (
-                        <p className="text-[9px] text-muted-foreground truncate">{(s.cases as any).customer}</p>
+                      {height > 40 && (s as any).profiles?.full_name && (
+                        <p className="text-[9px] text-muted-foreground truncate">{(s as any).profiles.full_name}</p>
                       )}
                       {height > 55 && (s as any).profiles?.full_name && (
                         <div className="flex items-center gap-1 mt-1">

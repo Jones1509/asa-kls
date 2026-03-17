@@ -244,7 +244,7 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                             "text-sm flex-1 truncate",
                             isSelected ? "font-semibold text-primary" : "text-foreground"
                           )}>
-                            {c.case_number}{c.customer ? ` – ${c.customer}` : ""}
+                            {formatCaseLabel(c)}
                           </span>
                           {isSelected && <Check size={16} className="text-primary" />}
                         </button>
