@@ -631,7 +631,7 @@ export default function InvoicesPage() {
                     <Building2 size={18} className="text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-card-foreground">{customerGroup.customerLabel}</p>
+                    <p className="text-sm font-semibold text-card-foreground">{customerGroup.customerNumberLabel ? `${customerGroup.customerNumberLabel} · ${customerGroup.customerLabel}` : customerGroup.customerLabel}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{customerInvoiceCount} {customerInvoiceCount === 1 ? "faktura" : "fakturaer"} fordelt på {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}</p>
                   </div>
                 </div>
