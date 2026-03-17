@@ -917,53 +917,63 @@ export default function CustomersPage() {
                         const caseInvoiceTotal = caseInvoices.reduce((sum: number, invoice: any) => sum + Number(invoice.amount), 0);
 
                         return (
-                          <div key={caseItem.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedInvoiceCases((prev) => ({ ...prev, [caseItem.id]: !prev[caseItem.id] }))}
-                              className="w-full p-4 text-left transition-all hover:bg-muted/20"
-                            >
-                              <div className="flex items-start justify-between gap-3">
+                          <div key={caseItem.id} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                            <div className="border-b border-border bg-muted/20 px-4 py-2">
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sag</p>
+                            </div>
+
+                            <div className="p-4">
+                              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                                      <Briefcase size={15} className="text-primary" />
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                                      <Briefcase size={16} className="text-primary" />
                                     </div>
                                     <div className="min-w-0">
                                       <div className="flex flex-wrap items-center gap-2">
                                         <p className="text-sm font-semibold text-card-foreground">{caseItem.case_number || "–"}</p>
                                         <p className="text-sm text-card-foreground">{caseItem.case_description || caseItem.description || "Ingen sagsbeskrivelse"}</p>
                                       </div>
-                                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                         <span className="flex items-center gap-1"><Hash size={12} /> {customer.customer_number || "–"}</span>
                                         <span className="flex items-center gap-1"><MapPin size={12} /> {caseItem.address || "Ingen adresse"}</span>
-                                        <span className="flex items-center gap-1"><Receipt size={12} /> {caseInvoices.length} {caseInvoices.length === 1 ? "faktura" : "fakturaer"}</span>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="text-right">
-                                    <Badge variant={customerCaseStatus === "Afsluttet" ? "secondary" : "default"}>
-                                      {customerCaseStatus}
-                                    </Badge>
-                                    {caseInvoices.length > 0 && (
-                                      <p className="mt-2 text-xs font-medium text-muted-foreground">{caseInvoiceTotal.toLocaleString("da-DK")} kr</p>
-                                    )}
+
+                                <div className="flex flex-col items-start gap-3 lg:items-end">
+                                  <Badge variant={customerCaseStatus === "Afsluttet" ? "secondary" : "default"}>
+                                    {customerCaseStatus}
+                                  </Badge>
+                                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                                    <Button type="button" size="sm" variant="outline" className="gap-2 rounded-xl" onClick={() => openEditCase(caseItem)}>
+                                      <Pencil size={14} /> Rediger sag
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={isInvoicesExpanded ? "secondary" : "default"}
+                                      className="gap-2 rounded-xl"
+                                      onClick={() => setExpandedInvoiceCases((prev) => ({ ...prev, [caseItem.id]: !prev[caseItem.id] }))}
+                                    >
+                                      <Receipt size={14} />
+                                      {isInvoicesExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseInvoices.length})`}
+                                    </Button>
                                   </div>
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground">
-                                    {isInvoicesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                  </div>
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    {caseInvoices.length} {caseInvoices.length === 1 ? "faktura" : "fakturaer"}
+                                    {caseInvoices.length > 0 ? ` · ${caseInvoiceTotal.toLocaleString("da-DK")} kr` : ""}
+                                  </p>
                                 </div>
                               </div>
-                            </button>
+                            </div>
 
                             {isInvoicesExpanded && (
                               <div className="border-t border-border bg-muted/10 p-3">
-                                <div className="mb-3 flex justify-end">
-                                  <Button type="button" size="sm" variant="outline" className="gap-2 rounded-xl" onClick={() => openEditCase(caseItem)}>
-                                    <Pencil size={14} /> Rediger sag
-                                  </Button>
+                                <div className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fakturaer</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">Kun fakturaer til denne sag vises her.</p>
                                 </div>
 
                                 {caseInvoices.length > 0 ? (
