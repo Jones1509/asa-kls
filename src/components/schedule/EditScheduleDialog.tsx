@@ -11,9 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
+import { formatCaseLabel } from "@/lib/case-format";
 
 interface Employee { user_id: string; full_name: string; avatar_url?: string }
-interface Case { id: string; case_number: string; customer?: string }
+interface Case { id: string; case_number: string; customer?: string; case_description?: string }
 
 interface Props {
   open: boolean;
@@ -47,9 +48,10 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
   const filteredCases = useMemo(() => {
     if (!caseSearch.trim()) return cases;
     const q = caseSearch.toLowerCase();
-    return cases.filter((c) => 
-      c.case_number.toLowerCase().includes(q) || 
-      c.customer?.toLowerCase().includes(q)
+    return cases.filter((c) =>
+      c.case_number.toLowerCase().includes(q) ||
+      c.customer?.toLowerCase().includes(q) ||
+      c.case_description?.toLowerCase().includes(q)
     );
   }, [cases, caseSearch]);
 
@@ -170,7 +172,7 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                     <>
                       <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground flex-1 truncate">
-                        {selectedCase.case_number}{selectedCase.customer ? ` – ${selectedCase.customer}` : ""}
+                        {formatCaseLabel(selectedCase)}
                       </span>
                     </>
                   ) : (
@@ -242,7 +244,7 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                             "text-sm flex-1 truncate",
                             isSelected ? "font-semibold text-primary" : "text-foreground"
                           )}>
-                            {c.case_number}{c.customer ? ` – ${c.customer}` : ""}
+                            {formatCaseLabel(c)}
                           </span>
                           {isSelected && <Check size={16} className="text-primary" />}
                         </button>

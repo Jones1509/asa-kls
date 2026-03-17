@@ -39,7 +39,6 @@ function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
   return {
     created_by: userId,
     customer_type: form.customer_type,
-    customer_number: form.customer_number.trim() || null,
     name: displayName,
     company_name: isBusiness ? form.company_name.trim() || null : null,
     contact_person: isBusiness ? form.contact_person.trim() || null : null,
@@ -170,7 +169,6 @@ export default function CustomersPage() {
         .from("customers")
         .update({
           customer_type: editForm.customer_type,
-          customer_number: editForm.customer_number?.trim() || null,
           name: displayName,
           company_name: isBusiness ? editForm.company_name?.trim() || null : null,
           contact_person: isBusiness ? editForm.contact_person?.trim() || null : null,
@@ -200,7 +198,6 @@ export default function CustomersPage() {
                 ...prev,
                 ...editForm,
                 name: editForm.customer_type === "Erhverv" ? editForm.company_name : editForm.name,
-                customer_number: editForm.customer_number,
               }
             : prev,
         );
@@ -246,13 +243,13 @@ export default function CustomersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {selectedCustomer.customer_number && (
+                      <span className="text-xs font-medium text-muted-foreground">{selectedCustomer.customer_number}</span>
+                    )}
                     <h2 className="text-xl font-heading font-bold text-card-foreground">{getCustomerNameLabel(selectedCustomer)}</h2>
                     <Badge variant={getCustomerTypeBadgeVariant(selectedCustomer.customer_type)}>
                       {selectedCustomer.customer_type || "Privat"}
                     </Badge>
-                    {selectedCustomer.customer_number && (
-                      <Badge variant="outline">#{selectedCustomer.customer_number}</Badge>
-                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {caseCounts[selectedCustomer.id] || 0} {(caseCounts[selectedCustomer.id] || 0) === 1 ? "sag" : "sager"}
@@ -426,7 +423,7 @@ export default function CustomersPage() {
 
                 <div>
                   <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
-                  <Input value={editForm.customer_number || ""} onChange={(e) => setEditForm({ ...editForm, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+                  <Input value={editForm.customer_number || "Tildeles automatisk"} readOnly className="mt-1.5 rounded-xl text-muted-foreground" />
                 </div>
                 <div>
                   <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
@@ -533,7 +530,7 @@ export default function CustomersPage() {
 
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kundenummer</Label>
-                <Input value={form.customer_number} onChange={(e) => setForm({ ...form, customer_number: e.target.value })} className="mt-1.5 rounded-xl" placeholder="Fx K-1024" />
+                <Input value={selectedCustomer.customer_number || "Tildeles automatisk"} readOnly className="mt-1.5 rounded-xl text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
@@ -608,9 +605,11 @@ export default function CustomersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-card-foreground">{getCustomerNameLabel(customer)}</p>
+                    <p className="text-sm font-semibold text-card-foreground">
+                      <span className="mr-2 text-xs font-medium text-muted-foreground">{customer.customer_number || "—"}</span>
+                      {getCustomerNameLabel(customer)}
+                    </p>
                     <Badge variant={getCustomerTypeBadgeVariant(customer.customer_type)}>{customer.customer_type || "Privat"}</Badge>
-                    {customer.customer_number && <Badge variant="outline">#{customer.customer_number}</Badge>}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{customer.address || "Ingen adresse"}</p>
                   <p className="mt-1 text-xs text-muted-foreground/80">

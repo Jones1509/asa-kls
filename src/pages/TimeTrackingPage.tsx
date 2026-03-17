@@ -37,7 +37,7 @@ export default function TimeTrackingPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active_time"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer").eq("status", "Aktiv");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
       return data || [];
     },
   });
@@ -54,7 +54,7 @@ export default function TimeTrackingPage() {
   const { data: entries, isLoading } = useQuery({
     queryKey: ["time_entries", user?.id, isAdmin],
     queryFn: async () => {
-      let query = supabase.from("time_entries").select("*, cases(case_number, customer)").order("date", { ascending: false }).limit(500);
+      let query = supabase.from("time_entries").select("*, cases(case_number, customer, case_description)").order("date", { ascending: false }).limit(500);
       if (!isAdmin) query = query.eq("user_id", user!.id);
       const { data } = await query;
       return data || [];

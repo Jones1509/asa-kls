@@ -102,11 +102,9 @@ function CaseFormFields({
         <div>
           <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsnummer</Label>
           <Input
-            value={f.case_number}
-            onChange={(e) => setF({ ...f, case_number: e.target.value })}
-            placeholder="2026-025"
-            className="mt-1.5 rounded-xl"
-            required
+            value={f.case_number || "Tildeles automatisk"}
+            readOnly
+            className="mt-1.5 rounded-xl text-muted-foreground"
           />
         </div>
         <div>

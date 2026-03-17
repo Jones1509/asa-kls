@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { AlertOctagon, Plus, Pencil, CheckCircle2, AlertTriangle, Calendar, User, Briefcase } from "lucide-react";
+import { formatCaseLabel } from "@/lib/case-format";
 import { format, differenceInDays } from "date-fns";
 import { da } from "date-fns/locale";
 
@@ -26,7 +27,7 @@ export default function DeviationsPage() {
   const { data: deviations, isLoading } = useQuery({
     queryKey: ["deviations"],
     queryFn: async () => {
-      const { data } = await supabase.from("deviations").select("*, cases(case_number)").order("created_at", { ascending: false });
+      const { data } = await supabase.from("deviations").select("*, cases(case_number, customer, case_description)").order("created_at", { ascending: false });
       return data || [];
     },
   });
@@ -34,7 +35,7 @@ export default function DeviationsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer").eq("status", "Aktiv");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
       return data || [];
     },
   });
@@ -126,7 +127,7 @@ export default function DeviationsPage() {
                     <p className="text-sm font-semibold text-foreground">{dev.description.length > 120 ? dev.description.slice(0, 120) + "..." : dev.description}</p>
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar size={11} /> {format(new Date(dev.deviation_date), "d. MMM yyyy", { locale: da })}</span>
-                      {(dev.cases as any)?.case_number && <span className="flex items-center gap-1"><Briefcase size={11} /> Sag {(dev.cases as any).case_number}</span>}
+                      {(dev.cases as any)?.case_number && <span className="flex items-center gap-1"><Briefcase size={11} /> {formatCaseLabel(dev.cases as any)}</span>}
                       {responsible && <span className="flex items-center gap-1"><User size={11} /> {responsible.full_name}</span>}
                     </div>
                     {overdue && (
@@ -185,7 +186,7 @@ export default function DeviationsPage() {
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Tilknyt sag (valgfrit)</Label>
               <select value={form.case_id} onChange={e => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm">
                 <option value="">Ingen sag</option>
-                {cases?.map(c => <option key={c.id} value={c.id}>Sag {c.case_number} — {c.customer}</option>)}
+                {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
               </select>
             </div>
             <div>

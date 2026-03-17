@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { formatCaseLabel } from "@/lib/case-format";
 import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
@@ -84,7 +85,7 @@ export default function SchedulePage() {
       const endDate = format(days[6], "yyyy-MM-dd");
       const query = supabase
         .from("schedules")
-        .select("*, cases(case_number, address, customer), profiles!schedules_user_id_profiles_fkey(full_name, avatar_url)")
+        .select("*, cases(case_number, address, customer, case_description), profiles!schedules_user_id_profiles_fkey(full_name, avatar_url)")
         .gte("date", startDate)
         .lte("date", endDate)
         .in("user_id", viewUserIds);
@@ -101,7 +102,7 @@ export default function SchedulePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cases")
-        .select("id, case_number, customer")
+        .select("id, case_number, customer, case_description")
         .not("status", "eq", "Afsluttet")
         .order("case_number");
       return data || [];
@@ -497,10 +498,10 @@ export default function SchedulePage() {
                       style={{ top: `${top}px`, height: `${height}px`, minHeight: '28px' }}
                     >
                       <p className="text-[10px] font-bold text-foreground leading-tight truncate pr-8">
-                        {(s.cases as any)?.case_number ? `Sag ${(s.cases as any).case_number}` : "Ingen sag"}
+                        {formatCaseLabel((s.cases as any) || undefined, "Ingen sag")}
                       </p>
-                      {height > 40 && (s.cases as any)?.customer && (
-                        <p className="text-[9px] text-muted-foreground truncate">{(s.cases as any).customer}</p>
+                      {height > 40 && (s as any).profiles?.full_name && (
+                        <p className="text-[9px] text-muted-foreground truncate">{(s as any).profiles.full_name}</p>
                       )}
                       {height > 55 && (s as any).profiles?.full_name && (
                         <div className="flex items-center gap-1 mt-1">

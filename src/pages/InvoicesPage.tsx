@@ -67,7 +67,7 @@ export default function InvoicesPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description");
       return data || [];
     },
   });
@@ -75,7 +75,7 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, cases(case_number, customer)");
+      const { data } = await supabase.from("invoices").select("*, cases(case_number, customer, case_description)");
       return (data || []).sort((a, b) => {
         const numA = parseInt(a.invoice_number, 10);
         const numB = parseInt(b.invoice_number, 10);
