@@ -103,6 +103,14 @@ function getCreatedDate(invoice: InvoiceWithCase) {
   return invoice.created_at.split("T")[0];
 }
 
+function getInvoiceSortDate(invoice: InvoiceWithCase) {
+  return invoice.due_date || getCreatedDate(invoice);
+}
+
+function getInvoiceSortTimestamp(invoice: InvoiceWithCase) {
+  return new Date(`${getInvoiceSortDate(invoice)}T12:00:00`).getTime();
+}
+
 function getCustomerKey(caseItem?: CaseOption | null) {
   return caseItem?.customer_id || caseItem?.customer || caseItem?.id || "";
 }
@@ -262,8 +270,8 @@ export default function InvoicesPage() {
     });
 
     return result.sort((a, b) => {
-      const first = new Date(a.created_at).getTime();
-      const second = new Date(b.created_at).getTime();
+      const first = getInvoiceSortTimestamp(a);
+      const second = getInvoiceSortTimestamp(b);
       return sortOrder === "newest" ? second - first : first - second;
     });
   }, [appliedFilters, invoices, sortOrder]);
@@ -276,14 +284,14 @@ export default function InvoicesPage() {
         customerLabel: string;
         customerNumberLabel: string;
         customerNumberValue: number;
-        firstInvoiceDate: number;
+        sortDate: number;
         cases: Map<
           string,
           {
             caseId: string;
             caseNumber: string;
             caseLabel: string;
-            firstInvoiceDate: number;
+            sortDate: number;
             invoices: InvoiceWithCase[];
           }
         >;
@@ -297,7 +305,7 @@ export default function InvoicesPage() {
       const caseNumber = caseData?.case_number || "";
       const customerNumberLabel = caseNumber.split("-").slice(0, 2).join("-");
       const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
-      const invoiceDate = new Date(invoice.created_at).getTime();
+      const invoiceSortDate = getInvoiceSortTimestamp(invoice);
 
       if (!grouped.has(customerKey)) {
         grouped.set(customerKey, {
@@ -305,33 +313,39 @@ export default function InvoicesPage() {
           customerLabel,
           customerNumberLabel,
           customerNumberValue: getCustomerSortValue(caseNumber),
-          firstInvoiceDate: invoiceDate,
+          sortDate: invoiceSortDate,
           cases: new Map(),
         });
       }
 
       const customerGroup = grouped.get(customerKey)!;
-      customerGroup.firstInvoiceDate = Math.min(customerGroup.firstInvoiceDate, invoiceDate);
+      customerGroup.sortDate =
+        sortOrder === "newest"
+          ? Math.max(customerGroup.sortDate, invoiceSortDate)
+          : Math.min(customerGroup.sortDate, invoiceSortDate);
 
       if (!customerGroup.cases.has(invoice.case_id)) {
         customerGroup.cases.set(invoice.case_id, {
           caseId: invoice.case_id,
           caseNumber,
           caseLabel,
-          firstInvoiceDate: invoiceDate,
+          sortDate: invoiceSortDate,
           invoices: [],
         });
       }
 
       const caseGroup = customerGroup.cases.get(invoice.case_id)!;
-      caseGroup.firstInvoiceDate = Math.min(caseGroup.firstInvoiceDate, invoiceDate);
+      caseGroup.sortDate =
+        sortOrder === "newest"
+          ? Math.max(caseGroup.sortDate, invoiceSortDate)
+          : Math.min(caseGroup.sortDate, invoiceSortDate);
       caseGroup.invoices.push(invoice);
     });
 
     return Array.from(grouped.values())
       .sort((a, b) => {
-        if (a.firstInvoiceDate !== b.firstInvoiceDate) {
-          return sortOrder === "newest" ? b.firstInvoiceDate - a.firstInvoiceDate : a.firstInvoiceDate - b.firstInvoiceDate;
+        if (a.sortDate !== b.sortDate) {
+          return sortOrder === "newest" ? b.sortDate - a.sortDate : a.sortDate - b.sortDate;
         }
 
         if (a.customerNumberValue !== b.customerNumberValue) return a.customerNumberValue - b.customerNumberValue;
@@ -340,8 +354,8 @@ export default function InvoicesPage() {
       .map((customerGroup) => ({
         ...customerGroup,
         cases: Array.from(customerGroup.cases.values()).sort((a, b) => {
-          if (a.firstInvoiceDate !== b.firstInvoiceDate) {
-            return sortOrder === "newest" ? b.firstInvoiceDate - a.firstInvoiceDate : a.firstInvoiceDate - b.firstInvoiceDate;
+          if (a.sortDate !== b.sortDate) {
+            return sortOrder === "newest" ? b.sortDate - a.sortDate : a.sortDate - b.sortDate;
           }
 
           return getCaseSortValue(a.caseNumber) - getCaseSortValue(b.caseNumber);
