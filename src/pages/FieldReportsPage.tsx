@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +42,7 @@ export default function FieldReportsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description");
+      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").order("case_number");
       return data || [];
     },
   });
