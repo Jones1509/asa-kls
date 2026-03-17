@@ -26,10 +26,10 @@ import {
   User,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 type CustomerType = "Privat" | "Erhverv";
+type CaseStatus = "Aktiv" | "Planlagt" | "Afsluttet";
 
 type CustomerWithCases = {
   customer: any;
@@ -40,6 +40,7 @@ type CustomerWithCases = {
 
 const customerTypeOptions: CustomerType[] = ["Privat", "Erhverv"];
 const customerFilters = ["Alle", "Privat", "Erhverv"] as const;
+const caseStatusOptions: CaseStatus[] = ["Aktiv", "Planlagt", "Afsluttet"];
 
 const emptyCustomerForm = {
   customer_type: "Privat" as CustomerType,
@@ -51,6 +52,19 @@ const emptyCustomerForm = {
   phone: "",
   email: "",
   notes: "",
+};
+
+const emptyCaseForm = {
+  id: "",
+  case_number: "",
+  case_description: "",
+  customer: "",
+  customer_id: "",
+  address: "",
+  description: "",
+  start_date: "",
+  end_date: "",
+  status: "Aktiv" as CaseStatus,
 };
 
 function getCustomerPayload(form: typeof emptyCustomerForm, userId: string) {
@@ -109,14 +123,16 @@ function matchesQuery(values: Array<string | null | undefined>, query: string) {
 export default function CustomersPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<(typeof customerFilters)[number]>("Alle");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [caseDialogOpen, setCaseDialogOpen] = useState(false);
+  const [caseDialogMode, setCaseDialogMode] = useState<"create" | "edit">("edit");
   const [form, setForm] = useState(emptyCustomerForm);
   const [editForm, setEditForm] = useState<any>(null);
+  const [caseForm, setCaseForm] = useState<any>(emptyCaseForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
 
@@ -197,14 +213,12 @@ export default function CustomersPage() {
 
         if (!customerMatches && matchingCases.length === 0) return [];
 
-        return [
-          {
-            customer,
-            visibleCases: customerMatches ? allCases : matchingCases,
-            totalCases: allCases.length,
-            activeCases: allCases.filter((caseItem: any) => getCustomerCaseStatus(caseItem) === "Igangværende").length,
-          },
-        ];
+        return [{
+          customer,
+          visibleCases: customerMatches ? allCases : matchingCases,
+          totalCases: allCases.length,
+          activeCases: allCases.filter((caseItem: any) => getCustomerCaseStatus(caseItem) === "Igangværende").length,
+        }];
       });
   }, [customers, customerCasesMap, search, typeFilter]);
 
@@ -288,8 +302,105 @@ export default function CustomersPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
+  const createCase = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error("Du skal være logget ind");
+      if (!caseForm.customer_id) throw new Error("Vælg kunde");
+      if (!caseForm.case_description?.trim()) throw new Error("Indtast sagsbeskrivelse");
+      if (!caseForm.address?.trim()) throw new Error("Indtast adresse");
+
+      const { error } = await supabase.from("cases").insert([{
+        case_number: caseForm.case_number || "",
+        customer_id: caseForm.customer_id,
+        customer: caseForm.customer,
+        case_description: caseForm.case_description.trim(),
+        address: caseForm.address.trim(),
+        description: caseForm.description?.trim() || null,
+        start_date: caseForm.start_date || null,
+        end_date: caseForm.end_date || null,
+        status: caseForm.status,
+        created_by: user.id,
+      }]);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      setCaseDialogOpen(false);
+      setCaseForm(emptyCaseForm);
+      toast.success("Sag oprettet");
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
+  const updateCase = useMutation({
+    mutationFn: async () => {
+      if (!caseForm.id) return;
+      if (!caseForm.customer_id) throw new Error("Vælg kunde");
+      if (!caseForm.case_description?.trim()) throw new Error("Indtast sagsbeskrivelse");
+      if (!caseForm.address?.trim()) throw new Error("Indtast adresse");
+
+      const { error } = await supabase
+        .from("cases")
+        .update({
+          customer_id: caseForm.customer_id,
+          customer: caseForm.customer,
+          case_description: caseForm.case_description.trim(),
+          address: caseForm.address.trim(),
+          description: caseForm.description?.trim() || null,
+          start_date: caseForm.start_date || null,
+          end_date: caseForm.end_date || null,
+          status: caseForm.status,
+        })
+        .eq("id", caseForm.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      setCaseDialogOpen(false);
+      setCaseForm(emptyCaseForm);
+      toast.success("Sag opdateret");
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
   const toggleCustomer = (customerId: string) => {
     setExpandedCustomers((prev) => ({ ...prev, [customerId]: !prev[customerId] }));
+  };
+
+  const openCreateCase = (customer: any) => {
+    setExpandedCustomers((prev) => ({ ...prev, [customer.id]: true }));
+    setCaseDialogMode("create");
+    setCaseForm({
+      ...emptyCaseForm,
+      customer_id: customer.id,
+      customer: getCustomerNameLabel(customer),
+    });
+    setCaseDialogOpen(true);
+  };
+
+  const openEditCase = (caseItem: any) => {
+    setCaseDialogMode("edit");
+    setCaseForm({
+      ...emptyCaseForm,
+      ...caseItem,
+      customer_id: caseItem.customer_id || "",
+      description: caseItem.description || "",
+      start_date: caseItem.start_date || "",
+      end_date: caseItem.end_date || "",
+      status: (caseItem.status || "Aktiv") as CaseStatus,
+    });
+    setCaseDialogOpen(true);
+  };
+
+  const handleCaseCustomerChange = (customerId: string) => {
+    const selectedCustomer = (customers || []).find((customer: any) => customer.id === customerId);
+    setCaseForm((prev: any) => ({
+      ...prev,
+      customer_id: customerId,
+      customer: selectedCustomer ? getCustomerNameLabel(selectedCustomer) : "",
+    }));
   };
 
   return (
@@ -382,7 +493,16 @@ export default function CustomersPage() {
         </Dialog>
       </PageHeader>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog
+        open={editOpen}
+        onOpenChange={(value) => {
+          setEditOpen(value);
+          if (!value) {
+            setEditForm(null);
+            setDeleteConfirm(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
             <DialogTitle className="font-heading text-lg font-bold">Rediger kunde</DialogTitle>
@@ -488,6 +608,136 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={caseDialogOpen}
+        onOpenChange={(value) => {
+          setCaseDialogOpen(value);
+          if (!value) setCaseForm(emptyCaseForm);
+        }}
+      >
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg font-bold">
+              {caseDialogMode === "edit" ? "Se og rediger sag" : "Opret ny sag"}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (caseDialogMode === "edit") {
+                updateCase.mutate();
+              } else {
+                createCase.mutate();
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsnummer</Label>
+                <Input value={caseForm.case_number || "Tildeles automatisk"} readOnly className="mt-1.5 rounded-xl text-muted-foreground" />
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
+                <select
+                  value={caseForm.status}
+                  onChange={(e) => setCaseForm({ ...caseForm, status: e.target.value as CaseStatus })}
+                  className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                >
+                  {caseStatusOptions.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kunde</Label>
+              <select
+                value={caseForm.customer_id}
+                onChange={(e) => handleCaseCustomerChange(e.target.value)}
+                className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                required
+              >
+                <option value="">Vælg kunde...</option>
+                {(customers || [])
+                  .slice()
+                  .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
+                  .map((customer: any) => (
+                    <option key={customer.id} value={customer.id}>{getCustomerOptionLabel(customer)}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sagsbeskrivelse</Label>
+              <Input
+                value={caseForm.case_description}
+                onChange={(e) => setCaseForm({ ...caseForm, case_description: e.target.value })}
+                className="mt-1.5 rounded-xl"
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Adresse</Label>
+              <Input
+                value={caseForm.address}
+                onChange={(e) => setCaseForm({ ...caseForm, address: e.target.value })}
+                className="mt-1.5 rounded-xl"
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Detaljer</Label>
+              <Textarea
+                value={caseForm.description || ""}
+                onChange={(e) => setCaseForm({ ...caseForm, description: e.target.value })}
+                className="mt-1.5 rounded-xl"
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Startdato</Label>
+                <Input
+                  type="date"
+                  value={caseForm.start_date || ""}
+                  onChange={(e) => setCaseForm({ ...caseForm, start_date: e.target.value })}
+                  className="mt-1.5 rounded-xl"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slutdato</Label>
+                <Input
+                  type="date"
+                  value={caseForm.end_date || ""}
+                  onChange={(e) => setCaseForm({ ...caseForm, end_date: e.target.value })}
+                  className="mt-1.5 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" className="rounded-xl" onClick={() => setCaseDialogOpen(false)}>
+                Luk
+              </Button>
+              <Button type="submit" className="rounded-xl shadow-card" disabled={createCase.isPending || updateCase.isPending}>
+                {caseDialogMode === "edit"
+                  ? updateCase.isPending
+                    ? "Opdaterer..."
+                    : "Opdater"
+                  : createCase.isPending
+                    ? "Opretter..."
+                    : "Opret sag"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -516,7 +766,7 @@ export default function CustomersPage() {
 
       <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
         <p className="text-sm font-medium text-card-foreground">Kunder vises nu i stigende kundenummer: K-001, K-002, K-003…</p>
-        <p className="mt-1 text-xs text-muted-foreground">Åbn en kunde for at se dens sager nedenunder, eller søg direkte på sagsnummer for at folde relevante kunder ud automatisk.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Klik direkte på en sag under kunden for at se og redigere kun den konkrete sag.</p>
       </div>
 
       <div className="space-y-3">
@@ -589,7 +839,7 @@ export default function CustomersPage() {
                   type="button"
                   size="sm"
                   className="gap-2 rounded-xl shadow-card"
-                  onClick={() => navigate("/cases", { state: { newCaseForCustomer: customer } })}
+                  onClick={() => openCreateCase(customer)}
                 >
                   <Plus size={14} /> Ny sag
                 </Button>
@@ -625,7 +875,7 @@ export default function CustomersPage() {
                           <button
                             key={caseItem.id}
                             type="button"
-                            onClick={() => navigate("/cases", { state: { focusCaseId: caseItem.id } })}
+                            onClick={() => openEditCase(caseItem)}
                             className="w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:shadow-elevated"
                           >
                             <div className="flex items-start justify-between gap-3">

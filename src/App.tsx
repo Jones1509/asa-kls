@@ -31,6 +31,13 @@ function AdminRoute({ element }: { element: React.ReactElement }) {
   return element;
 }
 
+function CasesRoute() {
+  const { role, loading } = useAuth();
+  if (loading) return null;
+  if (role === "admin") return <Navigate to="/customers" replace />;
+  return <CasesPage />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -43,7 +50,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/customers" element={<AdminRoute element={<CustomersPage />} />} />
-              <Route path="/cases" element={<CasesPage />} />
+              <Route path="/cases" element={<CasesRoute />} />
               <Route path="/invoices" element={<AdminRoute element={<InvoicesPage />} />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/time-tracking" element={<TimeTrackingPage />} />
