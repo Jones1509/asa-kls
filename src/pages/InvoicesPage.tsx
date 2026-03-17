@@ -74,8 +74,13 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*, cases(case_number)").order("invoice_number", { ascending: true });
-      return data || [];
+      const { data } = await supabase.from("invoices").select("*, cases(case_number)");
+      return (data || []).sort((a, b) => {
+        const numA = parseInt(a.invoice_number, 10);
+        const numB = parseInt(b.invoice_number, 10);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.invoice_number.localeCompare(b.invoice_number);
+      });
     },
   });
 
