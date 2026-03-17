@@ -370,7 +370,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* ── Create Employee Dialog ── */}
-      <Dialog open={showCreate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", make_admin: false }); } }}>
+      <Dialog open={showCreate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setCreateForm({ email: "", password: "", full_name: "", phone: "", role_label: "", company_title: "Medarbejder", make_admin: false }); } }}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="font-heading font-bold text-lg flex items-center gap-2">
