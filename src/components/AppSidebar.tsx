@@ -99,7 +99,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
                     {isActive && (
                       <motion.div
                         layoutId="sidebar-active"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-sidebar-primary"
+                        className="absolute left-0 inset-y-0 my-auto h-5 w-[3px] rounded-full bg-sidebar-primary"
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       />
                     )}
