@@ -54,7 +54,7 @@ export default function TimeTrackingPage() {
   const { data: entries, isLoading } = useQuery({
     queryKey: ["time_entries", user?.id, isAdmin],
     queryFn: async () => {
-      let query = supabase.from("time_entries").select("*, cases(case_number)").order("date", { ascending: false }).limit(500);
+      let query = supabase.from("time_entries").select("*, cases(case_number, customer)").order("date", { ascending: false }).limit(500);
       if (!isAdmin) query = query.eq("user_id", user!.id);
       const { data } = await query;
       return data || [];
