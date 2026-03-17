@@ -485,7 +485,16 @@ export default function EmployeesPage() {
                 </div>
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Stilling / titel</Label>
-                  <Input value={editForm.role_label} onChange={(e) => setEditForm({ ...editForm, role_label: e.target.value })} placeholder="Tekniker, Leder..." className="mt-1.5 rounded-xl h-11" />
+                  <Select value={editForm.role_label} onValueChange={(v) => setEditForm({ ...editForm, role_label: v })}>
+                    <SelectTrigger className="mt-1.5 rounded-xl h-11">
+                      <SelectValue placeholder="Vælg titel..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYEE_TITLES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
