@@ -22,8 +22,6 @@ import {
   AlertCircle,
   ArrowDownAZ,
   ArrowUpAZ,
-  Briefcase,
-  Building2,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -35,6 +33,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 const statusConfig: Record<string, { className: string; icon: any; variant: "secondary" | "destructive" | "outline" | "default" }> = {
@@ -47,9 +46,8 @@ const statusConfig: Record<string, { className: string; icon: any; variant: "sec
 const MONTHS = ["Januar", "Februar", "Marts", "April", "Maj", "Juni", "Juli", "August", "September", "Oktober", "November", "December"];
 const statuses = ["Udkast", "Sendt", "Betalt", "Forfalden"];
 const emptyForm = { case_id: "", invoice_number: "", customer: "", description: "", amount: "", due_date: "", status: "Udkast" };
-
-const collator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base" });
 const danishDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", year: "numeric" });
+const chartDateFormatter = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short" });
 
 type CaseOption = {
   id: string;
@@ -76,15 +74,13 @@ type InvoiceWithCase = {
 type SearchFilters = {
   year: string;
   month: string;
-  search: string;
-  sort: "newest" | "oldest";
 };
+
+type SortOrder = "newest" | "oldest";
 
 const defaultFilters: SearchFilters = {
   year: "all",
   month: "all",
-  search: "",
-  sort: "newest",
 };
 
 function formatDanishDate(dateString?: string | null) {
@@ -100,23 +96,9 @@ function formatCurrency(value: number) {
   return `${value.toLocaleString("da-DK")} kr`;
 }
 
-function getCustomerKey(caseItem?: CaseOption | null) {
-  return caseItem?.customer_id || caseItem?.customer || caseItem?.id || "";
+function getCreatedDate(invoice: InvoiceWithCase) {
+  return invoice.created_at.split("T")[0];
 }
-
-function getCustomerSortValue(caseNumber?: string | null) {
-  if (!caseNumber) return Number.MAX_SAFE_INTEGER;
-  const match = caseNumber.match(/K-(\d+)/i);
-  return match ? Number.parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
-}
-
-function getCaseSortValue(caseNumber?: string | null) {
-  if (!caseNumber) return Number.MAX_SAFE_INTEGER;
-  const match = caseNumber.match(/K-(\d+)-(\d+)/i);
-  if (!match) return Number.MAX_SAFE_INTEGER;
-  return Number.parseInt(match[1], 10) * 1000 + Number.parseInt(match[2], 10);
-}
-
 
 export default function InvoicesPage() {
   const { user, role } = useAuth();
@@ -127,10 +109,9 @@ export default function InvoicesPage() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
-  const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
-  const [expandedCases, setExpandedCases] = useState<Record<string, boolean>>({});
   const [draftFilters, setDraftFilters] = useState<SearchFilters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(defaultFilters);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
 
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
@@ -165,7 +146,6 @@ export default function InvoicesPage() {
     if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
     return years;
   }, [invoices]);
-
 
   const createInvoice = useMutation({
     mutationFn: async () => {
@@ -248,8 +228,6 @@ export default function InvoicesPage() {
   });
 
   const filteredInvoices = useMemo(() => {
-    const searchValue = appliedFilters.search.toLowerCase().trim();
-
     const result = (invoices || []).filter((invoice) => {
       const createdAt = new Date(invoice.created_at);
       const invoiceYear = createdAt.getFullYear();
@@ -258,69 +236,58 @@ export default function InvoicesPage() {
       const matchesYear = appliedFilters.year === "all" || invoiceYear === Number(appliedFilters.year);
       const matchesMonth = appliedFilters.month === "all" || invoiceMonth === Number(appliedFilters.month);
 
-      const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
-      const caseLabel = formatCaseLabel(caseData, "").toLowerCase();
-      const matchesSearch =
-        !searchValue ||
-        (invoice.invoice_number || "").toLowerCase().includes(searchValue) ||
-        (invoice.customer || "").toLowerCase().includes(searchValue) ||
-        caseLabel.includes(searchValue) ||
-        (invoice.description || "").toLowerCase().includes(searchValue);
-
-      return matchesYear && matchesMonth && matchesSearch;
+      return matchesYear && matchesMonth;
     });
 
     return result.sort((a, b) => {
       const first = new Date(a.created_at).getTime();
       const second = new Date(b.created_at).getTime();
-      return appliedFilters.sort === "newest" ? second - first : first - second;
+      return sortOrder === "newest" ? second - first : first - second;
     });
-  }, [appliedFilters, casesById, invoices]);
+  }, [appliedFilters, invoices, sortOrder]);
 
-  const groupedInvoices = useMemo(() => {
-    const grouped = new Map<string, { customerKey: string; customerLabel: string; customerNumberLabel: string; customerNumberValue: number; cases: Map<string, { caseId: string; caseNumber: string; caseLabel: string; invoices: InvoiceWithCase[] }> }>();
+  const chartData = useMemo(() => {
+    const grouped = new Map<string, { label: string; amount: number; sortValue: number }>();
+    const useDailyView = appliedFilters.month !== "all";
 
     filteredInvoices.forEach((invoice) => {
-      const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
-      const customerKey = getCustomerKey(caseData) || invoice.customer || invoice.case_id;
-      const customerLabel = caseData?.customer || invoice.customer || "Ukendt kunde";
-      const caseNumber = caseData?.case_number || "";
-      const customerNumberLabel = caseNumber.split("-").slice(0, 2).join("-");
-      const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
+      const createdAt = new Date(invoice.created_at);
+      const amount = Number(invoice.amount) || 0;
 
-      if (!grouped.has(customerKey)) {
-        grouped.set(customerKey, {
-          customerKey,
-          customerLabel,
-          customerNumberLabel,
-          customerNumberValue: getCustomerSortValue(caseNumber),
-          cases: new Map(),
+      if (useDailyView) {
+        const key = getCreatedDate(invoice);
+        const sortValue = new Date(`${key}T12:00:00`).getTime();
+        const label = chartDateFormatter.format(new Date(`${key}T12:00:00`));
+        const current = grouped.get(key);
+
+        grouped.set(key, {
+          label,
+          amount: (current?.amount || 0) + amount,
+          sortValue,
         });
+
+        return;
       }
 
-      const customerGroup = grouped.get(customerKey)!;
-      if (!customerGroup.cases.has(invoice.case_id)) {
-        customerGroup.cases.set(invoice.case_id, {
-          caseId: invoice.case_id,
-          caseNumber,
-          caseLabel,
-          invoices: [],
-        });
-      }
+      const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
+      const sortValue = new Date(createdAt.getFullYear(), createdAt.getMonth(), 1).getTime();
+      const label = `${MONTHS[createdAt.getMonth()]} ${createdAt.getFullYear()}`;
+      const current = grouped.get(key);
 
-      customerGroup.cases.get(invoice.case_id)!.invoices.push(invoice);
+      grouped.set(key, {
+        label,
+        amount: (current?.amount || 0) + amount,
+        sortValue,
+      });
     });
 
     return Array.from(grouped.values())
-      .sort((a, b) => {
-        if (a.customerNumberValue !== b.customerNumberValue) return a.customerNumberValue - b.customerNumberValue;
-        return collator.compare(a.customerLabel, b.customerLabel);
-      })
-      .map((customerGroup) => ({
-        ...customerGroup,
-        cases: Array.from(customerGroup.cases.values()).sort((a, b) => getCaseSortValue(a.caseNumber) - getCaseSortValue(b.caseNumber)),
+      .sort((a, b) => a.sortValue - b.sortValue)
+      .map((item) => ({
+        name: item.label,
+        amount: item.amount,
       }));
-  }, [casesById, filteredInvoices]);
+  }, [appliedFilters.month, filteredInvoices]);
 
   const periodSummary = useMemo(() => {
     if (appliedFilters.year === "all" && appliedFilters.month === "all") {
@@ -351,31 +318,22 @@ export default function InvoicesPage() {
       {} as Record<string, { count: number; amount: number }>,
     );
 
-    const totalAmount = filteredInvoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
-
     return {
       count: filteredInvoices.length,
-      totalAmount,
-      pendingAmount: totalAmount - byStatus.Betalt.amount,
+      totalAmount: filteredInvoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0),
       byStatus,
     };
   }, [filteredInvoices]);
 
-  const hasSearchTerm = appliedFilters.search.trim().length > 0;
-  const hasPendingChanges =
-    draftFilters.year !== appliedFilters.year ||
-    draftFilters.month !== appliedFilters.month ||
-    draftFilters.search !== appliedFilters.search ||
-    draftFilters.sort !== appliedFilters.sort;
+  const hasPendingChanges = draftFilters.year !== appliedFilters.year || draftFilters.month !== appliedFilters.month;
 
   const applySearch = () => {
     setAppliedFilters(draftFilters);
-    setExpandedCustomers({});
-    setExpandedCases({});
   };
 
-  const resetDraftFilters = () => {
+  const resetAllFilters = () => {
     setDraftFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
   };
 
   const handleCaseSelect = (caseId: string, isEdit = false) => {
@@ -402,14 +360,6 @@ export default function InvoicesPage() {
       status: invoice.status,
     });
     setEditOpen(true);
-  };
-
-  const toggleCustomer = (customerKey: string) => {
-    setExpandedCustomers((prev) => ({ ...prev, [customerKey]: !prev[customerKey] }));
-  };
-
-  const toggleCase = (caseId: string) => {
-    setExpandedCases((prev) => ({ ...prev, [caseId]: !prev[caseId] }));
   };
 
   return (
@@ -538,97 +488,95 @@ export default function InvoicesPage() {
       </Dialog>
 
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
               <CalendarDays size={18} />
             </div>
-            <h2 className="font-heading text-2xl font-bold tracking-tight text-card-foreground">Find fakturaer hurtigt og enkelt</h2>
+            <h2 className="font-heading text-2xl font-bold tracking-tight text-card-foreground">Søg enkelt i fakturaer</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vælg år, måned, søgning og sortering — og tryk derefter på <span className="font-semibold text-foreground">Søg</span>. Standardvisningen er alle fakturaer med nyeste først.
+              Vælg år og måned, og tryk på <span className="font-semibold text-foreground">Søg</span>. Nulstil viser alle fakturaer igen, og sortering styres separat.
             </p>
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Viser</p>
             <p className="mt-1 font-heading text-lg font-bold text-card-foreground">{periodSummary}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer · {appliedFilters.sort === "newest" ? "nyeste først" : "ældste først"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{periodTotals.count} fakturaer · {sortOrder === "newest" ? "nyeste først" : "ældste først"}</p>
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-border bg-muted/15 p-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
-              <Select value={draftFilters.year} onValueChange={(value) => setDraftFilters((current) => ({ ...current, year: value }))}>
-                <SelectTrigger className="rounded-xl bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle år</SelectItem>
-                  {availableYears.map((year) => (
-                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="rounded-2xl border border-border bg-muted/15 p-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">År</Label>
+                <Select value={draftFilters.year} onValueChange={(value) => setDraftFilters((current) => ({ ...current, year: value }))}>
+                  <SelectTrigger className="rounded-xl bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle år</SelectItem>
+                    {availableYears.map((year) => (
+                      <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
+                <Select value={draftFilters.month} onValueChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}>
+                  <SelectTrigger className="rounded-xl bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle måneder</SelectItem>
+                    {MONTHS.map((month, index) => (
+                      <SelectItem key={month} value={String(index)}>{month}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måned</Label>
-              <Select value={draftFilters.month} onValueChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}>
-                <SelectTrigger className="rounded-xl bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle måneder</SelectItem>
-                  {MONTHS.map((month, index) => (
-                    <SelectItem key={month} value={String(index)}>{month}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-medium text-card-foreground">Søgningen opdaterer først, når du trykker på Søg</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {hasPendingChanges ? "Du har nye valg, som endnu ikke er søgt på." : "Du ser resultaterne for dine nuværende valg."}
+                </p>
+              </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sortering</Label>
-              <Select value={draftFilters.sort} onValueChange={(value) => setDraftFilters((current) => ({ ...current, sort: value as "newest" | "oldest" }))}>
-                <SelectTrigger className="rounded-xl bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Nyeste først</SelectItem>
-                  <SelectItem value="oldest">Ældste først</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Søgning</Label>
-              <div className="relative">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Fakturanummer, kunde eller sag"
-                  className="h-11 rounded-xl bg-background pl-10"
-                  value={draftFilters.search}
-                  onChange={(e) => setDraftFilters((current) => ({ ...current, search: e.target.value }))}
-                />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button type="button" variant="outline" className="h-11 rounded-xl px-6" onClick={resetAllFilters}>
+                  Nulstil
+                </Button>
+                <Button type="button" className="h-11 rounded-xl px-6 shadow-card" onClick={applySearch}>
+                  <Search size={16} /> Søg
+                </Button>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-medium text-card-foreground">Resultater opdateres først, når du trykker på Søg</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {hasPendingChanges ? "Du har ændringer, som ikke er søgt på endnu." : "De viste resultater matcher dine senest valgte indstillinger."}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button type="button" variant="outline" className="h-11 rounded-xl px-6" onClick={resetDraftFilters}>
-                Nulstil alle indstillinger
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sortering</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <Button
+                type="button"
+                variant={sortOrder === "newest" ? "default" : "outline"}
+                className="justify-start rounded-xl"
+                onClick={() => setSortOrder("newest")}
+              >
+                <ArrowDownAZ size={16} /> Nyeste først
               </Button>
-              <Button type="button" className="h-11 rounded-xl px-6 shadow-card" onClick={applySearch}>
-                Søg
+              <Button
+                type="button"
+                variant={sortOrder === "oldest" ? "default" : "outline"}
+                className="justify-start rounded-xl"
+                onClick={() => setSortOrder("oldest")}
+              >
+                <ArrowUpAZ size={16} /> Ældste først
               </Button>
             </div>
           </div>
@@ -640,7 +588,7 @@ export default function InvoicesPage() {
           { label: "Faktureret", value: formatCurrency(periodTotals.totalAmount), meta: `${periodTotals.count} fakturaer`, icon: Receipt, tone: "text-card-foreground" },
           { label: "Sendt", value: formatCurrency(periodTotals.byStatus.Sendt.amount), meta: `${periodTotals.byStatus.Sendt.count} fakturaer`, icon: TrendingUp, tone: "text-info" },
           { label: "Betalt", value: formatCurrency(periodTotals.byStatus.Betalt.amount), meta: `${periodTotals.byStatus.Betalt.count} fakturaer`, icon: CheckCircle2, tone: "text-success" },
-          { label: appliedFilters.sort === "newest" ? "Nyeste først" : "Ældste først", value: periodSummary, meta: hasSearchTerm ? `Søgning: ${appliedFilters.search}` : "Aktive resultater", icon: appliedFilters.sort === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
+          { label: "Aktiv visning", value: periodSummary, meta: sortOrder === "newest" ? "Nyeste først" : "Ældste først", icon: sortOrder === "newest" ? ArrowDownAZ : ArrowUpAZ, tone: "text-primary" },
         ].map((card) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-5 shadow-card">
             <div className="mb-5 flex items-center justify-between">
@@ -655,12 +603,65 @@ export default function InvoicesPage() {
         ))}
       </div>
 
+      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-card">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Graf</p>
+            <h3 className="mt-1 font-heading text-xl font-bold text-card-foreground">Fakturakurve</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {appliedFilters.month === "all" ? "Udvikling pr. måned" : "Udvikling pr. dag i den valgte måned"}
+            </p>
+          </div>
+        </div>
+
+        <div className="h-[280px] w-full">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={48}
+                  tickFormatter={(value) => `${Number(value).toLocaleString("da-DK")}`}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatCurrency(Number(value)), "Beløb"]}
+                  contentStyle={{
+                    borderRadius: 16,
+                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "hsl(var(--background))",
+                    color: "hsl(var(--foreground))",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
+              Ingen data at vise i grafen endnu
+            </div>
+          )}
+        </div>
+      </motion.section>
+
       <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
         <p className="text-sm font-medium text-card-foreground">Resultater for: {periodSummary}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {hasSearchTerm ? `Søgning: ${appliedFilters.search}. ` : ""}
-          Sortering: {appliedFilters.sort === "newest" ? "nyeste først" : "ældste først"}.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Sortering: {sortOrder === "newest" ? "nyeste først" : "ældste først"}.</p>
       </div>
 
       <div className="space-y-3">
@@ -673,158 +674,74 @@ export default function InvoicesPage() {
           </div>
         ))}
 
-        {groupedInvoices.map((customerGroup, customerIndex) => {
-          const customerInvoiceCount = customerGroup.cases.reduce((sum, caseGroup) => sum + caseGroup.invoices.length, 0);
-          const isCustomerExpanded = hasSearchTerm || !!expandedCustomers[customerGroup.customerKey];
+        {filteredInvoices.map((invoice, index) => {
+          const caseData = (invoice.cases as CaseOption | null) || casesById.get(invoice.case_id);
+          const caseLabel = formatCaseLabel(caseData, invoice.customer || "Sag uden navn");
+          const config = statusConfig[invoice.status] || statusConfig.Udkast;
+          const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "Betalt";
 
           return (
             <motion.div
-              key={customerGroup.customerKey}
+              key={invoice.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: customerIndex * 0.03 }}
-              className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+              transition={{ delay: index * 0.02 }}
+              className={`rounded-2xl border bg-card p-5 shadow-card ${isOverdue ? "border-destructive/30" : "border-border"}`}
             >
-              <div className="border-b border-border bg-muted/20 px-5 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kunde</p>
-              </div>
-
-              <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex min-w-0 items-start gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
-                    <Building2 size={18} className="text-primary" />
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-heading text-lg font-bold text-card-foreground">{invoice.invoice_number}</p>
+                    {isOverdue && <span className="text-[10px] font-bold uppercase text-destructive">Forfalden</span>}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-card-foreground">{customerGroup.customerNumberLabel ? `${customerGroup.customerNumberLabel} · ${customerGroup.customerLabel}` : customerGroup.customerLabel}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{customerInvoiceCount} {customerInvoiceCount === 1 ? "faktura" : "fakturaer"} fordelt på {customerGroup.cases.length} {customerGroup.cases.length === 1 ? "sag" : "sager"}</p>
+
+                  <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
+                    <p><span className="font-medium text-card-foreground">Kunde:</span> {invoice.customer || "-"}</p>
+                    <p><span className="font-medium text-card-foreground">Sag:</span> {caseLabel}</p>
                   </div>
-                </div>
 
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={isCustomerExpanded ? "secondary" : "outline"}
-                  className="gap-2 rounded-xl"
-                  onClick={() => toggleCustomer(customerGroup.customerKey)}
-                >
-                  <Briefcase size={14} />
-                  {isCustomerExpanded ? "Skjul sager" : "Vis sager"}
-                </Button>
-              </div>
+                  {invoice.description && <p className="mt-3 text-sm text-muted-foreground">{invoice.description}</p>}
 
-              {isCustomerExpanded && (
-                <div className="border-t border-border bg-muted/10 px-5 py-4">
-                  <div className="space-y-3">
-                    {customerGroup.cases.map((caseGroup) => {
-                      const caseAmount = caseGroup.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
-                      const isCaseExpanded = hasSearchTerm || !!expandedCases[caseGroup.caseId];
-
-                      return (
-                        <div key={caseGroup.caseId} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                          <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="flex min-w-0 items-start gap-3">
-                              <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                                <Briefcase size={15} className="text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-card-foreground">{caseGroup.caseNumber || "Uden sagsnummer"}</p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">{caseGroup.caseLabel}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col items-start gap-3 lg:items-end">
-                              <div className="text-left lg:text-right">
-                                <p className="text-sm font-semibold text-card-foreground">{caseAmount.toLocaleString("da-DK")} kr</p>
-                                <p className="text-[11px] text-muted-foreground">{caseGroup.invoices.length} {caseGroup.invoices.length === 1 ? "faktura" : "fakturaer"}</p>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={isCaseExpanded ? "secondary" : "outline"}
-                                className="gap-2 rounded-xl"
-                                onClick={() => toggleCase(caseGroup.caseId)}
-                              >
-                                <Receipt size={14} />
-                                {isCaseExpanded ? "Skjul fakturaer" : `Vis fakturaer (${caseGroup.invoices.length})`}
-                              </Button>
-                            </div>
-                          </div>
-
-                          {isCaseExpanded && (
-                            <div className="border-t border-border bg-muted/10 p-3">
-                              <div className="space-y-3">
-                                {caseGroup.invoices.map((invoice) => {
-                                  const config = statusConfig[invoice.status] || statusConfig.Udkast;
-                                  const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "Betalt";
-
-                                  return (
-                                    <div key={invoice.id} className={`rounded-xl border bg-card p-4 ${isOverdue ? "border-destructive/30" : "border-border"}`}>
-                                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                        <div className="flex min-w-0 items-start gap-3">
-                                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                                            <Receipt size={16} className="text-primary" />
-                                          </div>
-                                          <div className="min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              <p className="font-heading text-base font-bold text-card-foreground">{invoice.invoice_number}</p>
-                                              {isOverdue && <span className="text-[10px] font-bold uppercase text-destructive">Forfalden</span>}
-                                            </div>
-                                            {invoice.description && <p className="mt-1 text-sm text-muted-foreground">{invoice.description}</p>}
-                                            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                                              <span>Oprettet: {formatDanishDate(invoice.created_at.split("T")[0])}</span>
-                                              {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
-                                              {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-3">
-                                          <div className="text-left lg:text-right">
-                                            <p className="font-heading text-base font-bold text-card-foreground">{Number(invoice.amount).toLocaleString("da-DK")} kr</p>
-                                          </div>
-                                          {role === "admin" ? (
-                                            <div className="flex items-center gap-2">
-                                              <select
-                                                value={invoice.status}
-                                                onChange={(e) => updateStatus.mutate({ id: invoice.id, status: e.target.value })}
-                                                className={`rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold outline-none ${config.className}`}
-                                              >
-                                                {statuses.map((status) => (
-                                                  <option key={status} value={status}>{status}</option>
-                                                ))}
-                                              </select>
-                                              <button
-                                                onClick={() => openEdit(invoice)}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                              >
-                                                <Pencil size={14} />
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <Badge variant={config.variant} className={config.className}>{invoice.status}</Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                    <span>Oprettet: {formatDanishDate(getCreatedDate(invoice))}</span>
+                    {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
+                    {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
                   </div>
                 </div>
-              )}
+
+                <div className="flex flex-col items-start gap-3 lg:items-end">
+                  <p className="font-heading text-xl font-bold text-card-foreground">{Number(invoice.amount).toLocaleString("da-DK")} kr</p>
+                  {role === "admin" ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={invoice.status}
+                        onChange={(e) => updateStatus.mutate({ id: invoice.id, status: e.target.value })}
+                        className={`rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold outline-none ${config.className}`}
+                      >
+                        {statuses.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(invoice)}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <Badge variant={config.variant} className={config.className}>{invoice.status}</Badge>
+                  )}
+                </div>
+              </div>
             </motion.div>
           );
         })}
 
-        {!isLoading && groupedInvoices.length === 0 && (
+        {!isLoading && filteredInvoices.length === 0 && (
           <div className="py-16 text-center">
             <Receipt size={32} className="mx-auto mb-3 text-muted-foreground/20" />
-            <p className="text-sm font-medium text-muted-foreground">Ingen fakturaer fundet for de valgte filtre</p>
+            <p className="text-sm font-medium text-muted-foreground">Ingen fakturaer fundet for den valgte periode</p>
           </div>
         )}
       </div>
