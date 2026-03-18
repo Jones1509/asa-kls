@@ -729,20 +729,33 @@ export default function EmployeesPage() {
                 </Button>
               </div>
               {showPasswordChange && (
-                <div className="mt-3 flex gap-2">
-                  <div className="relative flex-1">
-                    <Input type={showNewPw ? "text" : "password"} value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Ny adgangskode (min. 6 tegn)" className="pr-10 rounded-xl h-10" minLength={6} />
-                    <button type="button" onClick={() => setShowNewPw(!showNewPw)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-                      {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                <div className="mt-3 space-y-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showNewPw ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Ny adgangskode"
+                        className="pr-10 rounded-xl h-10"
+                        autoComplete="new-password"
+                      />
+                      <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                        {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="rounded-xl h-10"
+                      onClick={() => changePassword.mutate()}
+                      disabled={changePassword.isPending || !newPassword.trim()}
+                    >
+                      {changePassword.isPending ? "Gemmer..." : "Gem"}
+                    </Button>
                   </div>
-                  <Button type="button" size="sm" className="rounded-xl h-10" onClick={() => changePassword.mutate()}
-                    disabled={changePassword.isPending || newPassword.length < 6}>
-                    {changePassword.isPending ? "Gemmer..." : "Gem"}
-                  </Button>
+                  <p className="text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
                 </div>
               )}
             </div>
