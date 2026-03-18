@@ -147,6 +147,7 @@ export default function CustomersPage() {
   const [editForm, setEditForm] = useState<any>(null);
   const [caseForm, setCaseForm] = useState<any>(emptyCaseForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [caseDeleteConfirm, setCaseDeleteConfirm] = useState<string | null>(null);
   const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
   const [expandedInvoiceCases, setExpandedInvoiceCases] = useState<Record<string, boolean>>({});
 
@@ -343,6 +344,22 @@ export default function CustomersPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
+  const deleteCase = useMutation({
+    mutationFn: async (caseId: string) => {
+      const { error } = await supabase.from("cases").delete().eq("id", caseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-case-invoices"] });
+      setCaseDialogOpen(false);
+      setCaseForm(emptyCaseForm);
+      setCaseDeleteConfirm(null);
+      toast.success("Sag slettet");
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
   const createCase = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Du skal være logget ind");
@@ -369,6 +386,7 @@ export default function CustomersPage() {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       setCaseDialogOpen(false);
       setCaseForm(emptyCaseForm);
+      setCaseDeleteConfirm(null);
       toast.success("Sag oprettet");
     },
     onError: (error: any) => toast.error(error.message),
@@ -653,7 +671,10 @@ export default function CustomersPage() {
         open={caseDialogOpen}
         onOpenChange={(value) => {
           setCaseDialogOpen(value);
-          if (!value) setCaseForm(emptyCaseForm);
+          if (!value) {
+            setCaseForm(emptyCaseForm);
+            setCaseDeleteConfirm(null);
+          }
         }}
       >
         <DialogContent className="max-w-lg rounded-2xl">
@@ -761,19 +782,40 @@ export default function CustomersPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" className="rounded-xl" onClick={() => setCaseDialogOpen(false)}>
-                Luk
-              </Button>
-              <Button type="submit" className="rounded-xl shadow-card" disabled={createCase.isPending || updateCase.isPending}>
-                {caseDialogMode === "edit"
-                  ? updateCase.isPending
-                    ? "Opdaterer..."
-                    : "Opdater"
-                  : createCase.isPending
-                    ? "Opretter..."
-                    : "Opret sag"}
-              </Button>
+            <div className="flex justify-between gap-3 pt-2">
+              {caseDialogMode === "edit" && caseForm.id ? (
+                caseDeleteConfirm === caseForm.id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-destructive">Slet sag?</span>
+                    <Button type="button" variant="destructive" size="sm" className="rounded-xl" onClick={() => deleteCase.mutate(caseForm.id)}>
+                      Ja, slet
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="rounded-xl" onClick={() => setCaseDeleteConfirm(null)}>
+                      Nej
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="ghost" className="gap-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => setCaseDeleteConfirm(caseForm.id)}>
+                    <Trash2 size={14} /> Slet sag
+                  </Button>
+                )
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="rounded-xl" onClick={() => setCaseDialogOpen(false)}>
+                  Luk
+                </Button>
+                <Button type="submit" className="rounded-xl shadow-card" disabled={createCase.isPending || updateCase.isPending || deleteCase.isPending}>
+                  {caseDialogMode === "edit"
+                    ? updateCase.isPending
+                      ? "Opdaterer..."
+                      : "Opdater"
+                    : createCase.isPending
+                      ? "Opretter..."
+                      : "Opret sag"}
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>
@@ -949,6 +991,20 @@ export default function CustomersPage() {
                                   <div className="flex flex-wrap gap-2 lg:justify-end">
                                     <Button type="button" size="sm" variant="outline" className="gap-2 rounded-xl" onClick={() => openEditCase(caseItem)}>
                                       <Pencil size={14} /> Rediger sag
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="gap-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                      onClick={() => {
+                                        setCaseDeleteConfirm(caseItem.id);
+                                        setCaseForm(caseItem);
+                                        setCaseDialogMode("edit");
+                                        setCaseDialogOpen(true);
+                                      }}
+                                    >
+                                      <Trash2 size={14} /> Slet sag
                                     </Button>
                                     <Button
                                       type="button"
