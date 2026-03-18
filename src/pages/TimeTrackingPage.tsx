@@ -233,7 +233,7 @@ export default function TimeTrackingPage() {
           {isAdmin && (
             <TimeTrackingPdfExport
               entries={filteredEntries}
-              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
+              cases={(cases || []).map((c) => ({ id: c.id, case_number: c.case_number || "", customer: c.customer }))}
               profileMap={profileMap || {}}
               isAdmin={isAdmin}
             />
