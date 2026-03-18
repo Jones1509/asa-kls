@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { formatCaseLabel } from "@/lib/case-format";
+import { normalizeCaseOptions } from "@/lib/case-options";
 import { cn } from "@/lib/utils";
 
 export default function SchedulePage() {
