@@ -103,10 +103,17 @@ export default function SchedulePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cases")
-        .select("id, case_number, customer, case_description")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (customer_number)
+        `)
         .not("status", "eq", "Afsluttet")
         .order("case_number");
-      return data || [];
+      return normalizeCaseOptions(data);
     },
     enabled: role === "admin",
   });
