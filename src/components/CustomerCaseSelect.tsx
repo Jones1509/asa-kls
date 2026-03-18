@@ -8,6 +8,7 @@ type CaseOption = {
   customer?: string | null;
   customer_id?: string | null;
   case_description?: string | null;
+  customer_number?: string | null;
 };
 
 interface CustomerCaseSelectProps {
@@ -29,6 +30,12 @@ const collator = new Intl.Collator("da-DK", { numeric: true, sensitivity: "base"
 
 function getCustomerKey(caseItem: CaseOption) {
   return caseItem.customer_id || caseItem.customer || caseItem.id;
+}
+
+function getCustomerLabel(caseItem: CaseOption) {
+  const customerName = caseItem.customer?.trim() || "Ukendt kunde";
+  const customerNumber = caseItem.customer_number?.trim();
+  return customerNumber ? `${customerNumber} · ${customerName}` : customerName;
 }
 
 export function CustomerCaseSelect({
@@ -55,7 +62,7 @@ export function CustomerCaseSelect({
       if (!map.has(key)) {
         map.set(key, {
           value: key,
-          label: caseItem.customer || "Ukendt kunde",
+          label: getCustomerLabel(caseItem),
         });
       }
     });

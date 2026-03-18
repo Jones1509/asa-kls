@@ -43,8 +43,20 @@ export default function FieldReportsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").order("case_number");
-      return data || [];
+      const { data } = await supabase
+        .from("cases")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (
+            customer_number
+          )
+        `)
+        .order("case_number");
+      return normalizeCaseOptions(data as any[]);
     },
   });
 
