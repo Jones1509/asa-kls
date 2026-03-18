@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
