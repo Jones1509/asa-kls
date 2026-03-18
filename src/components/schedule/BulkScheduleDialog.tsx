@@ -159,83 +159,86 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
     >
       <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden">
         <div className="flex flex-col h-full max-h-[85vh]">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <DialogTitle className="font-heading font-bold text-lg">Planlæg opgave</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Vælg medarbejdere, sag, datointerval og tidspunkter
-            </p>
-          </DialogHeader>
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
+              <DialogTitle className="font-heading font-bold text-lg">Planlæg opgave</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Vælg medarbejdere, datointerval og tidspunkter — sag er valgfri
+              </p>
+            </DialogHeader>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left: Employee selection */}
-            <div className="w-56 flex-shrink-0 border-r border-border flex flex-col">
-              <div className="px-4 pt-4 pb-2">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Medarbejdere
-                </p>
-                <div className="relative">
-                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={employeeSearch}
-                    onChange={(e) => setEmployeeSearch(e.target.value)}
-                    placeholder="Søg..."
-                    className="w-full h-8 pl-7 pr-2 rounded-lg border border-input bg-background text-xs focus:ring-1 focus:ring-ring outline-none transition-all"
-                  />
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: Employee selection */}
+              <div className="w-56 flex-shrink-0 border-r border-border flex flex-col">
+                <div className="px-4 pt-4 pb-2">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Medarbejdere
+                  </p>
+                  <div className="relative">
+                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                      placeholder="Søg..."
+                      className="w-full h-8 pl-7 pr-2 rounded-lg border border-input bg-background text-xs focus:ring-1 focus:ring-ring outline-none transition-all"
+                    />
+                  </div>
                 </div>
+                <ScrollArea className="flex-1 px-2 pb-4">
+                  {filteredEmployees.map((emp) => {
+                    const isSelected = selectedEmployeeIds.includes(emp.user_id);
+                    return (
+                      <label
+                        key={emp.user_id}
+                        className={cn(
+                          "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs cursor-pointer transition-colors select-none",
+                          isSelected
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleEmployee(emp.user_id)}
+                          className="flex-shrink-0 h-5 w-5"
+                        />
+                        <span className="truncate">{emp.full_name}</span>
+                      </label>
+                    );
+                  })}
+                </ScrollArea>
+                {selectedEmployeeIds.length > 0 && (
+                  <div className="px-4 py-2 border-t border-border">
+                    <p className="text-[11px] font-semibold text-primary">
+                      {selectedEmployeeIds.length} valgt
+                    </p>
+                  </div>
+                )}
               </div>
-              <ScrollArea className="flex-1 px-2 pb-4">
-                {filteredEmployees.map((emp) => {
-                  const isSelected = selectedEmployeeIds.includes(emp.user_id);
-                  return (
-                    <label
-                      key={emp.user_id}
-                      className={cn(
-                        "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs cursor-pointer transition-colors select-none",
-                        isSelected
-                          ? "bg-primary/10 text-primary font-semibold"
-                          : "text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleEmployee(emp.user_id)}
-                        className="flex-shrink-0 h-5 w-5"
-                      />
-                      <span className="truncate">{emp.full_name}</span>
-                    </label>
-                  );
-                })}
-              </ScrollArea>
-              {selectedEmployeeIds.length > 0 && (
-                <div className="px-4 py-2 border-t border-border">
-                  <p className="text-[11px] font-semibold text-primary">
-                    {selectedEmployeeIds.length} valgt
+
+              {/* Right: Form */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {/* Case */}
+                <div>
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Sag (valgfrit)
+                  </Label>
+                  <select
+                    value={form.caseId}
+                    onChange={(e) => setForm({ ...form, caseId: e.target.value })}
+                    className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
+                  >
+                    <option value="">Ingen sag – planlæg uden kunde/sag</option>
+                    {cases.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {formatCaseLabel(c)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Du kan gemme opgaven uden at vælge kunde eller sag.
                   </p>
                 </div>
-              )}
-            </div>
-
-            {/* Right: Form */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {/* Case */}
-              <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Sag (valgfrit)
-                </Label>
-                <select
-                  value={form.caseId}
-                  onChange={(e) => setForm({ ...form, caseId: e.target.value })}
-                  className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
-                >
-                  <option value="">Ingen sag</option>
-                  {cases.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {formatCaseLabel(c)}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
