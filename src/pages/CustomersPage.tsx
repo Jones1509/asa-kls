@@ -147,6 +147,7 @@ export default function CustomersPage() {
   const [editForm, setEditForm] = useState<any>(null);
   const [caseForm, setCaseForm] = useState<any>(emptyCaseForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [caseDeleteConfirm, setCaseDeleteConfirm] = useState<string | null>(null);
   const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
   const [expandedInvoiceCases, setExpandedInvoiceCases] = useState<Record<string, boolean>>({});
 
@@ -343,6 +344,22 @@ export default function CustomersPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
+  const deleteCase = useMutation({
+    mutationFn: async (caseId: string) => {
+      const { error } = await supabase.from("cases").delete().eq("id", caseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-case-invoices"] });
+      setCaseDialogOpen(false);
+      setCaseForm(emptyCaseForm);
+      setCaseDeleteConfirm(null);
+      toast.success("Sag slettet");
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
   const createCase = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Du skal være logget ind");
@@ -369,6 +386,7 @@ export default function CustomersPage() {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       setCaseDialogOpen(false);
       setCaseForm(emptyCaseForm);
+      setCaseDeleteConfirm(null);
       toast.success("Sag oprettet");
     },
     onError: (error: any) => toast.error(error.message),
