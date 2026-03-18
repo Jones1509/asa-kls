@@ -441,6 +441,7 @@ export default function CustomersPage() {
 
   const openEditCase = (caseItem: any) => {
     setCaseDialogMode("edit");
+    setCaseDeleteConfirm(null);
     setCaseForm({
       ...emptyCaseForm,
       ...caseItem,
