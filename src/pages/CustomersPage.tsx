@@ -441,6 +441,7 @@ export default function CustomersPage() {
 
   const openEditCase = (caseItem: any) => {
     setCaseDialogMode("edit");
+    setCaseDeleteConfirm(null);
     setCaseForm({
       ...emptyCaseForm,
       ...caseItem,
@@ -991,20 +992,6 @@ export default function CustomersPage() {
                                   <div className="flex flex-wrap gap-2 lg:justify-end">
                                     <Button type="button" size="sm" variant="outline" className="gap-2 rounded-xl" onClick={() => openEditCase(caseItem)}>
                                       <Pencil size={14} /> Rediger sag
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      className="gap-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={() => {
-                                        setCaseDeleteConfirm(caseItem.id);
-                                        setCaseForm(caseItem);
-                                        setCaseDialogMode("edit");
-                                        setCaseDialogOpen(true);
-                                      }}
-                                    >
-                                      <Trash2 size={14} /> Slet sag
                                     </Button>
                                     <Button
                                       type="button"
