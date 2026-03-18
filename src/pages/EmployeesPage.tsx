@@ -46,26 +46,50 @@ const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
   "Andet": ["Ansættelseskontrakt"],
 };
 
-// Extra certs based on company title (Ejer/Medejer)
 const EXTRA_CERTS_BY_COMPANY_TITLE: Record<string, string[]> = {
   "Ejer": ["Direktørkontrakt"],
   "Medejer": ["Direktørkontrakt"],
 };
 
+const PASSWORD_HINT = "Brug mindst 10 tegn samt store og små bogstaver og mindst ét tal.";
+
 function getCertificatesForEmployee(roleLabel: string, companyTitle: string): string[] {
   const base = CERTIFICATES_BY_TITLE[roleLabel] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"];
   const extra = EXTRA_CERTS_BY_COMPANY_TITLE[companyTitle] || [];
-  // Replace Ansættelseskontrakt with Direktørkontrakt for Ejer/Medejer if present
+
   if (extra.includes("Direktørkontrakt") && base.includes("Ansættelseskontrakt")) {
     return [...base.filter(c => c !== "Ansættelseskontrakt"), ...extra];
   }
+
   return [...base, ...extra];
 }
 
+function validateEmployeePassword(password: string) {
+  const trimmedPassword = password.trim();
+
+  if (trimmedPassword.length < 10) {
+    return PASSWORD_HINT;
+  }
+
+  if (!/[a-zæøå]/i.test(trimmedPassword) || !/[A-ZÆØÅ]/.test(trimmedPassword) || !/\d/.test(trimmedPassword)) {
+    return PASSWORD_HINT;
+  }
+
+  return null;
+}
+
 async function callManageEmployee(body: Record<string, unknown>) {
-  const { data: { session } } = await supabase.auth.getSession();
   const res = await supabase.functions.invoke("manage-employee", { body });
-  if (res.error) throw new Error(res.error.message);
+
+  if (res.error) {
+    const functionError = res.error as Error & {
+      context?: { json?: () => Promise<{ error?: string }> };
+    };
+
+    const payload = await functionError.context?.json?.().catch(() => null);
+    throw new Error(payload?.error || functionError.message || "Der opstod en fejl");
+  }
+
   if (res.data?.error) throw new Error(res.data.error);
   return res.data;
 }
