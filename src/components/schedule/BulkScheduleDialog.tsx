@@ -6,19 +6,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
-import { formatCaseLabel } from "@/lib/case-format";
+import type { CustomerCaseOption } from "@/lib/case-options";
 
 const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7];
 const DAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
 
 type Employee = { user_id: string; full_name: string };
-type Case = { id: string; case_number: string; customer?: string; case_description?: string };
+
+type Case = CustomerCaseOption;
 
 interface Props {
   open: boolean;
@@ -218,27 +220,19 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
 
               {/* Right: Form */}
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                {/* Case */}
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Sag (valgfrit)
-                  </Label>
-                  <select
-                    value={form.caseId}
-                    onChange={(e) => setForm({ ...form, caseId: e.target.value })}
-                    className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-1 outline-none transition-all"
-                  >
-                    <option value="">Ingen sag – planlæg uden kunde/sag</option>
-                    {cases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {formatCaseLabel(c)}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Du kan gemme opgaven uden at vælge kunde eller sag.
-                  </p>
-                </div>
+                <CustomerCaseSelect
+                  cases={cases}
+                  value={form.caseId}
+                  onChange={(caseId) => setForm({ ...form, caseId })}
+                  customerLabel="Kunde (valgfrit)"
+                  caseLabel="Sag (valgfrit)"
+                  customerPlaceholder="Vælg kunde..."
+                  casePlaceholder="Vælg sag..."
+                  allowEmptyCustomer
+                  emptyCustomerLabel="Ingen specifik kunde"
+                  allowEmptyCase
+                  emptyCaseLabel="Ingen sag – planlæg uden kunde/sag"
+                />
 
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
