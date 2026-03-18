@@ -996,20 +996,6 @@ export default function CustomersPage() {
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant="ghost"
-                                      className="gap-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={() => {
-                                        setCaseDeleteConfirm(caseItem.id);
-                                        setCaseForm(caseItem);
-                                        setCaseDialogMode("edit");
-                                        setCaseDialogOpen(true);
-                                      }}
-                                    >
-                                      <Trash2 size={14} /> Slet sag
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
                                       variant={isInvoicesExpanded ? "secondary" : "default"}
                                       className="gap-2 rounded-xl"
                                       onClick={() => setExpandedInvoiceCases((prev) => ({ ...prev, [caseItem.id]: !prev[caseItem.id] }))}
