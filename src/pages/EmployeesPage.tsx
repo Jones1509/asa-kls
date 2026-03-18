@@ -46,26 +46,50 @@ const CERTIFICATES_BY_TITLE: Record<string, string[]> = {
   "Andet": ["Ansættelseskontrakt"],
 };
 
-// Extra certs based on company title (Ejer/Medejer)
 const EXTRA_CERTS_BY_COMPANY_TITLE: Record<string, string[]> = {
   "Ejer": ["Direktørkontrakt"],
   "Medejer": ["Direktørkontrakt"],
 };
 
+const PASSWORD_HINT = "Brug mindst 10 tegn samt store og små bogstaver og mindst ét tal.";
+
 function getCertificatesForEmployee(roleLabel: string, companyTitle: string): string[] {
   const base = CERTIFICATES_BY_TITLE[roleLabel] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"];
   const extra = EXTRA_CERTS_BY_COMPANY_TITLE[companyTitle] || [];
-  // Replace Ansættelseskontrakt with Direktørkontrakt for Ejer/Medejer if present
+
   if (extra.includes("Direktørkontrakt") && base.includes("Ansættelseskontrakt")) {
     return [...base.filter(c => c !== "Ansættelseskontrakt"), ...extra];
   }
+
   return [...base, ...extra];
 }
 
+function validateEmployeePassword(password: string) {
+  const trimmedPassword = password.trim();
+
+  if (trimmedPassword.length < 10) {
+    return PASSWORD_HINT;
+  }
+
+  if (!/[a-zæøå]/i.test(trimmedPassword) || !/[A-ZÆØÅ]/.test(trimmedPassword) || !/\d/.test(trimmedPassword)) {
+    return PASSWORD_HINT;
+  }
+
+  return null;
+}
+
 async function callManageEmployee(body: Record<string, unknown>) {
-  const { data: { session } } = await supabase.auth.getSession();
   const res = await supabase.functions.invoke("manage-employee", { body });
-  if (res.error) throw new Error(res.error.message);
+
+  if (res.error) {
+    const functionError = res.error as Error & {
+      context?: { json?: () => Promise<{ error?: string }> };
+    };
+
+    const payload = await functionError.context?.json?.().catch(() => null);
+    throw new Error(payload?.error || functionError.message || "Der opstod en fejl");
+  }
+
   if (res.data?.error) throw new Error(res.data.error);
   return res.data;
 }
@@ -191,10 +215,18 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const passwordValidationError = validateEmployeePassword(newPassword);
+
   const changePassword = useMutation({
     mutationFn: async () => {
-      if (!editEmployee || !newPassword) return;
-      await callManageEmployee({ action: "change_password", user_id: editEmployee.user_id, new_password: newPassword });
+      if (!editEmployee) return;
+      if (passwordValidationError) throw new Error(passwordValidationError);
+
+      await callManageEmployee({
+        action: "change_password",
+        user_id: editEmployee.user_id,
+        new_password: newPassword.trim(),
+      });
     },
     onSuccess: () => {
       toast.success("Adgangskode ændret");
@@ -697,20 +729,33 @@ export default function EmployeesPage() {
                 </Button>
               </div>
               {showPasswordChange && (
-                <div className="mt-3 flex gap-2">
-                  <div className="relative flex-1">
-                    <Input type={showNewPw ? "text" : "password"} value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Ny adgangskode (min. 6 tegn)" className="pr-10 rounded-xl h-10" minLength={6} />
-                    <button type="button" onClick={() => setShowNewPw(!showNewPw)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-                      {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                <div className="mt-3 space-y-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showNewPw ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Ny adgangskode"
+                        className="pr-10 rounded-xl h-10"
+                        autoComplete="new-password"
+                      />
+                      <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                        {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="rounded-xl h-10"
+                      onClick={() => changePassword.mutate()}
+                      disabled={changePassword.isPending || !newPassword.trim()}
+                    >
+                      {changePassword.isPending ? "Gemmer..." : "Gem"}
+                    </Button>
                   </div>
-                  <Button type="button" size="sm" className="rounded-xl h-10" onClick={() => changePassword.mutate()}
-                    disabled={changePassword.isPending || newPassword.length < 6}>
-                    {changePassword.isPending ? "Gemmer..." : "Gem"}
-                  </Button>
+                  <p className="text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
                 </div>
               )}
             </div>

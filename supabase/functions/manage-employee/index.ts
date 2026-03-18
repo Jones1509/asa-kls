@@ -86,12 +86,30 @@ Deno.serve(async (req) => {
     // --- CHANGE PASSWORD ---
     if (action === "change_password") {
       const { user_id, new_password } = body;
-      if (!user_id || !new_password) throw new Error("Mangler user_id eller new_password");
+      const password = typeof new_password === "string" ? new_password.trim() : "";
+
+      if (!user_id || !password) throw new Error("Mangler user_id eller new_password");
+      if (password.length < 10 || !/[a-zæøå]/i.test(password) || !/[A-ZÆØÅ]/.test(password) || !/\d/.test(password)) {
+        throw new Error("Adgangskoden skal være mindst 10 tegn og indeholde store og små bogstaver samt mindst ét tal");
+      }
 
       const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
-        password: new_password,
+        password,
       });
-      if (error) throw error;
+
+      if (error) {
+        const normalizedMessage = error.message?.toLowerCase?.() || "";
+
+        if (normalizedMessage.includes("password") && normalizedMessage.includes("weak")) {
+          throw new Error("Adgangskoden er for svag. Vælg en mere unik adgangskode.");
+        }
+
+        if (normalizedMessage.includes("pwned") || normalizedMessage.includes("have i been pwned")) {
+          throw new Error("Adgangskoden er fundet i et datalæk og må ikke bruges. Vælg en mere unik adgangskode.");
+        }
+
+        throw new Error(error.message || "Kunne ikke opdatere adgangskoden");
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
