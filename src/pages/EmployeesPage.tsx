@@ -201,17 +201,14 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const passwordValidationError = validateEmployeePassword(newPassword);
-
   const changePassword = useMutation({
     mutationFn: async () => {
       if (!editEmployee) return;
-      if (passwordValidationError) throw new Error(passwordValidationError);
 
       await callManageEmployee({
         action: "change_password",
         user_id: editEmployee.user_id,
-        new_password: newPassword.trim(),
+        new_password: newPassword,
       });
     },
     onSuccess: () => {
