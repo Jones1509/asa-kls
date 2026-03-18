@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel } from "@/lib/case-format";
+import { normalizeCaseOptions } from "@/lib/case-options";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { format, startOfWeek } from "date-fns";
@@ -37,8 +38,21 @@ export default function TimeTrackingPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active_time"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").eq("status", "Aktiv").order("case_number");
-      return data || [];
+      const { data } = await supabase
+        .from("cases")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (
+            customer_number
+          )
+        `)
+        .eq("status", "Aktiv")
+        .order("case_number");
+      return normalizeCaseOptions(data as any[]);
     },
   });
 
@@ -219,7 +233,7 @@ export default function TimeTrackingPage() {
           {isAdmin && (
             <TimeTrackingPdfExport
               entries={filteredEntries}
-              cases={(cases || []).map((c) => ({ ...c, display_label: formatCaseLabel(c) }))}
+              cases={(cases || []).map((c) => ({ id: c.id, case_number: c.case_number || "", customer: c.customer }))}
               profileMap={profileMap || {}}
               isAdmin={isAdmin}
             />

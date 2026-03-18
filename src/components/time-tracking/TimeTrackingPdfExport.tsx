@@ -22,7 +22,7 @@ interface Entry {
 
 interface TimeTrackingPdfExportProps {
   entries: Entry[];
-  cases: { id: string; case_number: string; customer?: string }[];
+  cases: { id: string; case_number?: string | null; customer?: string | null }[];
   profileMap: Record<string, string>;
   isAdmin: boolean;
 }

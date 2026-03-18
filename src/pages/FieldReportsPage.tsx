@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel } from "@/lib/case-format";
+import { normalizeCaseOptions } from "@/lib/case-options";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -42,8 +43,20 @@ export default function FieldReportsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, customer_id, case_description").order("case_number");
-      return data || [];
+      const { data } = await supabase
+        .from("cases")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (
+            customer_number
+          )
+        `)
+        .order("case_number");
+      return normalizeCaseOptions(data as any[]);
     },
   });
 

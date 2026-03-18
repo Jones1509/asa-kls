@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
+import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeCaseOptions } from "@/lib/case-options";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +37,21 @@ export default function DeviationsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
-      return data || [];
+      const { data } = await supabase
+        .from("cases")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (
+            customer_number
+          )
+        `)
+        .eq("status", "Aktiv")
+        .order("case_number");
+      return normalizeCaseOptions(data as any[]);
     },
   });
 
@@ -183,11 +198,19 @@ export default function DeviationsPage() {
               <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Beskriv hvad der gik galt — fx en fejl i arbejdet, en kundeklage, eller en procedure der ikke blev fulgt..." className="mt-1.5 rounded-xl min-h-[100px]" required />
             </div>
             <div>
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Tilknyt sag (valgfrit)</Label>
-              <select value={form.case_id} onChange={e => setForm({ ...form, case_id: e.target.value })} className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm">
-                <option value="">Ingen sag</option>
-                {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
-              </select>
+              <CustomerCaseSelect
+                cases={(cases as any) || []}
+                value={form.case_id}
+                onChange={(caseId) => setForm({ ...form, case_id: caseId })}
+                customerLabel="Tilknyt kunde (valgfrit)"
+                caseLabel="Tilknyt sag (valgfrit)"
+                customerPlaceholder="Vælg kunde..."
+                casePlaceholder="Vælg sag..."
+                allowEmptyCustomer
+                emptyCustomerLabel="Ingen specifik kunde"
+                allowEmptyCase
+                emptyCaseLabel="Ingen specifik sag"
+              />
             </div>
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hvad blev gjort for at rette det?</Label>
