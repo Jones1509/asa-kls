@@ -37,8 +37,21 @@ export default function DeviationsPage() {
   const { data: cases } = useQuery({
     queryKey: ["cases_active"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, case_number, customer, case_description").eq("status", "Aktiv");
-      return data || [];
+      const { data } = await supabase
+        .from("cases")
+        .select(`
+          id,
+          case_number,
+          customer,
+          customer_id,
+          case_description,
+          customers (
+            customer_number
+          )
+        `)
+        .eq("status", "Aktiv")
+        .order("case_number");
+      return normalizeCaseOptions(data as any[]);
     },
   });
 
