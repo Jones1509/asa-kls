@@ -51,7 +51,7 @@ const EXTRA_CERTS_BY_COMPANY_TITLE: Record<string, string[]> = {
   "Medejer": ["Direktørkontrakt"],
 };
 
-const PASSWORD_HINT = "Brug mindst 10 tegn samt store og små bogstaver og mindst ét tal.";
+const PASSWORD_HINT = "Vælg en ny adgangskode til medarbejderen.";
 
 function getCertificatesForEmployee(roleLabel: string, companyTitle: string): string[] {
   const base = CERTIFICATES_BY_TITLE[roleLabel] || CERTIFICATES_BY_TITLE["Andet"] || ["Ansættelseskontrakt"];
@@ -62,20 +62,6 @@ function getCertificatesForEmployee(roleLabel: string, companyTitle: string): st
   }
 
   return [...base, ...extra];
-}
-
-function validateEmployeePassword(password: string) {
-  const trimmedPassword = password.trim();
-
-  if (trimmedPassword.length < 10) {
-    return PASSWORD_HINT;
-  }
-
-  if (!/[a-zæøå]/i.test(trimmedPassword) || !/[A-ZÆØÅ]/.test(trimmedPassword) || !/\d/.test(trimmedPassword)) {
-    return PASSWORD_HINT;
-  }
-
-  return null;
 }
 
 async function callManageEmployee(body: Record<string, unknown>) {
@@ -215,17 +201,14 @@ export default function EmployeesPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const passwordValidationError = validateEmployeePassword(newPassword);
-
   const changePassword = useMutation({
     mutationFn: async () => {
       if (!editEmployee) return;
-      if (passwordValidationError) throw new Error(passwordValidationError);
 
       await callManageEmployee({
         action: "change_password",
         user_id: editEmployee.user_id,
-        new_password: newPassword.trim(),
+        new_password: newPassword,
       });
     },
     onSuccess: () => {
