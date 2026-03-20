@@ -1,19 +1,58 @@
 import { useMemo, useState } from "react";
 import { addDays, format, getISODay, parseISO } from "date-fns";
-import { CalendarDays, Search } from "lucide-react";
+import { da } from "date-fns/locale";
+import { CalendarDays, CalendarIcon, Search } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import type { CustomerCaseOption } from "@/lib/case-options";
+
+function DatePickerField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? parseISO(value) : undefined;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start font-normal rounded-xl h-10 mt-1.5 text-sm",
+            !value && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
+          {value ? format(parseISO(value), "d. MMM yyyy", { locale: da }) : (placeholder || "Vælg dato...")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(d) => {
+            if (d) {
+              onChange(format(d, "yyyy-MM-dd"));
+              setOpen(false);
+            }
+          }}
+          locale={da}
+          className="rounded-xl"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7];
 const DAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
