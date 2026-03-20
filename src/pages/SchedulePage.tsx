@@ -469,7 +469,7 @@ export default function SchedulePage() {
               >
                 {/* Hour grid lines */}
                 {Array.from({ length: 24 }, (_, h) => h).map((hour) => (
-                  <div key={hour} className="h-[60px] border-b border-border/20" />
+                  <div key={hour} className="h-[60px] border-b border-border/10" />
                 ))}
 
                 {/* Lunch break block - shown when any schedule is 7+ hours */}
