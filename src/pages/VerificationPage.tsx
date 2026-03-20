@@ -27,6 +27,7 @@ export default function VerificationPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [showElForm, setShowElForm] = useState(false);
+  const [genericOpen, setGenericOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [viewForm, setViewForm] = useState<any>(null);
   const [adminComment, setAdminComment] = useState("");
