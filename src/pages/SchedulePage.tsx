@@ -391,19 +391,18 @@ export default function SchedulePage() {
       {/* Week Grid - Time-based layout like Google Calendar */}
       <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
         {/* Day headers */}
-        <div className="grid grid-cols-[50px_repeat(7,1fr)] border-b border-border">
-          <div className="border-r border-border/50" />
+        <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border">
+          <div className="border-r border-border/30" />
           {days.map((day, i) => {
             const today = isToday(day);
             const dayName = format(day, "EEE", { locale: da }).toUpperCase();
             const dayNum = format(day, "d");
-            const dateStr = format(day, "yyyy-MM-dd");
 
             return (
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "px-2 py-3 text-center border-r last:border-r-0 border-border/50",
+                  "px-2 py-3 text-center border-r last:border-r-0 border-border/30",
                   today && "bg-primary/5"
                 )}
               >
@@ -429,12 +428,12 @@ export default function SchedulePage() {
         </div>
 
         {/* Time grid */}
-        <div className="grid grid-cols-[50px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
+        <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
           {/* Time labels column */}
-          <div className="border-r border-border/50 relative">
+          <div className="border-r border-border/30 relative">
             {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-              <div key={hour} className="h-[60px] relative">
-                <span className="absolute -top-2 right-2 text-[10px] font-medium text-muted-foreground/60 tabular-nums">
+              <div key={hour} className="h-[60px] relative border-b border-transparent">
+                <span className="absolute top-[-1px] left-0 right-0 text-right pr-2 text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none">
                   {String(hour).padStart(2, "0")}:00
                 </span>
               </div>
