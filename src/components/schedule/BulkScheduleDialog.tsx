@@ -258,6 +258,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                       setForm({ ...form, dateTo: v, dateFrom: form.dateFrom || v });
                     }}
                     placeholder="Vælg slutdato..."
+                    className="mt-1.5"
                   />
                 </div>
               </div>
