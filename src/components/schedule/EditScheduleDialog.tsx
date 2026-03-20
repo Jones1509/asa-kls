@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { CalendarIcon, Check, ChevronDown, Search, User, Briefcase } from "lucide-react";
-import { DayPicker } from "react-day-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -278,26 +278,15 @@ export function EditScheduleDialog({ open, onOpenChange, entry, employees, cases
                   <CalendarIcon size={16} className="text-muted-foreground" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-3 rounded-xl" align="start">
-                <DayPicker
+              <PopoverContent className="w-[320px] max-w-[calc(100vw-2rem)] p-0" align="start">
+                <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={(d) => {
                     if (d) setLocal({ ...local, date: format(d, "yyyy-MM-dd") });
                   }}
                   locale={da}
-                  weekStartsOn={1}
-                  classNames={{
-                    caption: "flex items-center justify-between mb-3",
-                    caption_label: "text-sm font-semibold",
-                    nav_button: "h-7 w-7 rounded-lg hover:bg-muted flex items-center justify-center",
-                    head_cell: "w-8 text-xs font-medium text-muted-foreground",
-                    cell: "p-0",
-                    day: "h-8 w-8 rounded-lg text-sm hover:bg-primary/10 transition-colors",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                    day_today: "font-bold text-primary",
-                    day_outside: "text-muted-foreground/40",
-                  }}
+                  className="rounded-xl"
                 />
               </PopoverContent>
             </Popover>

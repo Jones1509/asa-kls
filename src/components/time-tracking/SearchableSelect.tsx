@@ -46,7 +46,7 @@ export function SearchableSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between font-normal rounded-xl h-10 border-border bg-background hover:bg-muted/50 text-sm",
+            "min-h-11 justify-between rounded-xl border-border bg-background px-3 font-normal text-sm shadow-sm hover:bg-muted/40",
             !value && "text-muted-foreground",
             className
           )}
@@ -55,8 +55,8 @@ export function SearchableSelect({
           <ChevronsUpDown size={14} className="ml-2 shrink-0 text-muted-foreground/50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] rounded-xl shadow-lg border border-border/80" align="start">
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/60 rounded-t-xl">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-3 py-3">
           <Search size={14} className="text-muted-foreground/70 shrink-0" />
           <input
             value={search}
@@ -66,12 +66,12 @@ export function SearchableSelect({
             autoFocus
           />
           {search && (
-            <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
               <X size={12} />
             </button>
           )}
         </div>
-        <ScrollArea className="max-h-[220px]">
+        <ScrollArea className="max-h-[260px]">
           {filtered.length === 0 ? (
             <p className="px-3 py-6 text-sm text-muted-foreground/70 text-center">{emptyText}</p>
           ) : (
@@ -81,9 +81,10 @@ export function SearchableSelect({
                   key={opt.value}
                   onClick={() => { onSelect(opt.value); setOpen(false); setSearch(""); }}
                   className={cn(
-                    "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-left transition-colors",
+                    "w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                    "flex items-center gap-2.5",
                     "hover:bg-muted/50",
-                    value === opt.value && "bg-primary/5 text-primary"
+                    value === opt.value && "bg-primary/5 text-primary shadow-sm"
                   )}
                 >
                   <div className="flex-1 min-w-0">

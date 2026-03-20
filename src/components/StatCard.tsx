@@ -13,7 +13,7 @@ interface StatCardProps {
   className?: string;
 }
 
-export function StatCard({ title, value, icon, description, trend, trendValue, className }: StatCardProps) {
+export const StatCard = ({ title, value, icon, description, trend, trendValue, className }: StatCardProps) => {
   return (
     <motion.div
       whileHover={{ y: -2, boxShadow: "var(--shadow-elevated)" }}
@@ -49,4 +49,4 @@ export function StatCard({ title, value, icon, description, trend, trendValue, c
       <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/[0.04] blur-2xl" />
     </motion.div>
   );
-}
+};

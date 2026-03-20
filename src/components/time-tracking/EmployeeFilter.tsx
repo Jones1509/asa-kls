@@ -15,9 +15,10 @@ interface EmployeeFilterProps {
   employees: Employee[];
   selected: string;
   onSelect: (value: string) => void;
+  className?: string;
 }
 
-export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilterProps) {
+export function EmployeeFilter({ employees, selected, onSelect, className }: EmployeeFilterProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -41,7 +42,10 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-[240px] justify-between rounded-xl h-10 border-border font-normal text-sm"
+          className={cn(
+            "w-full justify-between rounded-xl border-border bg-background px-3 font-normal text-sm shadow-sm hover:bg-muted/40 sm:w-[240px]",
+            className,
+          )}
         >
           <span className="flex items-center gap-2 truncate">
             {selected === "all" ? (
@@ -58,8 +62,8 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
           <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground/50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[260px] p-0 rounded-xl shadow-lg border border-border/80" align="end">
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/60 rounded-t-xl">
+      <PopoverContent className="w-[min(260px,calc(100vw-2rem))] p-0" align="end">
+        <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-3 py-3">
           <Search size={14} className="text-muted-foreground/70 shrink-0" />
           <input
             value={search}
@@ -69,7 +73,7 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
             autoFocus
           />
           {search && (
-            <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
               <X size={12} />
             </button>
           )}
