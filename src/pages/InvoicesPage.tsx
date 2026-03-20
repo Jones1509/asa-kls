@@ -75,6 +75,7 @@ type InvoiceWithCase = {
   status: string;
   created_at: string;
   paid_date?: string | null;
+  file_url?: string | null;
   cases?: CaseOption | null;
 };
 
