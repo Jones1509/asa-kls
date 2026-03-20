@@ -58,15 +58,19 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-      <h3 className="font-heading font-bold text-card-foreground mb-4 flex items-center gap-2 text-[15px]">
+      <h3 className="font-heading font-bold text-card-foreground mb-5 flex items-center gap-2 text-[15px]">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
           <Plus size={15} className="text-primary" />
         </div>
         Registrer timer
       </h3>
 
-      <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
-        <div className={cn("grid gap-3", isAdmin ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2")}>
+      <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-5">
+        {/* Row 1: Employee (admin only), Customer/Case, Date */}
+        <div className={cn(
+          "grid gap-4 items-start",
+          isAdmin ? "grid-cols-1 sm:grid-cols-[1fr_2fr_1fr]" : "grid-cols-1 sm:grid-cols-[2fr_1fr]"
+        )}>
           {isAdmin && (
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Medarbejder</Label>
@@ -102,7 +106,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
                   {format(selectedDate, "d. MMMM yyyy", { locale: da })}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl" align="start">
+              <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -117,7 +121,8 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
+        {/* Row 2: Start, End, Lunch, Note, Submit - all same height and aligned */}
+        <div className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_2fr_auto] gap-4 items-end">
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Start</Label>
             <Input
@@ -173,7 +178,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </div>
           <Button
             type="submit"
-            className="rounded-xl h-10 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] font-semibold"
+            className="rounded-xl h-10 px-6 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] font-semibold whitespace-nowrap"
             disabled={isPending}
           >
             {isPending ? "Gemmer..." : "Registrer"}
@@ -181,7 +186,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
         </div>
 
         {previewHours && (
-          <div className="flex items-center gap-3 text-sm px-1">
+          <div className="flex items-center gap-3 text-sm px-1 pt-1">
             <span className="text-muted-foreground">
               Brutto: <span className="font-semibold text-foreground">{previewHours.raw}t</span>
             </span>

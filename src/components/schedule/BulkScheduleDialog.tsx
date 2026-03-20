@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -234,33 +235,30 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                   emptyCaseLabel="Ingen sag – planlæg uden kunde/sag"
                 />
 
-              {/* Date range */}
+              {/* Date range - styled calendar pickers */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Fra dato
                   </Label>
-                  <Input
-                    type="date"
+                  <DatePickerField
                     value={form.dateFrom}
-                    onChange={(e) => setForm({ ...form, dateFrom: e.target.value })}
-                    className="mt-1.5 rounded-xl"
-                    required
+                    onChange={(v) => setForm({ ...form, dateFrom: v })}
+                    placeholder="Vælg startdato..."
+                    className="mt-1.5"
                   />
                 </div>
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Til dato
                   </Label>
-                  <Input
-                    type="date"
+                  <DatePickerField
                     value={form.dateTo}
-                    onChange={(e) => {
-                      const newTo = e.target.value;
-                      setForm({ ...form, dateTo: newTo, dateFrom: form.dateFrom || newTo });
+                    onChange={(v) => {
+                      setForm({ ...form, dateTo: v, dateFrom: form.dateFrom || v });
                     }}
-                    className="mt-1.5 rounded-xl"
-                    required
+                    placeholder="Vælg slutdato..."
+                    className="mt-1.5"
                   />
                 </div>
               </div>
