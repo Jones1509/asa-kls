@@ -160,7 +160,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
         if (!v) reset();
       }}
     >
-      <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-[calc(100vw-1rem)] rounded-2xl p-0 overflow-hidden sm:max-w-2xl">
         <div className="flex flex-col h-full max-h-[85vh]">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
               <DialogTitle className="font-heading font-bold text-lg">Planlæg opgave</DialogTitle>
@@ -169,25 +169,25 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
               </p>
             </DialogHeader>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
               {/* Left: Employee selection */}
-              <div className="w-56 flex-shrink-0 border-r border-border flex flex-col">
+              <div className="flex w-full flex-col border-b border-border lg:w-56 lg:flex-shrink-0 lg:border-b-0 lg:border-r">
                 <div className="px-4 pt-4 pb-2">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     Medarbejdere
                   </p>
                   <div className="relative">
-                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
                       value={employeeSearch}
                       onChange={(e) => setEmployeeSearch(e.target.value)}
                       placeholder="Søg..."
-                      className="w-full h-8 pl-7 pr-2 rounded-lg border border-input bg-background text-xs focus:ring-1 focus:ring-ring outline-none transition-all"
+                      className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-sm outline-none transition-all placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-ring"
                     />
                   </div>
                 </div>
-                <ScrollArea className="flex-1 px-2 pb-4">
+                <ScrollArea className="max-h-52 px-2 pb-4 lg:max-h-none lg:flex-1">
                   {filteredEmployees.map((emp) => {
                     const isSelected = selectedEmployeeIds.includes(emp.user_id);
                     return (
@@ -220,7 +220,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
               </div>
 
               {/* Right: Form */}
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 sm:px-6">
                 <CustomerCaseSelect
                   cases={cases}
                   value={form.caseId}
@@ -236,7 +236,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                 />
 
               {/* Date range - styled calendar pickers */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Fra dato
@@ -268,7 +268,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Ugedage
                 </Label>
-                <div className="flex gap-1.5">
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
                   {ISO_DAYS.map((day, idx) => (
                     <button
                       key={day}

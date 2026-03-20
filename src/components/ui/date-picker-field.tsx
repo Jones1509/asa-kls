@@ -25,7 +25,7 @@ export function DatePickerField({ value, onChange, placeholder, className, requi
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start font-normal rounded-xl h-10 text-sm border-border",
+            "w-full justify-start font-normal rounded-xl h-11 border-border bg-background px-3 text-sm shadow-sm hover:bg-muted/40",
             !value && "text-muted-foreground",
             className
           )}
@@ -34,7 +34,7 @@ export function DatePickerField({ value, onChange, placeholder, className, requi
           {value ? format(parseISO(value), "d. MMM yyyy", { locale: da }) : (placeholder || "Vælg dato...")}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+      <PopoverContent className="w-[320px] max-w-[calc(100vw-2rem)] p-0" align="start">
         <Calendar
           mode="single"
           selected={selected}

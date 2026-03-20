@@ -77,8 +77,8 @@ export function WeeklyTimesheet({
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex items-center gap-1 rounded-full bg-muted/50 p-0.5 self-start">
           <Button variant="ghost" size="icon" className="rounded-full h-7 w-7" onClick={() => onWeekChange(subWeeks(currentWeekStart, 1))}>
             <ChevronLeft size={14} />
           </Button>
@@ -89,7 +89,7 @@ export function WeeklyTimesheet({
             <ChevronRight size={14} />
           </Button>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
           <Button variant="outline" size="sm" className="rounded-full text-xs h-7" onClick={() => onWeekChange(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
             I dag
           </Button>
@@ -145,7 +145,8 @@ export function WeeklyTimesheet({
       </div>
 
       {/* Time grid */}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: '400px' }}>
+      <div className="overflow-x-auto">
+        <div className="grid min-w-[720px] grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: '400px' }}>
         {/* Time labels */}
         <div className="border-r border-border/30 relative" style={{ height: `${gridHeight}px` }}>
           {hours.map((hour) => (
@@ -246,6 +247,7 @@ export function WeeklyTimesheet({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

@@ -66,10 +66,9 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
       </h3>
 
       <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-5">
-        {/* Row 1: Employee (admin only), Customer/Case, Date */}
         <div className={cn(
-          "grid gap-4 items-start",
-          isAdmin ? "grid-cols-1 sm:grid-cols-[1fr_2fr_1fr]" : "grid-cols-1 sm:grid-cols-[2fr_1fr]"
+          "grid items-start gap-4 lg:gap-5",
+          isAdmin ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)_minmax(0,1fr)]" : "grid-cols-1 xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]"
         )}>
           {isAdmin && (
             <div>
@@ -100,13 +99,13 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start font-normal rounded-xl h-10 border-border text-sm"
+                  className="h-11 w-full justify-start rounded-xl border-border px-3 text-sm font-normal shadow-sm hover:bg-muted/40"
                 >
                   <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
                   {format(selectedDate, "d. MMMM yyyy", { locale: da })}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+              <PopoverContent className="w-[320px] max-w-[calc(100vw-2rem)] p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -121,8 +120,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
           </div>
         </div>
 
-        {/* Row 2: Start, End, Lunch, Note, Submit - all same height and aligned */}
-        <div className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_2fr_auto] gap-4 items-end">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.8fr)_auto] xl:items-end">
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Start</Label>
             <Input
@@ -133,7 +131,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
                 if (v !== null) setForm({ ...form, start_time: v });
               }}
               onBlur={() => setForm({ ...form, start_time: normalizeTime(form.start_time) })}
-              className="rounded-xl h-10 tabular-nums text-center font-semibold"
+              className="h-11 rounded-xl text-center font-semibold tabular-nums"
               required
             />
           </div>
@@ -147,7 +145,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
                 if (v !== null) setForm({ ...form, end_time: v });
               }}
               onBlur={() => setForm({ ...form, end_time: normalizeTime(form.end_time) })}
-              className="rounded-xl h-10 tabular-nums text-center font-semibold"
+              className="h-11 rounded-xl text-center font-semibold tabular-nums"
               required
             />
           </div>
@@ -157,7 +155,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
               type="button"
               onClick={() => setForm({ ...form, lunch_break: !form.lunch_break })}
               className={cn(
-                "w-full h-10 rounded-xl border flex items-center justify-center gap-2 text-sm font-medium transition-all",
+                "flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-all",
                 form.lunch_break
                   ? "bg-warning/10 border-warning/30 text-warning"
                   : "bg-muted/30 border-border text-muted-foreground"
@@ -173,12 +171,12 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               placeholder="Valgfrit..."
-              className="rounded-xl h-10"
+              className="h-11 rounded-xl"
             />
           </div>
           <Button
             type="submit"
-            className="rounded-xl h-10 px-6 shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] font-semibold whitespace-nowrap"
+            className="h-11 w-full rounded-xl px-6 font-semibold whitespace-nowrap shadow-[0_2px_8px_hsl(215_80%_56%/0.25)] xl:w-auto"
             disabled={isPending}
           >
             {isPending ? "Gemmer..." : "Registrer"}
@@ -186,7 +184,7 @@ export function QuickEntryForm({ form, setForm, isAdmin, employees, cases, onSub
         </div>
 
         {previewHours && (
-          <div className="flex items-center gap-3 text-sm px-1 pt-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 pt-1 text-sm">
             <span className="text-muted-foreground">
               Brutto: <span className="font-semibold text-foreground">{previewHours.raw}t</span>
             </span>

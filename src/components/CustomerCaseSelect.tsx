@@ -77,7 +77,7 @@ function StyledSelect({
           role="combobox"
           disabled={disabled}
           className={cn(
-            "w-full justify-between font-normal rounded-xl h-11 mt-1.5 border-border bg-background hover:bg-muted/50 text-sm",
+            "mt-1.5 h-11 w-full justify-between rounded-xl border-border bg-background px-3 font-normal text-sm shadow-sm hover:bg-muted/40",
             !value && "text-muted-foreground",
             disabled && "opacity-60 cursor-not-allowed"
           )}
@@ -87,11 +87,11 @@ function StyledSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 w-[var(--radix-popover-trigger-width)] rounded-xl shadow-lg border border-border/80 pointer-events-auto"
+        className="w-[var(--radix-popover-trigger-width)] p-0 pointer-events-auto"
         align="start"
       >
         {searchable && options.length > 4 && (
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/60 rounded-t-xl">
+          <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-3 py-3">
             <Search size={14} className="text-muted-foreground/70 shrink-0" />
             <input
               value={search}
@@ -101,7 +101,7 @@ function StyledSelect({
               autoFocus
             />
             {search && (
-              <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+              <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
                 <X size={12} />
               </button>
             )}
@@ -114,9 +114,9 @@ function StyledSelect({
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setOpen(false); setSearch(""); }}
                 className={cn(
-                  "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-left transition-colors",
+                  "w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left transition-colors",
                   "hover:bg-muted/50",
-                  value === opt.value && "bg-primary/5 text-primary font-medium"
+                  value === opt.value && "bg-primary/5 text-primary font-medium shadow-sm"
                 )}
               >
                 <span className="flex-1 truncate">{opt.label}</span>
@@ -198,7 +198,7 @@ export function CustomerCaseSelect({
   }, [filteredCases, allowEmptyCase, emptyCaseLabel]);
 
   return (
-    <div className="space-y-4">
+    <div className="grid gap-4 sm:grid-cols-2">
       <div>
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           {customerLabel}
@@ -210,7 +210,7 @@ export function CustomerCaseSelect({
           placeholder={customerPlaceholder}
         />
       </div>
-      <div>
+      <div className="sm:min-w-0">
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           {caseLabel}
         </Label>

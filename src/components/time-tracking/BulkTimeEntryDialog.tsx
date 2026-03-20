@@ -162,7 +162,7 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
           Masseregistrering
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-heading text-lg flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
@@ -254,8 +254,10 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
               </div>
             )}
 
-              <div className="flex justify-center">
-                <Calendar mode="multiple" selected={selectedDates} onSelect={handleCustomDateSelect as any} locale={da} className="rounded-xl border border-border" />
+              <div className="overflow-x-auto rounded-2xl border border-border bg-background p-2 sm:p-3">
+                <div className="flex min-w-fit justify-center">
+                  <Calendar mode="multiple" selected={selectedDates} onSelect={handleCustomDateSelect as any} locale={da} className="rounded-xl" />
+                </div>
               </div>
 
             {activeDates.length > 0 && datePreset !== "custom" && (

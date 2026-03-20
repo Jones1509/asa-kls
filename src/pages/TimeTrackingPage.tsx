@@ -228,7 +228,7 @@ export default function TimeTrackingPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <PageHeader title="Timeregistrering" description="Registrer og se arbejdstimer" />
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           {/* PDF export */}
           {isAdmin && (
             <TimeTrackingPdfExport
@@ -252,7 +252,7 @@ export default function TimeTrackingPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="rounded-xl h-10 border-border font-normal text-sm gap-2"
+                  className="h-11 w-full rounded-xl border-border px-3 text-sm font-normal gap-2 shadow-sm sm:h-10 sm:w-auto"
                 >
                   <CalendarIcon size={14} className="text-muted-foreground" />
                   {selectedDate
@@ -282,6 +282,7 @@ export default function TimeTrackingPage() {
               employees={employees}
               selected={selectedEmployee}
               onSelect={(v) => { setSelectedEmployee(v); setSelectedDate(null); }}
+              className="h-11 sm:h-10"
             />
           )}
         </div>
