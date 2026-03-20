@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
