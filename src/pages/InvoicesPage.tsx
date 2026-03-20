@@ -977,6 +977,45 @@ export default function InvoicesPage() {
                                               {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
                                               {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
                                             </div>
+                                            <div className="mt-2 flex items-center gap-2">
+                                              {invoice.file_url ? (
+                                                <a
+                                                  href={invoice.file_url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success transition-colors hover:bg-success/20"
+                                                >
+                                                  <FileDown size={12} /> Se PDF
+                                                </a>
+                                              ) : null}
+                                              {role === "admin" && (
+                                                <>
+                                                  <input
+                                                    type="file"
+                                                    accept=".pdf"
+                                                    className="hidden"
+                                                    ref={uploadingInvoiceId === invoice.id ? fileInputRef : undefined}
+                                                    onChange={(e) => {
+                                                      const file = e.target.files?.[0];
+                                                      if (file) uploadInvoicePdf(invoice.id, file);
+                                                      e.target.value = "";
+                                                    }}
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    disabled={uploadingInvoiceId === invoice.id}
+                                                    onClick={() => {
+                                                      setUploadingInvoiceId(invoice.id);
+                                                      setTimeout(() => fileInputRef.current?.click(), 50);
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                                                  >
+                                                    <FileUp size={12} />
+                                                    {uploadingInvoiceId === invoice.id ? "Uploader..." : invoice.file_url ? "Erstat PDF" : "Upload PDF"}
+                                                  </button>
+                                                </>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
 
