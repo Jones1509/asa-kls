@@ -430,10 +430,10 @@ export default function SchedulePage() {
         {/* Time grid */}
         <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
           {/* Time labels column */}
-          <div className="border-r border-border/30 relative">
+          <div className="border-r border-border/30 relative" style={{ height: `${24 * 60}px` }}>
             {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-              <div key={hour} className="h-[60px] relative border-b border-transparent">
-                <span className="absolute top-[-1px] left-0 right-0 text-right pr-2 text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none">
+              <div key={hour} className="absolute left-0 right-0" style={{ top: `${hour * 60}px` }}>
+                <span className="absolute -top-[7px] left-0 right-0 text-right pr-2 text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none">
                   {String(hour).padStart(2, "0")}:00
                 </span>
               </div>
@@ -469,7 +469,7 @@ export default function SchedulePage() {
               >
                 {/* Hour grid lines */}
                 {Array.from({ length: 24 }, (_, h) => h).map((hour) => (
-                  <div key={hour} className="h-[60px] border-b border-border/10" />
+                  <div key={hour} className="h-[60px] border-t border-border/[0.08]" />
                 ))}
 
                 {/* Lunch break block - shown when any schedule is 7+ hours */}
