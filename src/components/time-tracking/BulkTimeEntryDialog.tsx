@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Coffee, Search } from "lucide-react";
+import { Users, Coffee, Search, X } from "lucide-react";
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWeekend } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -177,15 +177,20 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
               1. Vælg medarbejdere ({selectedEmployees.length} valgt)
             </Label>
-            <div className="border border-border rounded-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/20">
-                <Search size={13} className="text-muted-foreground" />
+            <div className="border border-border/80 rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-muted/30 rounded-t-xl">
+                <Search size={14} className="text-muted-foreground/70 shrink-0" />
                 <input
                   value={empSearch}
                   onChange={(e) => setEmpSearch(e.target.value)}
                   placeholder="Søg medarbejder..."
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
                 />
+                {empSearch && (
+                  <button onClick={() => setEmpSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors mr-1">
+                    <X size={12} />
+                  </button>
+                )}
                 <button onClick={selectAllEmployees} className="text-[11px] font-medium text-primary hover:underline whitespace-nowrap">
                   {selectedEmployees.length === sortedEmployees.length ? "Fravælg alle" : "Vælg alle"}
                 </button>

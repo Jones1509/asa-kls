@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Search, Users } from "lucide-react";
+import { Check, ChevronsUpDown, Search, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -38,7 +37,7 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
     : employees.find(e => e.user_id === selected)?.full_name || "Vælg...";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -59,23 +58,28 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
           <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground/50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[240px] p-0 rounded-xl" align="end">
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-          <Search size={14} className="text-muted-foreground shrink-0" />
+      <PopoverContent className="w-[260px] p-0 rounded-xl shadow-lg border border-border/80" align="end">
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/60 rounded-t-xl">
+          <Search size={14} className="text-muted-foreground/70 shrink-0" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Søg medarbejder..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
             autoFocus
           />
+          {search && (
+            <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+              <X size={12} />
+            </button>
+          )}
         </div>
         <ScrollArea className="max-h-[260px]">
-          <div className="p-1">
+          <div className="p-1.5">
             <button
               onClick={() => { onSelect("all"); setOpen(false); setSearch(""); }}
               className={cn(
-                "w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-muted/60",
+                "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
                 selected === "all" && "bg-primary/5 text-primary"
               )}
             >
@@ -88,7 +92,7 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
                 key={e.user_id}
                 onClick={() => { onSelect(e.user_id); setOpen(false); setSearch(""); }}
                 className={cn(
-                  "w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-muted/60",
+                  "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
                   selected === e.user_id && "bg-primary/5 text-primary"
                 )}
               >
@@ -102,7 +106,7 @@ export function EmployeeFilter({ employees, selected, onSelect }: EmployeeFilter
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground text-center">Ingen fundet</p>
+              <p className="px-3 py-6 text-sm text-muted-foreground/70 text-center">Ingen fundet</p>
             )}
           </div>
         </ScrollArea>
