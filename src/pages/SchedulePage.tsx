@@ -23,6 +23,10 @@ import { cn } from "@/lib/utils";
 export default function SchedulePage() {
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const START_HOUR = 0;
+  const HOUR_HEIGHT = 60;
+  const GRID_HEIGHT = hours.length * HOUR_HEIGHT;
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -430,10 +434,10 @@ export default function SchedulePage() {
         {/* Time grid */}
         <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
           {/* Time labels column */}
-          <div className="border-r border-border/30 relative" style={{ height: `${24 * 60}px` }}>
-            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-              <div key={hour} className="absolute left-0 right-0" style={{ top: `${hour * 60}px` }}>
-                <span className="absolute -top-[7px] left-0 right-0 text-right pr-2 text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none">
+          <div className="border-r border-border/30 bg-card" style={{ height: `${GRID_HEIGHT}px` }}>
+            {hours.map((hour) => (
+              <div key={hour} className="relative h-[60px] border-t border-border/[0.08] first:border-t-0">
+                <span className="absolute right-2 top-2 text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none">
                   {String(hour).padStart(2, "0")}:00
                 </span>
               </div>
@@ -446,9 +450,6 @@ export default function SchedulePage() {
             const dateStr = format(day, "yyyy-MM-dd");
             const today = isToday(day);
             const isWeekend = i >= 5;
-
-            const START_HOUR = 0;
-            const HOUR_HEIGHT = 60;
 
             const getPosition = (startTime: string, endTime: string) => {
               const [sh, sm] = startTime.split(":").map(Number);
@@ -466,10 +467,11 @@ export default function SchedulePage() {
                   today && "bg-primary/[0.02]",
                   isWeekend && !today && "bg-muted/10"
                 )}
+                style={{ height: `${GRID_HEIGHT}px` }}
               >
                 {/* Hour grid lines */}
-                {Array.from({ length: 24 }, (_, h) => h).map((hour) => (
-                  <div key={hour} className="h-[60px] border-t border-border/[0.08]" />
+                {hours.map((hour) => (
+                  <div key={hour} className="h-[60px] border-t border-border/[0.08] first:border-t-0" />
                 ))}
 
                 {/* Lunch break block - shown when any schedule is 7+ hours */}
