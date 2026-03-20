@@ -245,6 +245,7 @@ export function BulkScheduleDialog({ open, onOpenChange, employees, cases }: Pro
                     value={form.dateFrom}
                     onChange={(v) => setForm({ ...form, dateFrom: v })}
                     placeholder="Vælg startdato..."
+                    className="mt-1.5"
                   />
                 </div>
                 <div>
