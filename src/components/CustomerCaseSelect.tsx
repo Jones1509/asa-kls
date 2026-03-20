@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search, X } from "lucide-react";
 import { formatCaseLabel } from "@/lib/case-format";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ function StyledSelect({
   const selectedLabel = options.find(o => o.value === value)?.label;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -87,30 +87,35 @@ function StyledSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 w-[var(--radix-popover-trigger-width)] rounded-xl pointer-events-auto"
+        className="p-0 w-[var(--radix-popover-trigger-width)] rounded-xl shadow-lg border border-border/80 pointer-events-auto"
         align="start"
       >
         {searchable && options.length > 4 && (
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-            <Search size={14} className="text-muted-foreground shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 border-b border-border/60 rounded-t-xl">
+            <Search size={14} className="text-muted-foreground/70 shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Søg..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
               autoFocus
             />
+            {search && (
+              <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                <X size={12} />
+              </button>
+            )}
           </div>
         )}
         <ScrollArea className="max-h-[240px]">
-          <div className="p-1">
+          <div className="p-1.5">
             {filtered.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setOpen(false); setSearch(""); }}
                 className={cn(
                   "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-left transition-colors",
-                  "hover:bg-muted/60",
+                  "hover:bg-muted/50",
                   value === opt.value && "bg-primary/5 text-primary font-medium"
                 )}
               >
@@ -119,7 +124,7 @@ function StyledSelect({
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground text-center">Ingen resultater</p>
+              <p className="px-3 py-6 text-sm text-muted-foreground/70 text-center">Ingen resultater</p>
             )}
           </div>
         </ScrollArea>
@@ -146,46 +151,31 @@ export function CustomerCaseSelect({
 
   const customers = useMemo(() => {
     const map = new Map<string, { value: string; label: string }>();
-
     cases.forEach((caseItem) => {
       const key = getCustomerKey(caseItem);
       if (!map.has(key)) {
-        map.set(key, {
-          value: key,
-          label: getCustomerLabel(caseItem),
-        });
+        map.set(key, { value: key, label: getCustomerLabel(caseItem) });
       }
     });
-
     return Array.from(map.values()).sort((a, b) => collator.compare(a.label, b.label));
   }, [cases]);
 
   const filteredCases = useMemo(() => {
     if (!selectedCustomerKey) return [];
-
     return cases
       .filter((caseItem) => getCustomerKey(caseItem) === selectedCustomerKey)
       .sort((a, b) => collator.compare(a.case_number || "", b.case_number || ""));
   }, [cases, selectedCustomerKey]);
 
   useEffect(() => {
-    if (!value) {
-      setSelectedCustomerKey("");
-      return;
-    }
-
+    if (!value) { setSelectedCustomerKey(""); return; }
     const selectedCase = cases.find((caseItem) => caseItem.id === value);
-    if (!selectedCase) {
-      setSelectedCustomerKey("");
-      return;
-    }
-
+    if (!selectedCase) { setSelectedCustomerKey(""); return; }
     setSelectedCustomerKey(getCustomerKey(selectedCase));
   }, [cases, value]);
 
   const handleCustomerChange = (nextCustomerKey: string) => {
     setSelectedCustomerKey(nextCustomerKey);
-
     const selectedCase = cases.find((caseItem) => caseItem.id === value);
     if (!selectedCase || getCustomerKey(selectedCase) !== nextCustomerKey) {
       onChange("");
@@ -194,23 +184,16 @@ export function CustomerCaseSelect({
 
   const customerOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [];
-    if (allowEmptyCustomer) {
-      opts.push({ value: "__empty__", label: emptyCustomerLabel });
-    }
+    if (allowEmptyCustomer) opts.push({ value: "__empty__", label: emptyCustomerLabel });
     return [...opts, ...customers];
   }, [customers, allowEmptyCustomer, emptyCustomerLabel]);
 
   const caseOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [];
-    if (allowEmptyCase) {
-      opts.push({ value: "__empty__", label: emptyCaseLabel });
-    }
+    if (allowEmptyCase) opts.push({ value: "__empty__", label: emptyCaseLabel });
     return [
       ...opts,
-      ...filteredCases.map((caseItem) => ({
-        value: caseItem.id,
-        label: formatCaseLabel(caseItem),
-      })),
+      ...filteredCases.map((caseItem) => ({ value: caseItem.id, label: formatCaseLabel(caseItem) })),
     ];
   }, [filteredCases, allowEmptyCase, emptyCaseLabel]);
 
@@ -227,7 +210,6 @@ export function CustomerCaseSelect({
           placeholder={customerPlaceholder}
         />
       </div>
-
       <div>
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           {caseLabel}
