@@ -359,7 +359,7 @@ export default function VerificationPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setOpen(false); setTimeout(() => setOpen(true), 10); setShowGenericForm(true); }}
+                onClick={() => { setOpen(false); setGenericOpen(true); }}
                 className="w-full flex items-center gap-4 rounded-2xl border border-border p-4 hover:border-primary hover:bg-primary/5 transition-all text-left group active:scale-[0.98]"
               >
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
