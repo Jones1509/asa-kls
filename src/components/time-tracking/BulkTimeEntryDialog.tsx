@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Coffee, Search } from "lucide-react";
+import { Users, Coffee, Search, X } from "lucide-react";
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWeekend } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
