@@ -266,6 +266,37 @@ export default function InvoicesPage() {
     },
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null);
+
+  const uploadInvoicePdf = async (invoiceId: string, file: File) => {
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Kun PDF-filer er tilladt");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Filen er for stor (maks 20 MB)");
+      return;
+    }
+    setUploadingInvoiceId(invoiceId);
+    try {
+      const filePath = `invoices/${invoiceId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from("uploads").upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(filePath);
+      const { error: updateError } = await supabase.from("invoices").update({ file_url: urlData.publicUrl }).eq("id", invoiceId);
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("PDF uploadet");
+    } catch (err: any) {
+      toast.error(err.message || "Fejl ved upload");
+    } finally {
+      setUploadingInvoiceId(null);
+    }
+  };
+
   const filteredInvoices = useMemo(() => {
     const activeYear = appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
 
