@@ -265,7 +265,6 @@ export default function InvoicesPage() {
     },
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null);
 
   const uploadInvoicePdf = async (invoiceId: string, file: File) => {
