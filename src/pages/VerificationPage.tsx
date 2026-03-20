@@ -375,6 +375,76 @@ export default function VerificationPage() {
         </Dialog>
       </PageHeader>
 
+      {/* Generic form dialog */}
+      <Dialog open={genericOpen} onOpenChange={(v) => { setGenericOpen(v); if (!v) resetForm(); }}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-2xl">
+          <DialogHeader><DialogTitle className="font-heading font-bold text-lg">Udfyld verifikationsskema</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); createForm.mutate(); }} className="space-y-4">
+            <CustomerCaseSelect
+              cases={(cases as any) || []}
+              value={form.case_id}
+              onChange={(caseId) => setForm({ ...form, case_id: caseId })}
+              customerLabel="Kunde"
+              caseLabel="Sag"
+              customerPlaceholder="Vælg kunde..."
+              casePlaceholder="Vælg sag..."
+              required
+            />
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Skematype</Label>
+              <Input value={form.form_type} onChange={(e) => setForm({ ...form, form_type: e.target.value })} placeholder="Brandtætning, Isolering..." className="mt-1.5 rounded-xl" required />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Beskrivelse af udført arbejde</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Beskriv det udførte arbejde..." className="mt-1.5 rounded-xl" rows={4} required />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Installationstype</Label>
+              <Input value={form.installation_type} onChange={(e) => setForm({ ...form, installation_type: e.target.value })} placeholder="Type af installation..." className="mt-1.5 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Måleresultater</Label>
+              <Textarea value={form.measurements} onChange={(e) => setForm({ ...form, measurements: e.target.value })} placeholder="Angiv måleresultater..." className="mt-1.5 rounded-xl" rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label>
+                <Input type="date" value={form.form_date} onChange={(e) => setForm({ ...form, form_date: e.target.value })} className="mt-1.5 rounded-xl" required />
+              </div>
+              <div>
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Tidspunkt</Label>
+                <Input type="time" value={form.form_time} onChange={(e) => setForm({ ...form, form_time: e.target.value })} className="mt-1.5 rounded-xl" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Bemærkninger</Label>
+              <Textarea value={form.comments} onChange={(e) => setForm({ ...form, comments: e.target.value })} placeholder="Eventuelle bemærkninger..." className="mt-1.5 rounded-xl" rows={2} />
+            </div>
+            <div>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Billeder</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {imagePreviews.map((src, i) => (
+                  <div key={i} className="relative h-16 w-16 rounded-xl overflow-hidden border border-border">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 rounded-full bg-black/60 p-0.5 text-white"><X size={10} /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => fileRef.current?.click()} className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                  <ImagePlus size={18} />
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" onChange={handleImageAdd} className="hidden" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-3">
+              <Button type="button" variant="outline" onClick={() => setGenericOpen(false)} className="rounded-xl">Annuller</Button>
+              <Button type="submit" disabled={createForm.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(var(--primary)/0.25)]">
+                {createForm.isPending ? "Indsender..." : role === "admin" ? "Opret & godkend" : "Indsend til godkendelse"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Admin dashboard stats */}
       {role === "admin" && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
