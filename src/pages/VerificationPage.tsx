@@ -97,17 +97,21 @@ export default function VerificationPage() {
     setImagePreviews([]);
   };
 
+  const uploadImages = async (files: File[]) => {
+    const urls: string[] = [];
+    for (const file of files) {
+      const path = `verification/${user!.id}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("uploads").upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  };
+
   const createForm = useMutation({
     mutationFn: async () => {
-      let image_urls: string[] = [];
-      for (const file of imageFiles) {
-        const path = `verification/${user!.id}/${Date.now()}-${file.name}`;
-        const { error } = await supabase.storage.from("uploads").upload(path, file);
-        if (error) throw error;
-        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
-        image_urls.push(data.publicUrl);
-      }
-
+      const image_urls = await uploadImages(imageFiles);
       const isAdmin = role === "admin";
       const { error } = await supabase.from("verification_forms").insert({
         user_id: user!.id,
@@ -130,6 +134,35 @@ export default function VerificationPage() {
       queryClient.invalidateQueries({ queryKey: ["verification_forms"] });
       setOpen(false);
       resetForm();
+      toast.success(role === "admin" ? "Skema oprettet og godkendt" : "Skema indsendt til godkendelse");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const createElForm = useMutation({
+    mutationFn: async (data: ElFormData) => {
+      const image_urls = await uploadImages(data.imageFiles);
+      const isAdmin = role === "admin";
+      const { error } = await supabase.from("verification_forms").insert({
+        user_id: user!.id,
+        case_id: data.case_id,
+        form_type: data.form_type,
+        description: data.description || null,
+        installation_type: data.installation_type || null,
+        comments: data.comments || null,
+        form_date: data.form_date,
+        form_time: data.form_time || null,
+        image_urls: image_urls.length > 0 ? image_urls : null,
+        items: data.items as any,
+        status: isAdmin ? "Godkendt" : "Afventer",
+        approved_by: isAdmin ? user!.id : null,
+        approved_at: isAdmin ? new Date().toISOString() : null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["verification_forms"] });
+      setShowElForm(false);
       toast.success(role === "admin" ? "Skema oprettet og godkendt" : "Skema indsendt til godkendelse");
     },
     onError: (e: any) => toast.error(e.message),
