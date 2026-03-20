@@ -991,10 +991,10 @@ export default function InvoicesPage() {
                                               {role === "admin" && (
                                                 <>
                                                   <input
+                                                    id={`pdf-upload-${invoice.id}`}
                                                     type="file"
                                                     accept=".pdf"
                                                     className="hidden"
-                                                    ref={uploadingInvoiceId === invoice.id ? fileInputRef : undefined}
                                                     onChange={(e) => {
                                                       const file = e.target.files?.[0];
                                                       if (file) uploadInvoicePdf(invoice.id, file);
@@ -1004,10 +1004,7 @@ export default function InvoicesPage() {
                                                   <button
                                                     type="button"
                                                     disabled={uploadingInvoiceId === invoice.id}
-                                                    onClick={() => {
-                                                      setUploadingInvoiceId(invoice.id);
-                                                      setTimeout(() => fileInputRef.current?.click(), 50);
-                                                    }}
+                                                    onClick={() => document.getElementById(`pdf-upload-${invoice.id}`)?.click()}
                                                     className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
                                                   >
                                                     <FileUp size={12} />
