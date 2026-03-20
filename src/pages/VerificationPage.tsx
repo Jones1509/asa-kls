@@ -221,6 +221,28 @@ export default function VerificationPage() {
     return matchSearch;
   });
 
+  // El-installation full-page form
+  if (showElForm) {
+    return (
+      <div>
+        <button onClick={() => setShowElForm(false)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <ChevronLeft size={16} /> Tilbage til oversigt
+        </button>
+        <div className="max-w-3xl">
+          <h1 className="text-xl font-heading font-bold text-foreground mb-1">Elinstallation – Verifikation</h1>
+          <p className="text-sm text-muted-foreground mb-6">Udfyld tjekliste og måleresultater for den udførte elinstallation</p>
+          <ElInstallationForm
+            cases={(cases as any) || []}
+            onSubmit={(data) => createElForm.mutate(data)}
+            isPending={createElForm.isPending}
+            isAdmin={role === "admin"}
+            onCancel={() => setShowElForm(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Detail view
   if (viewForm) {
     const f = viewForm;
