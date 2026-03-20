@@ -31,7 +31,7 @@ interface WeeklyTimesheetProps {
 
 const START_HOUR = 0;
 const END_HOUR = 24;
-const HOUR_HEIGHT = 40;
+const HOUR_HEIGHT = 48;
 
 export function WeeklyTimesheet({
   entries, currentWeekStart, onWeekChange,
@@ -67,7 +67,7 @@ export function WeeklyTimesheet({
     const clampedSh = Math.max(sh + sm / 60, START_HOUR);
     const clampedEh = Math.min(eh + em / 60, END_HOUR);
     const top = (clampedSh - START_HOUR) * HOUR_HEIGHT;
-    const height = Math.max((clampedEh - clampedSh) * HOUR_HEIGHT, 20);
+    const height = Math.max((clampedEh - clampedSh) * HOUR_HEIGHT, 24);
     return { top, height };
   };
 
@@ -98,8 +98,8 @@ export function WeeklyTimesheet({
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-[40px_repeat(7,1fr)] border-b border-border">
-        <div className="border-r border-border/50" />
+      <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border">
+        <div className="border-r border-border/30" />
         {weekDays.map((day) => {
           const today = isToday(day);
           const dateStr = format(day, "yyyy-MM-dd");
@@ -112,7 +112,7 @@ export function WeeklyTimesheet({
               key={day.toISOString()}
               onClick={() => onSelectDate(day)}
               className={cn(
-                "px-1 py-2 text-center border-r last:border-r-0 border-border/50 transition-colors",
+                "px-1 py-2.5 text-center border-r last:border-r-0 border-border/30 transition-colors",
                 today && "bg-primary/5",
                 selected && "bg-primary/10"
               )}
@@ -144,13 +144,13 @@ export function WeeklyTimesheet({
         })}
       </div>
 
-      {/* Time grid - compact scrollable */}
-      <div className="grid grid-cols-[40px_repeat(7,1fr)] overflow-y-auto" style={{ height: '360px' }}>
+      {/* Time grid */}
+      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ height: '400px' }}>
         {/* Time labels */}
-        <div className="border-r border-border/50 relative" style={{ height: `${gridHeight}px` }}>
+        <div className="border-r border-border/30 relative" style={{ height: `${gridHeight}px` }}>
           {hours.map((hour) => (
-            <div key={hour} className="relative" style={{ height: `${HOUR_HEIGHT}px` }}>
-              <span className="absolute -top-1.5 right-1.5 text-[9px] font-medium text-muted-foreground/50 tabular-nums">
+            <div key={hour} style={{ height: `${HOUR_HEIGHT}px` }} className="relative border-b border-transparent">
+              <span className="absolute top-[-1px] left-0 right-0 text-center text-[10px] font-medium text-muted-foreground tabular-nums leading-none select-none pr-1 text-right">
                 {String(hour).padStart(2, "0")}:00
               </span>
             </div>
@@ -165,7 +165,6 @@ export function WeeklyTimesheet({
           const selected = selectedDate && isSameDay(day, selectedDate);
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
-          // Check if any entry has lunch break based on notes
           const hasLunchBreak = dayEntries.some((e) => 
             e.notes?.includes("pause fratrukket")
           );
@@ -174,7 +173,7 @@ export function WeeklyTimesheet({
             <div
               key={day.toISOString()}
               className={cn(
-                "border-r last:border-r-0 border-border/50 relative",
+                "border-r last:border-r-0 border-border/30 relative",
                 today && "bg-primary/[0.02]",
                 selected && "bg-primary/[0.04]",
                 isWeekend && !today && !selected && "bg-muted/10"
@@ -183,7 +182,7 @@ export function WeeklyTimesheet({
             >
               {/* Hour grid lines */}
               {hours.map((hour) => (
-                <div key={hour} className="border-b border-border/15" style={{ height: `${HOUR_HEIGHT}px` }} />
+                <div key={hour} className="border-b border-border/10" style={{ height: `${HOUR_HEIGHT}px` }} />
               ))}
 
               {/* Lunch break indicator */}
@@ -203,18 +202,17 @@ export function WeeklyTimesheet({
               {dayEntries.map((entry) => {
                 if (!entry.start_time || !entry.end_time) return null;
                 const { top, height } = getPosition(entry.start_time.slice(0, 5), entry.end_time.slice(0, 5));
-                const hasBreak = entry.notes?.includes("pause fratrukket");
 
                 return (
                   <div
                     key={entry.id}
-                    className="absolute left-0.5 right-0.5 rounded-md bg-gradient-to-br from-primary/15 to-primary/8 border border-primary/20 px-1 py-0.5 overflow-hidden z-10"
-                    style={{ top: `${top}px`, height: `${height}px`, minHeight: '20px' }}
+                    className="absolute left-0.5 right-0.5 rounded-md bg-gradient-to-br from-primary/15 to-primary/8 border border-primary/20 px-1.5 py-0.5 overflow-hidden z-10"
+                    style={{ top: `${top}px`, height: `${height}px`, minHeight: '24px' }}
                   >
-                      <p className="text-[9px] font-bold text-foreground truncate">
-                        {entry.cases?.customer ? `${entry.cases.case_number} (${entry.cases.customer})` : (entry.cases as any)?.case_number || "–"}
-                      </p>
-                    {height > 28 && (
+                    <p className="text-[9px] font-bold text-foreground truncate">
+                      {entry.cases?.customer ? `${entry.cases.case_number} (${entry.cases.customer})` : (entry.cases as any)?.case_number || "–"}
+                    </p>
+                    {height > 32 && (
                       <div className="flex items-center gap-0.5">
                         <Clock size={7} className="text-primary shrink-0" />
                         <span className="text-[8px] font-semibold text-primary tabular-nums">
@@ -222,7 +220,7 @@ export function WeeklyTimesheet({
                         </span>
                       </div>
                     )}
-                    {height > 45 && (
+                    {height > 50 && (
                       <span className="text-[8px] font-bold text-primary/70 tabular-nums">{entry.hours}t</span>
                     )}
                   </div>
@@ -239,7 +237,7 @@ export function WeeklyTimesheet({
                 return (
                   <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${top}px` }}>
                     <div className="flex items-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-destructive -ml-0.5" />
+                      <div className="w-2 h-2 rounded-full bg-destructive -ml-0.5" />
                       <div className="flex-1 h-[1.5px] bg-destructive/70" />
                     </div>
                   </div>
