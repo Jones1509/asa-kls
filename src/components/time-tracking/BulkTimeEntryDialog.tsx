@@ -249,9 +249,9 @@ export function BulkTimeEntryDialog({ employees, cases, onSubmit, isPending }: B
               </div>
             )}
 
-            {datePreset === "custom" && (
-              <Calendar mode="multiple" selected={selectedDates} onSelect={handleCustomDateSelect as any} locale={da} className="rounded-xl border border-border" />
-            )}
+              <div className="flex justify-center">
+                <Calendar mode="multiple" selected={selectedDates} onSelect={handleCustomDateSelect as any} locale={da} className="rounded-xl border border-border pointer-events-auto" />
+              </div>
 
             {activeDates.length > 0 && datePreset !== "custom" && (
               <div className="flex flex-wrap gap-1 mt-2">
