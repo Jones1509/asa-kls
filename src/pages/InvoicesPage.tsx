@@ -27,6 +27,8 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
+  FileUp,
+  FileDown,
   Pencil,
   Plus,
   Receipt,
@@ -72,6 +74,7 @@ type InvoiceWithCase = {
   status: string;
   created_at: string;
   paid_date?: string | null;
+  file_url?: string | null;
   cases?: CaseOption | null;
 };
 
@@ -261,6 +264,36 @@ export default function InvoicesPage() {
       toast.success("Status opdateret");
     },
   });
+
+  const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null);
+
+  const uploadInvoicePdf = async (invoiceId: string, file: File) => {
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Kun PDF-filer er tilladt");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Filen er for stor (maks 20 MB)");
+      return;
+    }
+    setUploadingInvoiceId(invoiceId);
+    try {
+      const filePath = `invoices/${invoiceId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from("uploads").upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(filePath);
+      const { error: updateError } = await supabase.from("invoices").update({ file_url: urlData.publicUrl }).eq("id", invoiceId);
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("PDF uploadet");
+    } catch (err: any) {
+      toast.error(err.message || "Fejl ved upload");
+    } finally {
+      setUploadingInvoiceId(null);
+    }
+  };
 
   const filteredInvoices = useMemo(() => {
     const activeYear = appliedFilters.year === "all" ? String(CURRENT_YEAR) : appliedFilters.year;
@@ -941,6 +974,42 @@ export default function InvoicesPage() {
                                               <span>Oprettet: {formatDanishDate(getCreatedDate(invoice))}</span>
                                               {invoice.due_date && <span>Forfald: {formatDanishDate(invoice.due_date)}</span>}
                                               {invoice.paid_date && <span>Betalt: {formatDanishDate(invoice.paid_date)}</span>}
+                                            </div>
+                                            <div className="mt-2 flex items-center gap-2">
+                                              {invoice.file_url ? (
+                                                <a
+                                                  href={invoice.file_url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center gap-1.5 rounded-lg bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success transition-colors hover:bg-success/20"
+                                                >
+                                                  <FileDown size={12} /> Se PDF
+                                                </a>
+                                              ) : null}
+                                              {role === "admin" && (
+                                                <>
+                                                  <input
+                                                    id={`pdf-upload-${invoice.id}`}
+                                                    type="file"
+                                                    accept=".pdf"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                      const file = e.target.files?.[0];
+                                                      if (file) uploadInvoicePdf(invoice.id, file);
+                                                      e.target.value = "";
+                                                    }}
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    disabled={uploadingInvoiceId === invoice.id}
+                                                    onClick={() => document.getElementById(`pdf-upload-${invoice.id}`)?.click()}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                                                  >
+                                                    <FileUp size={12} />
+                                                    {uploadingInvoiceId === invoice.id ? "Uploader..." : invoice.file_url ? "Erstat PDF" : "Upload PDF"}
+                                                  </button>
+                                                </>
+                                              )}
                                             </div>
                                           </div>
                                         </div>

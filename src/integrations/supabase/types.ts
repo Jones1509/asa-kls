@@ -447,6 +447,7 @@ export type Database = {
           customer: string
           description: string | null
           due_date: string | null
+          file_url: string | null
           id: string
           invoice_number: string
           paid_date: string | null
@@ -461,6 +462,7 @@ export type Database = {
           customer: string
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           id?: string
           invoice_number: string
           paid_date?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           customer?: string
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           id?: string
           invoice_number?: string
           paid_date?: string | null
