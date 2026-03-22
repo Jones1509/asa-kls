@@ -87,18 +87,6 @@ export default function DocumentationPage() {
   const [uploadForm, setUploadForm] = useState({ title: "", description: "" });
   const [docFile, setDocFile] = useState<File | null>(null);
   const docFileRef = useRef<HTMLInputElement>(null);
-  const verificationFileRef = useRef<HTMLInputElement>(null);
-  const [verificationImageFiles, setVerificationImageFiles] = useState<File[]>([]);
-  const [verificationImagePreviews, setVerificationImagePreviews] = useState<string[]>([]);
-  const [verificationForm, setVerificationForm] = useState({
-    form_type: "",
-    description: "",
-    installation_type: "",
-    measurements: "",
-    comments: "",
-    form_date: new Date().toISOString().split("T")[0],
-    form_time: new Date().toTimeString().slice(0, 5),
-  });
 
   const { data: cases, isLoading: casesLoading } = useQuery({
     queryKey: ["cases_for_docs"],
