@@ -225,7 +225,7 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                         }`}
                       >
-                        <Minus size={12} /> N/A
+                        <Minus size={12} /> Ikke relevant
                       </button>
                     </div>
                   </div>
