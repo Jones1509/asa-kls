@@ -124,6 +124,18 @@ export default function DocumentationPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      
+      // Fetch profile names separately since FK goes to auth.users, not profiles
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((f: any) => f.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
+        return data.map((f: any) => ({ ...f, profiles: { full_name: profileMap.get(f.user_id) || "Ukendt" } }));
+      }
       return data || [];
     },
     enabled: !!selectedCase,
