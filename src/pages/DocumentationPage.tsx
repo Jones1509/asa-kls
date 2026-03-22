@@ -293,45 +293,6 @@ export default function DocumentationPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
-  const createVerificationForm = useMutation({
-    mutationFn: async () => {
-      if (!user || !selectedCase) throw new Error("Vælg først en sag");
-
-      const imageUrls: string[] = [];
-      for (const imageFile of verificationImageFiles) {
-        const path = `verification/${user.id}/${Date.now()}-${imageFile.name}`;
-        const { error } = await supabase.storage.from("uploads").upload(path, imageFile);
-        if (error) throw error;
-        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
-        imageUrls.push(data.publicUrl);
-      }
-
-      const isAdmin = role === "admin";
-      const { error } = await supabase.from("verification_forms").insert({
-        user_id: user.id,
-        case_id: selectedCase.id,
-        form_type: verificationForm.form_type,
-        description: verificationForm.description || null,
-        installation_type: verificationForm.installation_type || null,
-        measurements: verificationForm.measurements || null,
-        comments: verificationForm.comments || null,
-        form_date: verificationForm.form_date,
-        form_time: verificationForm.form_time || null,
-        image_urls: imageUrls.length > 0 ? imageUrls : null,
-        status: isAdmin ? "Godkendt" : "Afventer",
-        approved_by: isAdmin ? user.id : null,
-        approved_at: isAdmin ? new Date().toISOString() : null,
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["case_verification_forms", selectedCase?.id] });
-      queryClient.invalidateQueries({ queryKey: ["documentation_case_counts"] });
-      setVerificationOpen(false);
-      resetVerificationForm();
-      toast.success(role === "admin" ? "Verifikationsskema oprettet" : "Verifikationsskema sendt til godkendelse");
-    },
     onError: (error: any) => toast.error(error.message),
   });
 
