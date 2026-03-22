@@ -124,20 +124,7 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-8">
-      {/* Progress bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 pb-4 pt-2 -mx-1 px-1">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
-            {answeredQuestions}/{totalQuestions}
-          </span>
-        </div>
-      </div>
+
 
       {/* Case + date selection */}
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
@@ -238,7 +225,7 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                         }`}
                       >
-                        <Minus size={12} /> N/A
+                        <Minus size={12} /> Ikke relevant
                       </button>
                     </div>
                   </div>
