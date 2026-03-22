@@ -324,14 +324,24 @@ export default function FieldReportsPage() {
         </div>
         {role === "admin" && (
           <div className="flex flex-wrap gap-2">
-            <select value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className="h-9 rounded-xl border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring outline-none">
-              <option value="alle">Alle medarbejdere</option>
-              {profiles?.map(p => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-            </select>
-            <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)} className="h-9 rounded-xl border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring outline-none">
-              <option value="alle">Alle sager</option>
-              {cases?.map(c => <option key={c.id} value={c.id}>{formatCaseLabel(c)}</option>)}
-            </select>
+            <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+              <SelectTrigger className="h-11 w-[200px] rounded-xl text-xs bg-muted/30 border-border/60 shadow-sm">
+                <SelectValue placeholder="Alle medarbejdere" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="alle" className="text-xs rounded-lg">Alle medarbejdere</SelectItem>
+                {profiles?.map(p => <SelectItem key={p.user_id} value={p.user_id} className="text-xs rounded-lg">{p.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={caseFilter} onValueChange={setCaseFilter}>
+              <SelectTrigger className="h-11 w-[200px] rounded-xl text-xs bg-muted/30 border-border/60 shadow-sm">
+                <SelectValue placeholder="Alle sager" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="alle" className="text-xs rounded-lg">Alle sager</SelectItem>
+                {cases?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs rounded-lg">{formatCaseLabel(c)}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
