@@ -119,7 +119,7 @@ export default function DocumentationPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("verification_forms")
-        .select("*, profiles!verification_forms_user_id_fkey(full_name)")
+        .select("*")
         .eq("case_id", selectedCase!.id)
         .order("created_at", { ascending: false });
 
