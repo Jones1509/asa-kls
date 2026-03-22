@@ -83,7 +83,7 @@ export default function DocumentationPage() {
   const [selectedCustomerKey, setSelectedCustomerKey] = useState<string | null>(null);
   const [selectedCase, setSelectedCase] = useState<CustomerCaseOption | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [verificationOpen, setVerificationOpen] = useState(false);
+  
   const [uploadForm, setUploadForm] = useState({ title: "", description: "" });
   const [docFile, setDocFile] = useState<File | null>(null);
   const docFileRef = useRef<HTMLInputElement>(null);
