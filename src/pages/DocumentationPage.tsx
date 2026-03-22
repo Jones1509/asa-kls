@@ -233,33 +233,6 @@ export default function DocumentationPage() {
     );
   }, [search, selectedCustomer]);
 
-  const resetVerificationForm = () => {
-    setVerificationForm({
-      form_type: "",
-      description: "",
-      installation_type: "",
-      measurements: "",
-      comments: "",
-      form_date: new Date().toISOString().split("T")[0],
-      form_time: new Date().toTimeString().slice(0, 5),
-    });
-    setVerificationImageFiles([]);
-    setVerificationImagePreviews([]);
-  };
-
-  const handleVerificationImageAdd = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setVerificationImageFiles((prev) => [...prev, ...files]);
-    setVerificationImagePreviews((prev) => [
-      ...prev,
-      ...files.map((file) => URL.createObjectURL(file)),
-    ]);
-  };
-
-  const removeVerificationImage = (index: number) => {
-    setVerificationImageFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-    setVerificationImagePreviews((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-  };
 
   const uploadPdf = useMutation({
     mutationFn: async () => {
