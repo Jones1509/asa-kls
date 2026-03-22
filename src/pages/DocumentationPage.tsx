@@ -119,11 +119,23 @@ export default function DocumentationPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("verification_forms")
-        .select("*, profiles!verification_forms_user_id_fkey(full_name)")
+        .select("*")
         .eq("case_id", selectedCase!.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      
+      // Fetch profile names separately since FK goes to auth.users, not profiles
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((f: any) => f.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
+        return data.map((f: any) => ({ ...f, profiles: { full_name: profileMap.get(f.user_id) || "Ukendt" } }));
+      }
       return data || [];
     },
     enabled: !!selectedCase,
@@ -352,7 +364,7 @@ export default function DocumentationPage() {
               <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
                 <ClipboardCheck size={26} className="mx-auto mb-3 text-muted-foreground/20" />
                 <p className="text-sm font-medium text-muted-foreground">Ingen verifikationsskemaer endnu</p>
-                <p className="mt-1 text-xs text-muted-foreground/70">Opret det første skema direkte i denne sagsmappe.</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">Skemaer udfyldt under Verifikationsskemaer vises automatisk her.</p>
               </div>
             )}
           </section>
