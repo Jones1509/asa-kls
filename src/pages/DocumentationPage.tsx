@@ -293,8 +293,6 @@ export default function DocumentationPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
-    onError: (error: any) => toast.error(error.message),
-  });
 
   const deleteDoc = useMutation({
     mutationFn: async (docId: string) => {
