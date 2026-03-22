@@ -458,7 +458,7 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
       </div>
 
       {/* Submit */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border pt-4 pb-2 -mx-1 px-1 flex flex-col sm:flex-row gap-2 sm:justify-end">
+      <div className="flex flex-col sm:flex-row gap-2 sm:justify-end pt-2">
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl sm:order-1">
           Annuller
         </Button>
