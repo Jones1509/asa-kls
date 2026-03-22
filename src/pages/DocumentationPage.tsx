@@ -377,14 +377,9 @@ export default function DocumentationPage() {
           title={formatCaseLabel(selectedCase)}
           description="Sagsmappe med verifikationsskemaer og PDF-dokumenter"
         >
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => setVerificationOpen(true)} className="gap-2 rounded-xl">
-              <Plus size={14} /> Nyt verifikationsskema
-            </Button>
-            <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
-              <Upload size={14} /> Upload PDF
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+            <Upload size={14} /> Upload PDF
+          </Button>
         </PageHeader>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
