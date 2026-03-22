@@ -364,7 +364,7 @@ export default function DocumentationPage() {
               <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
                 <ClipboardCheck size={26} className="mx-auto mb-3 text-muted-foreground/20" />
                 <p className="text-sm font-medium text-muted-foreground">Ingen verifikationsskemaer endnu</p>
-                <p className="mt-1 text-xs text-muted-foreground/70">Opret det første skema direkte i denne sagsmappe.</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">Skemaer udfyldt under Verifikationsskemaer vises automatisk her.</p>
               </div>
             )}
           </section>
