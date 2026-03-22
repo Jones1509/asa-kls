@@ -83,22 +83,10 @@ export default function DocumentationPage() {
   const [selectedCustomerKey, setSelectedCustomerKey] = useState<string | null>(null);
   const [selectedCase, setSelectedCase] = useState<CustomerCaseOption | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [verificationOpen, setVerificationOpen] = useState(false);
+  
   const [uploadForm, setUploadForm] = useState({ title: "", description: "" });
   const [docFile, setDocFile] = useState<File | null>(null);
   const docFileRef = useRef<HTMLInputElement>(null);
-  const verificationFileRef = useRef<HTMLInputElement>(null);
-  const [verificationImageFiles, setVerificationImageFiles] = useState<File[]>([]);
-  const [verificationImagePreviews, setVerificationImagePreviews] = useState<string[]>([]);
-  const [verificationForm, setVerificationForm] = useState({
-    form_type: "",
-    description: "",
-    installation_type: "",
-    measurements: "",
-    comments: "",
-    form_date: new Date().toISOString().split("T")[0],
-    form_time: new Date().toTimeString().slice(0, 5),
-  });
 
   const { data: cases, isLoading: casesLoading } = useQuery({
     queryKey: ["cases_for_docs"],
@@ -245,33 +233,6 @@ export default function DocumentationPage() {
     );
   }, [search, selectedCustomer]);
 
-  const resetVerificationForm = () => {
-    setVerificationForm({
-      form_type: "",
-      description: "",
-      installation_type: "",
-      measurements: "",
-      comments: "",
-      form_date: new Date().toISOString().split("T")[0],
-      form_time: new Date().toTimeString().slice(0, 5),
-    });
-    setVerificationImageFiles([]);
-    setVerificationImagePreviews([]);
-  };
-
-  const handleVerificationImageAdd = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setVerificationImageFiles((prev) => [...prev, ...files]);
-    setVerificationImagePreviews((prev) => [
-      ...prev,
-      ...files.map((file) => URL.createObjectURL(file)),
-    ]);
-  };
-
-  const removeVerificationImage = (index: number) => {
-    setVerificationImageFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-    setVerificationImagePreviews((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-  };
 
   const uploadPdf = useMutation({
     mutationFn: async () => {
@@ -305,47 +266,6 @@ export default function DocumentationPage() {
     onError: (error: any) => toast.error(error.message),
   });
 
-  const createVerificationForm = useMutation({
-    mutationFn: async () => {
-      if (!user || !selectedCase) throw new Error("Vælg først en sag");
-
-      const imageUrls: string[] = [];
-      for (const imageFile of verificationImageFiles) {
-        const path = `verification/${user.id}/${Date.now()}-${imageFile.name}`;
-        const { error } = await supabase.storage.from("uploads").upload(path, imageFile);
-        if (error) throw error;
-        const { data } = supabase.storage.from("uploads").getPublicUrl(path);
-        imageUrls.push(data.publicUrl);
-      }
-
-      const isAdmin = role === "admin";
-      const { error } = await supabase.from("verification_forms").insert({
-        user_id: user.id,
-        case_id: selectedCase.id,
-        form_type: verificationForm.form_type,
-        description: verificationForm.description || null,
-        installation_type: verificationForm.installation_type || null,
-        measurements: verificationForm.measurements || null,
-        comments: verificationForm.comments || null,
-        form_date: verificationForm.form_date,
-        form_time: verificationForm.form_time || null,
-        image_urls: imageUrls.length > 0 ? imageUrls : null,
-        status: isAdmin ? "Godkendt" : "Afventer",
-        approved_by: isAdmin ? user.id : null,
-        approved_at: isAdmin ? new Date().toISOString() : null,
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["case_verification_forms", selectedCase?.id] });
-      queryClient.invalidateQueries({ queryKey: ["documentation_case_counts"] });
-      setVerificationOpen(false);
-      resetVerificationForm();
-      toast.success(role === "admin" ? "Verifikationsskema oprettet" : "Verifikationsskema sendt til godkendelse");
-    },
-    onError: (error: any) => toast.error(error.message),
-  });
 
   const deleteDoc = useMutation({
     mutationFn: async (docId: string) => {
@@ -377,14 +297,9 @@ export default function DocumentationPage() {
           title={formatCaseLabel(selectedCase)}
           description="Sagsmappe med verifikationsskemaer og PDF-dokumenter"
         >
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => setVerificationOpen(true)} className="gap-2 rounded-xl">
-              <Plus size={14} /> Nyt verifikationsskema
-            </Button>
-            <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
-              <Upload size={14} /> Upload PDF
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-2 rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
+            <Upload size={14} /> Upload PDF
+          </Button>
         </PageHeader>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -581,131 +496,6 @@ export default function DocumentationPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
-          <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="font-heading text-lg font-bold">Nyt verifikationsskema til {formatCaseLabel(selectedCase)}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={(event) => {
-              event.preventDefault();
-              createVerificationForm.mutate();
-            }} className="space-y-4">
-              <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Skematype</Label>
-                <Input
-                  value={verificationForm.form_type}
-                  onChange={(event) => setVerificationForm({ ...verificationForm, form_type: event.target.value })}
-                  placeholder="Brandtætning, EL-check, isolering..."
-                  className="mt-1.5 rounded-xl"
-                  required
-                />
-              </div>
-              <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Beskrivelse af udført arbejde</Label>
-                <Textarea
-                  value={verificationForm.description}
-                  onChange={(event) => setVerificationForm({ ...verificationForm, description: event.target.value })}
-                  placeholder="Beskriv det udførte arbejde..."
-                  className="mt-1.5 rounded-xl"
-                  rows={4}
-                  required
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Installationstype</Label>
-                  <Input
-                    value={verificationForm.installation_type}
-                    onChange={(event) => setVerificationForm({ ...verificationForm, installation_type: event.target.value })}
-                    placeholder="Type af installation"
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dato</Label>
-                  <Input
-                    type="date"
-                    value={verificationForm.form_date}
-                    onChange={(event) => setVerificationForm({ ...verificationForm, form_date: event.target.value })}
-                    className="mt-1.5 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tidspunkt</Label>
-                  <Input
-                    type="time"
-                    value={verificationForm.form_time}
-                    onChange={(event) => setVerificationForm({ ...verificationForm, form_time: event.target.value })}
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Måleresultater</Label>
-                  <Input
-                    value={verificationForm.measurements}
-                    onChange={(event) => setVerificationForm({ ...verificationForm, measurements: event.target.value })}
-                    placeholder="Evt. måleværdier"
-                    className="mt-1.5 rounded-xl"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bemærkninger</Label>
-                <Textarea
-                  value={verificationForm.comments}
-                  onChange={(event) => setVerificationForm({ ...verificationForm, comments: event.target.value })}
-                  placeholder="Eventuelle bemærkninger..."
-                  className="mt-1.5 rounded-xl"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Billeder (valgfrit)</Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {verificationImagePreviews.map((src, index) => (
-                    <div key={index} className="relative h-16 w-16 overflow-hidden rounded-xl border border-border">
-                      <img src={src} alt={`Forhåndsvisning ${index + 1}`} className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeVerificationImage(index)}
-                        className="absolute right-1 top-1 rounded-full bg-card/90 px-1.5 py-0.5 text-[10px] text-foreground"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => verificationFileRef.current?.click()}
-                    className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                  >
-                    <Plus size={18} />
-                  </button>
-                  <input
-                    ref={verificationFileRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    capture="environment"
-                    onChange={handleVerificationImageAdd}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setVerificationOpen(false)} className="rounded-xl">
-                  Annuller
-                </Button>
-                <Button type="submit" disabled={createVerificationForm.isPending} className="rounded-xl shadow-[0_2px_8px_hsl(215_80%_56%/0.25)]">
-                  {createVerificationForm.isPending ? "Gemmer..." : role === "admin" ? "Opret skema" : "Send til godkendelse"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
