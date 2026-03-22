@@ -229,7 +229,7 @@ export default function VerificationPage() {
         <button onClick={() => setShowElForm(false)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
           <ChevronLeft size={16} /> Tilbage til oversigt
         </button>
-        <div className="max-w-3xl">
+        <div className="w-full">
           <h1 className="text-xl font-heading font-bold text-foreground mb-1">Elinstallation – Verifikation</h1>
           <p className="text-sm text-muted-foreground mb-6">Udfyld tjekliste og måleresultater for den udførte elinstallation</p>
           <ElInstallationForm

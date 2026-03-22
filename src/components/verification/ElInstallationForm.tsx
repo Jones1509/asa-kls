@@ -125,18 +125,17 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-8">
       {/* Progress bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border pb-3 pt-1 -mx-1 px-1">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {answeredQuestions} af {totalQuestions} spørgsmål besvaret
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 pb-4 pt-2 -mx-1 px-1">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
+            {answeredQuestions}/{totalQuestions}
           </span>
-          <span className="text-xs font-bold text-primary">{progress}%</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-            style={{ width: `${progress}%` }}
-          />
         </div>
       </div>
 
