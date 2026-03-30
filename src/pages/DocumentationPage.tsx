@@ -338,7 +338,7 @@ export default function DocumentationPage() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className="rounded-2xl border border-border bg-card p-4 shadow-card"
+                      className="rounded-2xl border border-border bg-card p-4 shadow-card hover:shadow-elevated transition-all"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
@@ -355,9 +355,31 @@ export default function DocumentationPage() {
                             )}
                           </div>
                         </div>
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}>
-                          <StatusIcon size={11} /> {status.label}
-                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}>
+                            <StatusIcon size={11} /> {status.label}
+                          </span>
+                          <button
+                            onClick={() => generateVerificationPdf(formItem)}
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                            title="Download PDF"
+                          >
+                            <Download size={14} />
+                          </button>
+                          {role === "admin" && (
+                            <button
+                              onClick={() => {
+                                // Navigate to verification page with edit state via sessionStorage
+                                sessionStorage.setItem("editVerificationForm", JSON.stringify(formItem));
+                                window.location.href = "/verification";
+                              }}
+                              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                              title="Rediger"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   );
