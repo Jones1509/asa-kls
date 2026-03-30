@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "hsl(220 20% 4%)" }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "hsl(205 62% 10%)" }}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
