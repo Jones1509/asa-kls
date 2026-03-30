@@ -105,23 +105,21 @@ export default function LoginPage() {
       {/* Soft glow behind card */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(209 63% 49% / 0.06), transparent 70%)" }} />
 
-      <div className="w-full max-w-[440px] relative z-10 flex flex-col items-center">
-        {/* Triangle layout: narrow top → wide bottom */}
+      <div className="w-full max-w-[480px] relative z-10 flex flex-col items-center">
         
-        {/* Apex: Logo icon */}
-        <img src={asaLogoIcon} alt="ASA Icon" className="h-32 w-auto mb-3 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
+        {/* ▲ Apex: Logo icon — smallest element */}
+        <img src={asaLogoIcon} alt="ASA Icon" className="h-28 w-auto mb-2.5 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
         
-        {/* Level 2: Text logo */}
-        <img src={asaLogoText} alt="ASA KLS System" className="h-5 w-auto mb-3" />
+        {/* Text logo */}
+        <img src={asaLogoText} alt="ASA KLS System" className="h-[18px] w-auto mb-2" />
         
-        {/* Level 3: Subtitle */}
-        <div className="font-heading font-semibold text-[10px] tracking-[0.3em] uppercase text-white/40 mb-8">
+        {/* Subtitle — slightly wider */}
+        <div className="font-heading font-semibold text-[9px] tracking-[0.35em] uppercase text-white/35 mb-7">
           Kvalitetsledelsessystem
         </div>
 
         {resetMode ? (
-          /* Password reset view */
-          <div className="w-full max-w-[380px] flex flex-col items-center gap-5">
+          <div className="w-[85%] flex flex-col items-center gap-5">
             <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
               Nulstil adgangskode
             </h1>
@@ -133,160 +131,109 @@ export default function LoginPage() {
                 <p className="text-white/50 text-sm leading-relaxed">
                   Vi har sendt et link til{" "}
                   <strong className="text-white/70">{email}</strong>.<br />
-                  Tjek din indbakke og klik på linket for at nulstille din
-                  adgangskode.
+                  Tjek din indbakke og klik på linket for at nulstille din adgangskode.
                 </p>
-                <button
-                  onClick={() => {
-                    setResetMode(false);
-                    setResetSent(false);
-                  }}
-                  className="text-primary text-sm font-semibold bg-transparent border-none cursor-pointer hover:underline"
-                >
+                <button onClick={() => { setResetMode(false); setResetSent(false); }}
+                  className="text-primary text-sm font-semibold bg-transparent border-none cursor-pointer hover:underline">
                   Tilbage til login
                 </button>
               </div>
             ) : (
               <form onSubmit={handleResetPassword} className="w-full flex flex-col gap-5">
                 <p className="text-center text-sm text-white/40">
-                  Indtast din email-adresse og vi sender dig et link til at
-                  nulstille din adgangskode.
+                  Indtast din email-adresse og vi sender dig et link til at nulstille din adgangskode.
                 </p>
                 <div className="relative">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="din@email.dk"
-                    required
-                    className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]"
-                  />
-                  <Mail
-                    size={16}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25"
-                  />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder="din@email.dk" required
+                    className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]" />
+                  <Mail size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25" />
                 </div>
                 {error && (
-                  <div className="text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">
-                    {error}
-                  </div>
+                  <div className="text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">{error}</div>
                 )}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] disabled:opacity-60"
-                >
+                <button type="submit" disabled={loading}
+                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] disabled:opacity-60">
                   {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 size={16} className="animate-spin" />
-                      Sender...
-                    </span>
+                    <span className="flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" />Sender...</span>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <KeyRound size={16} />
-                      Send nulstillingslink
-                    </span>
+                    <span className="flex items-center justify-center gap-2"><KeyRound size={16} />Send nulstillingslink</span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResetMode(false);
-                    setError("");
-                  }}
-                  className="text-center text-sm text-white/40 bg-transparent border-none cursor-pointer hover:text-white/60 transition-colors"
-                >
+                <button type="button" onClick={() => { setResetMode(false); setError(""); }}
+                  className="text-center text-sm text-white/40 bg-transparent border-none cursor-pointer hover:text-white/60 transition-colors">
                   Tilbage til login
                 </button>
               </form>
             )}
           </div>
         ) : (
-          /* Login view — triangle flow */
+          /* ▲ Triangle login flow */
           <div className="w-full flex flex-col items-center">
-            {/* Level 4: Toggle buttons (narrow) */}
-            <div className="flex justify-center gap-2.5 mb-4">
+            
+            {/* Toggle — ~40% width */}
+            <div className="flex justify-center gap-2 mb-3">
               <button
-                onClick={() => {
-                  setIsAdminMode(false);
-                  setError("");
-                }}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
+                onClick={() => { setIsAdminMode(false); setError(""); }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-300 border ${
                   !isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
-                    : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
+                    : "bg-transparent text-white/50 border-white/10 hover:border-white/25"
                 }`}
               >
-                <User size={13} strokeWidth={2} />
+                <User size={12} strokeWidth={2} />
                 Medarbejder
               </button>
               <button
-                onClick={() => {
-                  setIsAdminMode(true);
-                  setError("");
-                }}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
+                onClick={() => { setIsAdminMode(true); setError(""); }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-300 border ${
                   isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
-                    : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
+                    : "bg-transparent text-white/50 border-white/10 hover:border-white/25"
                 }`}
               >
-                <Shield size={13} strokeWidth={2} />
+                <Shield size={12} strokeWidth={2} />
                 Kontor
               </button>
             </div>
 
-            {/* Level 5: Subtitle text */}
-            <p className="text-center text-[12px] mb-5 text-white/35">
+            {/* Description — ~55% width */}
+            <p className="text-center text-[11px] mb-5 text-white/30">
               {isAdminMode ? "Log ind med din kontor-konto" : "Log ind med dine oplysninger"}
             </p>
 
-            {/* Level 6: Form inputs (progressively wider) */}
+            {/* Form — progressive widths: 72% → 82% → 92% → 100% */}
             <form onSubmit={handleLogin} className="w-full flex flex-col items-center gap-3">
-              <div className="relative w-[88%]">
+              <div className="relative w-[72%]">
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="din@email.dk"
-                  required
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="din@email.dk" required
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.06] text-white border border-white/[0.08] placeholder:text-white/20 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
-                <Mail
-                  size={16}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25"
-                />
+                <Mail size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20" />
               </div>
 
-              <div className="relative w-[94%]">
+              <div className="relative w-[82%]">
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
+                  type={showPassword ? "text" : "password"} value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
+                  placeholder="••••••••" required
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.06] text-white border border-white/[0.08] placeholder:text-white/20 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-white/25 hover:text-white/50 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-white/20 hover:text-white/45 transition-colors">
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
 
               {error && (
-                <div className="w-full text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">
-                  {error}
-                </div>
+                <div className="w-[92%] text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">{error}</div>
               )}
 
-              {/* Level 7: Login button (widest) */}
+              {/* Login button — widest: 92% */}
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 mt-1 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.35)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.45)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                type="submit" disabled={loading}
+                className="w-[92%] py-3.5 mt-1 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.35)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.45)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -299,15 +246,11 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Base: Forgot password */}
-            <p className="text-center text-[12px] mt-4">
+            {/* Base */}
+            <p className="text-center text-[11px] mt-4">
               <button
-                onClick={() => {
-                  setResetMode(true);
-                  setError("");
-                }}
-                className="text-white/25 bg-transparent border-none cursor-pointer hover:text-white/45 transition-colors text-[12px]"
-              >
+                onClick={() => { setResetMode(true); setError(""); }}
+                className="text-white/20 bg-transparent border-none cursor-pointer hover:text-white/40 transition-colors text-[11px]">
                 Glemt din adgangskode?
               </button>
             </p>
