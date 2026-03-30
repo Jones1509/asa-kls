@@ -136,7 +136,7 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
             </p>
           </div>
           {onSignOut && (
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-1.5 text-white/30 hover:bg-white/10 hover:text-red-400 transition-colors flex-shrink-0">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-1.5 text-white/30 hover:bg-white/10 hover:text-destructive transition-colors flex-shrink-0">
               <LogOut size={14} />
             </button>
           )}
