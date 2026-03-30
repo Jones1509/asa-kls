@@ -26,6 +26,7 @@ interface Props {
   isPending: boolean;
   isAdmin: boolean;
   onCancel: () => void;
+  initialData?: any;
 }
 
 export interface ElFormData {
