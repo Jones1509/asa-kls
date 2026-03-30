@@ -314,7 +314,7 @@ export default function DocumentationPage() {
           </Button>
         </PageHeader>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 lg:grid-cols-2">
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Verifikationsskemaer</h2>
