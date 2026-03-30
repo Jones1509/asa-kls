@@ -165,7 +165,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(217_91%_60%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(217_91%_60%/0.5)] disabled:opacity-60"
+                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] disabled:opacity-60"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
