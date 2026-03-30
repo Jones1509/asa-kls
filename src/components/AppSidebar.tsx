@@ -69,8 +69,8 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
   return (
     <aside className="flex h-full w-[264px] flex-col bg-sidebar text-white">
       {/* Logo */}
-      <div className="flex h-20 items-center gap-3 px-5 flex-shrink-0 border-b border-white/10">
-        <img src={asaLogo} alt="ASA El-Service" className="h-14" />
+      <div className="flex h-24 items-center gap-3 px-5 flex-shrink-0 border-b border-white/10">
+        <img src={asaLogo} alt="ASA El-Service" className="h-16" />
       </div>
 
       {/* Navigation */}
