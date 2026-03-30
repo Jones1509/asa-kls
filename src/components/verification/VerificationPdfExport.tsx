@@ -56,7 +56,6 @@ export function generateVerificationPdf(form: any) {
 
   // Basic info
   const addField = (label: string, value: string | null | undefined) => {
-    // Show field even if empty, mark as "Ikke udfyldt"
     checkNewPage(12);
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
@@ -65,10 +64,16 @@ export function generateVerificationPdf(form: any) {
     y += 4;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(30);
-    const lines = doc.splitTextToSize(value, pageWidth - margin * 2);
+    const displayValue = value && value.trim() ? value : "Ikke udfyldt";
+    if (!value || !value.trim()) {
+      doc.setTextColor(180);
+    } else {
+      doc.setTextColor(30);
+    }
+    const lines = doc.splitTextToSize(displayValue, pageWidth - margin * 2);
     doc.text(lines, margin, y);
     y += lines.length * 5 + 4;
+    doc.setTextColor(0);
   };
 
   addField("Beskrivelse af udfoert arbejde", form.description);
