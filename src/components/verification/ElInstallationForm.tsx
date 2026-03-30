@@ -53,25 +53,28 @@ export interface ElFormData {
   imageFiles: File[];
 }
 
-export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin, onCancel }: Props) {
-  const [caseId, setCaseId] = useState("");
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
-  const [formTime, setFormTime] = useState(new Date().toTimeString().slice(0, 5));
-  const [identification, setIdentification] = useState("");
-  const [performedBy, setPerformedBy] = useState("");
-  const [verifiedBy, setVerifiedBy] = useState("");
-  const [comments, setComments] = useState("");
+export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin, onCancel, initialData }: Props) {
+  const existingItems = initialData?.items as any;
+  const existingInfo = existingItems?.installation_info || {};
 
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [caseId, setCaseId] = useState(initialData?.case_id || "");
+  const [formDate, setFormDate] = useState(initialData?.form_date || new Date().toISOString().split("T")[0]);
+  const [formTime, setFormTime] = useState(initialData?.form_time || new Date().toTimeString().slice(0, 5));
+  const [identification, setIdentification] = useState(existingInfo.identification || "");
+  const [performedBy, setPerformedBy] = useState(existingInfo.performed_by || "");
+  const [verifiedBy, setVerifiedBy] = useState(existingInfo.verified_by || "");
+  const [comments, setComments] = useState(initialData?.comments || "");
+
+  const [answers, setAnswers] = useState<Record<string, Answer>>(existingItems?.checklist || {});
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
     Object.fromEntries(checklistSections.map(s => [s.id, true]))
   );
 
-  const [kredsRows, setKredsRows] = useState<KredsRow[]>([emptyKredsRow(), emptyKredsRow(), emptyKredsRow()]);
-  const [rcdRows, setRcdRows] = useState<RcdRow[]>([emptyRcdRow()]);
-  const [kortslutRows, setKortslutRows] = useState<KortslutRow[]>([emptyKortslutRow(), emptyKortslutRow(), emptyKortslutRow()]);
-  const [spaendingsfaldRows, setSpaendingsfaldRows] = useState<SpændingsfaldRow[]>([emptySpændingsfaldRow(), emptySpændingsfaldRow(), emptySpændingsfaldRow()]);
-  const [overgangsmodstand, setOvergangsmodstand] = useState("");
+  const [kredsRows, setKredsRows] = useState<KredsRow[]>(existingItems?.kreds?.length ? existingItems.kreds : [emptyKredsRow(), emptyKredsRow(), emptyKredsRow()]);
+  const [rcdRows, setRcdRows] = useState<RcdRow[]>(existingItems?.rcd?.length ? existingItems.rcd : [emptyRcdRow()]);
+  const [kortslutRows, setKortslutRows] = useState<KortslutRow[]>(existingItems?.kortslut?.length ? existingItems.kortslut : [emptyKortslutRow(), emptyKortslutRow(), emptyKortslutRow()]);
+  const [spaendingsfaldRows, setSpaendingsfaldRows] = useState<SpændingsfaldRow[]>(existingItems?.spaendingsfald?.length ? existingItems.spaendingsfald : [emptySpændingsfaldRow(), emptySpændingsfaldRow(), emptySpændingsfaldRow()]);
+  const [overgangsmodstand, setOvergangsmodstand] = useState(existingItems?.overgangsmodstand || "");
 
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
