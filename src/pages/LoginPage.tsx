@@ -89,24 +89,26 @@ export default function LoginPage() {
       className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at 70% 20%, hsl(209 63% 30% / 0.7), transparent 60%), radial-gradient(ellipse at 20% 80%, hsl(205 62% 21% / 0.6), transparent 60%), radial-gradient(ellipse at 90% 90%, hsl(205 55% 12% / 0.5), transparent 50%), hsl(205 62% 10%)",
+          "radial-gradient(ellipse at 60% 10%, hsl(209 63% 25% / 0.6), transparent 50%), radial-gradient(ellipse at 30% 90%, hsl(205 62% 18% / 0.5), transparent 50%), hsl(205 62% 8%)",
       }}
     >
+      {/* Subtle grain overlay */}
       <div
-        className="absolute inset-0 opacity-20 pointer-events-none"
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`,
         }}
       />
 
-      <div className="w-full max-w-[420px] relative z-10">
+      {/* Soft glow behind card */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(209 63% 49% / 0.06), transparent 70%)" }} />
+
+      <div className="w-full max-w-[440px] relative z-10">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block mb-3">
-            <img src={asaLogo} alt="ASA El-Service" className="h-16 mx-auto" />
-            <div className="font-heading font-semibold text-sm tracking-[0.15em] uppercase text-primary/70 mt-2">
-              Kvalitetsledelsessystem
-            </div>
+        <div className="text-center mb-10">
+          <img src={asaLogo} alt="ASA El-Service" className="h-24 mx-auto mb-4 drop-shadow-[0_4px_24px_hsl(209_63%_49%/0.3)]" />
+          <div className="font-heading font-bold text-xs tracking-[0.25em] uppercase text-primary/50">
+            Kvalitetsledelsessystem
           </div>
         </div>
 
