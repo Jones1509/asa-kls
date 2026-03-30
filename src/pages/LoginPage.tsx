@@ -233,7 +233,7 @@ export default function LoginPage() {
             </div>
 
             <h1 className="font-heading font-extrabold text-2xl tracking-tight text-center mb-1 text-white">
-              {isAdminMode ? "Admin Login" : "Velkommen tilbage!"}
+              {isAdminMode ? "Kontor Login" : "Velkommen tilbage!"}
             </h1>
 
             <p className="text-center text-[13px] mb-6 text-white/40">
