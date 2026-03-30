@@ -106,9 +106,13 @@ export default function LoginPage() {
 
       <div className="w-full max-w-[400px] relative z-10 px-2">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <img src={asaLogo} alt="ASA El-Service" className="h-28 w-auto mx-auto mb-4 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
-          <div className="font-heading font-semibold text-[11px] tracking-[0.3em] uppercase text-white/50">
+        <div className="text-center mb-10 flex flex-col items-center">
+          <img src={asaIcon} alt="" className="h-20 w-auto mb-4 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
+          <div className="flex items-baseline gap-1.5 mb-2">
+            <span className="font-heading font-bold text-[22px] tracking-wide text-primary">ASA</span>
+            <span className="font-heading font-semibold text-[22px] tracking-wide text-white">EL-SERVICE</span>
+          </div>
+          <div className="font-body font-medium text-[10px] tracking-[0.3em] uppercase text-white/45">
             Kvalitetsledelsessystem
           </div>
         </div>
