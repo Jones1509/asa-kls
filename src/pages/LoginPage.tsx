@@ -103,11 +103,11 @@ export default function LoginPage() {
       {/* Soft glow behind card */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(209 63% 49% / 0.06), transparent 70%)" }} />
 
-      <div className="w-full max-w-[440px] relative z-10">
+      <div className="w-full max-w-[400px] relative z-10 px-2">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <img src={asaLogo} alt="ASA El-Service" className="h-24 mx-auto mb-4 drop-shadow-[0_4px_24px_hsl(209_63%_49%/0.3)]" />
-          <div className="font-heading font-bold text-xs tracking-[0.25em] uppercase text-primary/50">
+        <div className="text-center mb-8">
+          <img src={asaLogo} alt="ASA El-Service" className="h-20 mx-auto mb-3 drop-shadow-[0_4px_24px_hsl(209_63%_49%/0.3)]" />
+          <div className="font-heading font-bold text-[10px] tracking-[0.25em] uppercase text-primary/45">
             Kvalitetsledelsessystem
           </div>
         </div>
@@ -198,19 +198,19 @@ export default function LoginPage() {
           /* Login view */
           <>
             {/* Bruger / Admin toggle */}
-            <div className="flex justify-center gap-3 mb-6">
+            <div className="flex justify-center gap-2.5 mb-5">
               <button
                 onClick={() => {
                   setIsAdminMode(false);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
                   !isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <User size={15} strokeWidth={2} />
+                <User size={14} strokeWidth={2} />
                 Bruger
               </button>
               <button
@@ -218,26 +218,26 @@ export default function LoginPage() {
                   setIsAdminMode(true);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
                   isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <Shield size={15} strokeWidth={2} />
+                <Shield size={14} strokeWidth={2} />
                 Admin
               </button>
             </div>
 
-            <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
+            <h1 className="font-heading font-extrabold text-2xl tracking-tight text-center mb-1 text-white">
               {isAdminMode ? "Admin Login" : "Velkommen tilbage!"}
             </h1>
 
-            <p className="text-center text-sm mb-8 text-white/40">
+            <p className="text-center text-[13px] mb-6 text-white/40">
               {isAdminMode ? "Log ind med din administrator-konto" : "Log ind med dine oplysninger"}
             </p>
 
-            <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
               <div className="relative">
                 <input
                   type="email"
@@ -245,7 +245,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="din@email.dk"
                   required
-                  className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]"
+                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
                 <Mail
                   size={16}
@@ -260,7 +260,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]"
+                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
                 <button
                   type="button"
@@ -280,7 +280,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="w-full py-3.5 mt-1 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.35)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.45)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -293,7 +293,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-center text-sm mt-6">
+            <p className="text-center text-[13px] mt-5">
               <button
                 onClick={() => {
                   setResetMode(true);
