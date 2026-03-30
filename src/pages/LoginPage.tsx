@@ -172,27 +172,27 @@ export default function LoginPage() {
           <div className="w-full flex flex-col items-center">
             
             {/* Toggle — ~40% width */}
-            <div className="flex justify-center gap-2 mb-3">
+            <div className="flex justify-center gap-2.5 mb-3">
               <button
                 onClick={() => { setIsAdminMode(false); setError(""); }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
                   !isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/50 border-white/10 hover:border-white/25"
                 }`}
               >
-                <User size={12} strokeWidth={2} />
+                <User size={13} strokeWidth={2} />
                 Medarbejder
               </button>
               <button
                 onClick={() => { setIsAdminMode(true); setError(""); }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
                   isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/50 border-white/10 hover:border-white/25"
                 }`}
               >
-                <Shield size={12} strokeWidth={2} />
+                <Shield size={13} strokeWidth={2} />
                 Kontor
               </button>
             </div>
