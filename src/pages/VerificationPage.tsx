@@ -15,6 +15,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import ElInstallationForm, { type ElFormData } from "@/components/verification/ElInstallationForm";
+import VerificationDetailView from "@/components/verification/VerificationDetailView";
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
   Afventer: { color: "bg-warning/10 text-warning border border-warning/20", icon: Clock, label: "Afventer godkendelse" },
