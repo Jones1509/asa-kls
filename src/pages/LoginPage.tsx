@@ -103,10 +103,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-block mb-3">
-            <span className="font-heading font-extrabold text-5xl tracking-tight text-primary">
-              ASA
-            </span>
-            <div className="font-heading font-semibold text-sm tracking-[0.2em] uppercase text-primary/70">
+            <img src={asaLogo} alt="ASA El-Service" className="h-16 mx-auto" />
+            <div className="font-heading font-semibold text-sm tracking-[0.15em] uppercase text-primary/70 mt-2">
               Kvalitetsledelsessystem
             </div>
           </div>
