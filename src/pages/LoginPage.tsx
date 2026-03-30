@@ -293,7 +293,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-center text-sm mt-6">
+            <p className="text-center text-[13px] mt-5">
               <button
                 onClick={() => {
                   setResetMode(true);
