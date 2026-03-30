@@ -108,7 +108,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[480px] relative z-10 flex flex-col items-center">
         
         {/* ▲ Apex: Logo icon */}
-        <img src={asaLogoIcon} alt="ASA Icon" className="h-24 w-auto mb-3 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
+        <img src={asaLogoIcon} alt="ASA Icon" className="h-28 w-auto mb-3 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
         
         {/* Text logo */}
         <img src={asaLogoText} alt="ASA KLS System" className="h-[18px] w-auto mb-2.5" />
