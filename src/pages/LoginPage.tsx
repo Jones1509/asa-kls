@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { User, Shield, Mail, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
+import asaLogo from "@/assets/asa-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function LoginPage() {
@@ -17,7 +18,7 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "hsl(220 20% 4%)" }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "hsl(205 62% 10%)" }}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -88,7 +89,7 @@ export default function LoginPage() {
       className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at 70% 20%, hsl(217 80% 20% / 0.7), transparent 60%), radial-gradient(ellipse at 20% 80%, hsl(217 70% 15% / 0.6), transparent 60%), radial-gradient(ellipse at 90% 90%, hsl(220 60% 10% / 0.5), transparent 50%), hsl(220 20% 4%)",
+          "radial-gradient(ellipse at 70% 20%, hsl(209 63% 30% / 0.7), transparent 60%), radial-gradient(ellipse at 20% 80%, hsl(205 62% 21% / 0.6), transparent 60%), radial-gradient(ellipse at 90% 90%, hsl(205 55% 12% / 0.5), transparent 50%), hsl(205 62% 10%)",
       }}
     >
       <div
@@ -102,10 +103,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-block mb-3">
-            <span className="font-heading font-extrabold text-5xl tracking-tight text-primary">
-              ASA
-            </span>
-            <div className="font-heading font-semibold text-sm tracking-[0.2em] uppercase text-primary/70">
+            <img src={asaLogo} alt="ASA El-Service" className="h-16 mx-auto" />
+            <div className="font-heading font-semibold text-sm tracking-[0.15em] uppercase text-primary/70 mt-2">
               Kvalitetsledelsessystem
             </div>
           </div>
@@ -166,7 +165,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(217_91%_60%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(217_91%_60%/0.5)] disabled:opacity-60"
+                  className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] disabled:opacity-60"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -205,7 +204,7 @@ export default function LoginPage() {
                 }}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
                   !isAdminMode
-                    ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(217_91%_60%/0.4)]"
+                    ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
@@ -219,7 +218,7 @@ export default function LoginPage() {
                 }}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
                   isAdminMode
-                    ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(217_91%_60%/0.4)]"
+                    ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
@@ -279,7 +278,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(217_91%_60%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(217_91%_60%/0.5)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="w-full py-4 rounded-xl text-sm font-bold cursor-pointer transition-all duration-300 border-none bg-primary text-primary-foreground shadow-[0_4px_20px_hsl(209_63%_49%/0.4)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_hsl(209_63%_49%/0.5)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
