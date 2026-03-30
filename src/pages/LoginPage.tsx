@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { User, Shield, Mail, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
 import asaLogo from "@/assets/asa-logo.png";
+import asaIcon from "@/assets/asa-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function LoginPage() {
