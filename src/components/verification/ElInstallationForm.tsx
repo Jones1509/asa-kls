@@ -468,7 +468,7 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
         </Button>
         <Button type="submit" disabled={isPending || !caseId} className="rounded-xl gap-2 shadow-[0_2px_8px_hsl(var(--primary)/0.25)] sm:order-2">
           <Send size={14} />
-          {isPending ? "Indsender..." : isAdmin ? "Opret & godkend" : "Indsend til godkendelse"}
+          {isPending ? "Gemmer..." : initialData ? "Gem ændringer" : isAdmin ? "Opret & godkend" : "Indsend til godkendelse"}
         </Button>
       </div>
     </form>
