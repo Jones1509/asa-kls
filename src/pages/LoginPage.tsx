@@ -172,7 +172,7 @@ export default function LoginPage() {
           <div className="w-full flex flex-col items-center">
             
             {/* Toggle — ~40% width */}
-            <div className="flex justify-center gap-2.5 mb-3">
+            <div className="flex justify-center gap-2.5 mb-4">
               <button
                 onClick={() => { setIsAdminMode(false); setError(""); }}
                 className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
@@ -197,13 +197,11 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Description — ~55% width */}
-            <p className="text-center text-[11px] mb-5 text-white/30">
+            <p className="text-center text-[11px] mb-4 text-white/30">
               {isAdminMode ? "Log ind med din kontor-konto" : "Log ind med dine oplysninger"}
             </p>
 
-            {/* Form — progressive widths: 72% → 82% → 92% → 100% */}
-            <form onSubmit={handleLogin} className="w-full flex flex-col items-center gap-3">
+            <form onSubmit={handleLogin} className="w-full flex flex-col items-center gap-3.5">
               <div className="relative w-[72%]">
                 <input
                   type="email" value={email} onChange={(e) => setEmail(e.target.value)}
