@@ -198,19 +198,19 @@ export default function LoginPage() {
           /* Login view */
           <>
             {/* Bruger / Admin toggle */}
-            <div className="flex justify-center gap-3 mb-6">
+            <div className="flex justify-center gap-2.5 mb-5">
               <button
                 onClick={() => {
                   setIsAdminMode(false);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
                   !isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <User size={15} strokeWidth={2} />
+                <User size={14} strokeWidth={2} />
                 Bruger
               </button>
               <button
@@ -218,22 +218,22 @@ export default function LoginPage() {
                   setIsAdminMode(true);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
                   isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <Shield size={15} strokeWidth={2} />
+                <Shield size={14} strokeWidth={2} />
                 Admin
               </button>
             </div>
 
-            <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
+            <h1 className="font-heading font-extrabold text-2xl tracking-tight text-center mb-1 text-white">
               {isAdminMode ? "Admin Login" : "Velkommen tilbage!"}
             </h1>
 
-            <p className="text-center text-sm mb-8 text-white/40">
+            <p className="text-center text-[13px] mb-6 text-white/40">
               {isAdminMode ? "Log ind med din administrator-konto" : "Log ind med dine oplysninger"}
             </p>
 
