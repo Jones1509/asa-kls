@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import asaLogo from "@/assets/asa-logo.png";
+import asaLogo from "@/assets/asa-sidebar-logo.png";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
