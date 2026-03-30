@@ -72,7 +72,7 @@ export function AppLayout() {
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               className="fixed inset-y-0 left-0 z-50 lg:hidden"
             >
-              <AppSidebar role={userRole} profile={profile} onNavigate={() => setSidebarOpen(false)} onSignOut={signOut} />
+              <AppSidebar role={userRole} profile={profile ? { ...profile, avatar_url: profile.avatar_url } : null} onNavigate={() => setSidebarOpen(false)} onSignOut={signOut} />
             </motion.div>
           </>
         )}

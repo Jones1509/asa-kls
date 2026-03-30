@@ -18,10 +18,11 @@ import {
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import asaLogo from "@/assets/asa-logo.png";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
   role: "admin" | "employee";
-  profile?: { full_name: string; email: string } | null;
+  profile?: { full_name: string; email: string; avatar_url?: string | null } | null;
   onNavigate?: () => void;
   onSignOut?: () => void;
 }
@@ -63,19 +64,20 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
     return acc;
   }, {} as Record<string, typeof links>);
 
+  const initials = profile?.full_name?.charAt(0)?.toUpperCase() || (role === "admin" ? "A" : "M");
+
   return (
-    <aside className="flex h-full w-[264px] flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="flex h-full w-[264px] flex-col bg-sidebar text-white">
       {/* Logo */}
-      <div className="flex h-14 items-center gap-3 px-5 flex-shrink-0 border-b border-sidebar-border/50">
-        <img src={asaLogo} alt="ASA El-Service" className="h-8" />
-        <p className="text-[7px] font-semibold text-sidebar-primary/50 tracking-[0.15em] uppercase leading-none">KLS</p>
+      <div className="flex h-20 items-center gap-3 px-5 flex-shrink-0 border-b border-white/10">
+        <img src={asaLogo} alt="ASA El-Service" className="h-14" />
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 pt-4 pb-4 scrollbar-thin">
         {Object.entries(sections).map(([section, sectionLinks]) => (
           <div key={section} className="mb-5">
-            <p className="px-3 mb-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/25">{section}</p>
+            <p className="px-3 mb-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">{section}</p>
             <div className="space-y-0.5">
               {sectionLinks.map((link) => {
                 const isActive = link.to === "/" ? location.pathname === "/" : location.pathname.startsWith(link.to);
@@ -88,14 +90,14 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
                     className={cn(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-150",
                       isActive
-                        ? "bg-sidebar-primary/12 text-sidebar-primary"
-                        : "text-sidebar-foreground/55 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground"
+                        ? "bg-white/12 text-white"
+                        : "text-white/70 hover:bg-white/8 hover:text-white"
                     )}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="sidebar-active"
-                        className="absolute left-0 inset-y-0 my-auto h-5 w-[3px] rounded-full bg-sidebar-primary"
+                        className="absolute left-0 inset-y-0 my-auto h-5 w-[3px] rounded-full bg-white"
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       />
                     )}
@@ -110,28 +112,31 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
       </nav>
 
       {/* User profile - fixed at bottom */}
-      <div className="border-t border-sidebar-border/50 px-3 py-3 flex-shrink-0">
+      <div className="border-t border-white/10 px-3 py-3 flex-shrink-0">
         <NavLink
           to="/profile"
           onClick={onNavigate}
           className={({ isActive }) => cn(
             "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150",
-            isActive ? "bg-sidebar-primary/12" : "hover:bg-sidebar-accent/80"
+            isActive ? "bg-white/12" : "hover:bg-white/8"
           )}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary text-[11px] font-bold text-white shadow-[0_2px_8px_hsl(215_80%_56%/0.2)] flex-shrink-0">
-            {profile?.full_name?.charAt(0)?.toUpperCase() || (role === "admin" ? "A" : "M")}
-          </div>
+          <Avatar className="h-9 w-9 flex-shrink-0">
+            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile?.full_name} />}
+            <AvatarFallback className="bg-white/15 text-white text-[11px] font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-sidebar-accent-foreground truncate">
+            <p className="text-[12px] font-semibold text-white truncate">
               {profile?.full_name || (role === "admin" ? "Administrator" : "Medarbejder")}
             </p>
-            <p className="text-[10px] text-sidebar-foreground/35 truncate">
+            <p className="text-[10px] text-white/40 truncate">
               {role === "admin" ? "Administrator" : "Medarbejder"}
             </p>
           </div>
           {onSignOut && (
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-1.5 text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-destructive transition-colors flex-shrink-0">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSignOut(); }} className="rounded-lg p-1.5 text-white/30 hover:bg-white/10 hover:text-red-400 transition-colors flex-shrink-0">
               <LogOut size={14} />
             </button>
           )}
