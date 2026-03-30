@@ -134,30 +134,42 @@ export function generateVerificationPdf(form: any) {
     }
   }
 
-  // Measurement tables
-  if (isElForm) {
+  // Measurement tables — always show headers, indicate if no data
+  const addMeasurementSection = (title: string, head: string[][], body: string[][], hasRows: boolean) => {
     checkNewPage(20);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0);
-    doc.text("Kredsdetaljer", margin, y);
+    doc.text(title, margin, y);
     y += 5;
 
-    if (hasData(kredsRows)) {
+    if (hasRows) {
+      autoTable(doc, {
+        startY: y,
+        head,
+        body,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        headStyles: { fillColor: [41, 82, 130], textColor: 255, fontStyle: "bold" },
+      });
+      y = (doc as any).lastAutoTable.finalY + 5;
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(180);
+      doc.text("Ingen data udfyldt", margin, y);
+      doc.setTextColor(0);
+      y += 8;
+    }
+  };
 
-    const data = kredsRows.filter(r => Object.values(r).some(v => v)).map(r => [
-      r.gruppe, r.ob, r.karakteristik, r.tvaersnit, r.maksOb, r.zs, r.ra, r.isolation,
-    ]);
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Gruppe", "OB A", "Karakt.", "mm2", "Maks OB", "ZS", "RA", "Isol."]],
-      body: data,
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 7, cellPadding: 1.5 },
-      headStyles: { fillColor: [41, 82, 130], textColor: 255, fontStyle: "bold" },
-    });
-    y = (doc as any).lastAutoTable.finalY + 3;
+  if (isElForm) {
+    addMeasurementSection(
+      "Kredsdetaljer",
+      [["Gruppe", "OB A", "Karakt.", "mm2", "Maks OB", "ZS", "RA", "Isol."]],
+      kredsRows.filter(r => Object.values(r).some(v => v)).map(r => [r.gruppe, r.ob, r.karakteristik, r.tvaersnit, r.maksOb, r.zs, r.ra, r.isolation]),
+      hasData(kredsRows)
+    );
 
     if (overgangsmodstand) {
       doc.setFontSize(8);
@@ -165,67 +177,27 @@ export function generateVerificationPdf(form: any) {
       doc.text(`Overgangsmodstand for jordingsleder: ${overgangsmodstand} Ohm`, margin, y);
       y += 6;
     }
-  }
 
-  if (isElForm && hasData(rcdRows)) {
-    checkNewPage(20);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(0);
-    doc.text("Afproevning af RCD'er", margin, y);
-    y += 5;
+    addMeasurementSection(
+      "Afproevning af RCD'er",
+      [["RCD", "0deg 1x", "180deg 1x", "0deg 5x", "0deg 0.5x", "0deg 1x", "180deg 1x", "Proveknap"]],
+      rcdRows.filter(r => Object.values(r).some(v => v)).map(r => [r.rcd, r.sinus0, r.sinus180, r.sinus5x, r.puls0half, r.puls0, r.puls180, r.proveknap]),
+      hasData(rcdRows)
+    );
 
-    const data = rcdRows.filter(r => Object.values(r).some(v => v)).map(r => [
-      r.rcd, r.sinus0, r.sinus180, r.sinus5x, r.puls0half, r.puls0, r.puls180, r.proveknap,
-    ]);
+    addMeasurementSection(
+      "Kortslutningsstroem",
+      [["Gruppe", "Ik (kA)", "Maalt i punkt"]],
+      kortslutRows.filter(r => Object.values(r).some(v => v)).map(r => [r.gruppe, r.ik, r.maaltPunkt]),
+      hasData(kortslutRows)
+    );
 
-    autoTable(doc, {
-      startY: y,
-      head: [["RCD", "0deg 1x", "180deg 1x", "0deg 5x", "0deg 0.5x", "0deg 1x", "180deg 1x", "Proveknap"]],
-      body: data,
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 7, cellPadding: 1.5 },
-      headStyles: { fillColor: [41, 82, 130], textColor: 255, fontStyle: "bold" },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-  }
-
-  if (isElForm && hasData(kortslutRows)) {
-    checkNewPage(20);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(0);
-    doc.text("Kortslutningsstroem", margin, y);
-    y += 5;
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Gruppe", "Ik (kA)", "Maalt i punkt"]],
-      body: kortslutRows.filter(r => Object.values(r).some(v => v)).map(r => [r.gruppe, r.ik, r.maaltPunkt]),
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [41, 82, 130], textColor: 255, fontStyle: "bold" },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-  }
-
-  if (isElForm && hasData(spaendingsfaldRows)) {
-    checkNewPage(20);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(0);
-    doc.text("Spaendingsfald", margin, y);
-    y += 5;
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Gruppe", "U (%)", "Maalt i punkt"]],
-      body: spaendingsfaldRows.filter(r => Object.values(r).some(v => v)).map(r => [r.gruppe, r.u, r.maaltPunkt]),
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [41, 82, 130], textColor: 255, fontStyle: "bold" },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
+    addMeasurementSection(
+      "Spaendingsfald",
+      [["Gruppe", "U (%)", "Maalt i punkt"]],
+      spaendingsfaldRows.filter(r => Object.values(r).some(v => v)).map(r => [r.gruppe, r.u, r.maaltPunkt]),
+      hasData(spaendingsfaldRows)
+    );
   }
 
   // Admin comment
