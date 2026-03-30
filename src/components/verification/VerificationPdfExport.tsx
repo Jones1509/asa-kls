@@ -56,7 +56,7 @@ export function generateVerificationPdf(form: any) {
 
   // Basic info
   const addField = (label: string, value: string | null | undefined) => {
-    if (!value) return;
+    // Show field even if empty, mark as "Ikke udfyldt"
     checkNewPage(12);
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
