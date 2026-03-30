@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import asaLogo from "@/assets/asa-logo.png";
 
 interface AppSidebarProps {
   role: "admin" | "employee";
