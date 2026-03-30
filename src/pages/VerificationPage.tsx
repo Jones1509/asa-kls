@@ -219,6 +219,31 @@ export default function VerificationPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updateElForm = useMutation({
+    mutationFn: async (data: ElFormData & { id: string }) => {
+      const image_urls = data.imageFiles.length > 0 ? await uploadImages(data.imageFiles) : undefined;
+      const updateData: any = {
+        case_id: data.case_id,
+        description: data.description || null,
+        installation_type: data.installation_type || null,
+        comments: data.comments || null,
+        form_date: data.form_date,
+        form_time: data.form_time || null,
+        items: data.items as any,
+      };
+      if (image_urls) updateData.image_urls = image_urls;
+      const { error } = await supabase.from("verification_forms").update(updateData).eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["verification_forms"] });
+      setEditingForm(null);
+      setShowElForm(false);
+      toast.success("Skema opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const pending = forms?.filter(f => f.status === "Afventer") || [];
   const approvedThisMonth = forms?.filter(f => {
     if (f.status !== "Godkendt") return false;
