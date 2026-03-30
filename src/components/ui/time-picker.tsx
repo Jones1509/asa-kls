@@ -43,7 +43,7 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="00:00"
-        className="w-full h-12 rounded-xl border border-border bg-background px-4 text-xl font-bold tabular-nums text-foreground text-center focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all"
+        className="w-full h-11 rounded-xl border border-border bg-background px-4 text-base font-bold tabular-nums text-foreground text-center focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/50 transition-all"
       />
     </div>
   );

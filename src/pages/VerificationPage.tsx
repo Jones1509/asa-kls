@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePickerField } from "@/components/ui/date-picker-field";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Plus, ClipboardCheck, CheckCircle2, XCircle, Clock, Search, ImagePlus, X, ChevronLeft, Eye, Zap, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -393,11 +395,20 @@ export default function VerificationPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label>
-                <Input type="date" value={form.form_date} onChange={(e) => setForm({ ...form, form_date: e.target.value })} className="mt-1.5 rounded-xl" required />
+                <DatePickerField
+                  value={form.form_date}
+                  onChange={(v) => setForm({ ...form, form_date: v })}
+                  placeholder="Vælg dato..."
+                  className="mt-1.5"
+                  required
+                />
               </div>
               <div>
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Tidspunkt</Label>
-                <Input type="time" value={form.form_time} onChange={(e) => setForm({ ...form, form_time: e.target.value })} className="mt-1.5 rounded-xl" />
+                <TimePicker
+                  label="Tidspunkt"
+                  value={form.form_time}
+                  onChange={(v) => setForm({ ...form, form_time: v })}
+                />
               </div>
             </div>
             <div>
