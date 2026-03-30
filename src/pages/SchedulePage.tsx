@@ -394,7 +394,8 @@ export default function SchedulePage() {
 
       {/* Week Grid - Time-based layout like Google Calendar */}
       <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-        {/* Day headers */}
+        <div className="overflow-x-auto scrollbar-subtle">
+        <div className="min-w-[700px]">
         <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border">
           <div className="border-r border-border/30" />
           {days.map((day, i) => {
@@ -595,6 +596,8 @@ export default function SchedulePage() {
             );
           })}
         </div>
+        </div>
+      </div>
       </div>
 
       {/* Bulk schedule dialog */}
