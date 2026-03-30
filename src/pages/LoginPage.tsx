@@ -245,7 +245,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="din@email.dk"
                   required
-                  className="w-full px-5 py-4 rounded-xl text-sm outline-none transition-all duration-300 bg-white/[0.08] text-white border-2 border-white/[0.08] placeholder:text-white/30 focus:border-primary/50 focus:bg-white/[0.12]"
+                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
                 <Mail
                   size={16}
