@@ -228,7 +228,7 @@ export default function LoginPage() {
                 }`}
               >
                 <Shield size={14} strokeWidth={2} />
-                Admin
+                Kontor
               </button>
             </div>
 
