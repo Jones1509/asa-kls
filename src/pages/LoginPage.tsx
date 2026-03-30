@@ -89,7 +89,7 @@ export default function LoginPage() {
       className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at 70% 20%, hsl(217 80% 20% / 0.7), transparent 60%), radial-gradient(ellipse at 20% 80%, hsl(217 70% 15% / 0.6), transparent 60%), radial-gradient(ellipse at 90% 90%, hsl(220 60% 10% / 0.5), transparent 50%), hsl(220 20% 4%)",
+          "radial-gradient(ellipse at 70% 20%, hsl(209 63% 30% / 0.7), transparent 60%), radial-gradient(ellipse at 20% 80%, hsl(205 62% 21% / 0.6), transparent 60%), radial-gradient(ellipse at 90% 90%, hsl(205 55% 12% / 0.5), transparent 50%), hsl(205 62% 10%)",
       }}
     >
       <div
