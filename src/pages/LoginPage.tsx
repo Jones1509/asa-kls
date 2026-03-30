@@ -214,7 +214,7 @@ export default function LoginPage() {
                 }`}
               >
                 <User size={14} strokeWidth={2} />
-                Bruger
+                Medarbejder
               </button>
               <button
                 onClick={() => {
