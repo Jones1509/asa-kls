@@ -103,11 +103,11 @@ export default function LoginPage() {
       {/* Soft glow behind card */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(209 63% 49% / 0.06), transparent 70%)" }} />
 
-      <div className="w-full max-w-[440px] relative z-10">
+      <div className="w-full max-w-[400px] relative z-10 px-2">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <img src={asaLogo} alt="ASA El-Service" className="h-24 mx-auto mb-4 drop-shadow-[0_4px_24px_hsl(209_63%_49%/0.3)]" />
-          <div className="font-heading font-bold text-xs tracking-[0.25em] uppercase text-primary/50">
+        <div className="text-center mb-8">
+          <img src={asaLogo} alt="ASA El-Service" className="h-20 mx-auto mb-3 drop-shadow-[0_4px_24px_hsl(209_63%_49%/0.3)]" />
+          <div className="font-heading font-bold text-[10px] tracking-[0.25em] uppercase text-primary/45">
             Kvalitetsledelsessystem
           </div>
         </div>
