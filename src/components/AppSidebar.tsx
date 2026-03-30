@@ -66,11 +66,9 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
   return (
     <aside className="flex h-full w-[264px] flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className="flex h-14 items-center gap-3 px-6 flex-shrink-0 border-b border-sidebar-border/50">
-        <div>
-          <span className="font-heading text-xl font-extrabold italic tracking-tight text-sidebar-primary">ASA</span>
-          <p className="text-[8px] font-semibold text-sidebar-primary/50 tracking-[0.2em] uppercase leading-none mt-0.5">Kvalitetsledelsessystem</p>
-        </div>
+      <div className="flex h-14 items-center gap-3 px-5 flex-shrink-0 border-b border-sidebar-border/50">
+        <img src={asaLogo} alt="ASA El-Service" className="h-8" />
+        <p className="text-[7px] font-semibold text-sidebar-primary/50 tracking-[0.15em] uppercase leading-none">KLS</p>
       </div>
 
       {/* Navigation */}
