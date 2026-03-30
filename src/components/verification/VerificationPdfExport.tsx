@@ -135,13 +135,15 @@ export function generateVerificationPdf(form: any) {
   }
 
   // Measurement tables
-  if (isElForm && hasData(kredsRows)) {
+  if (isElForm) {
     checkNewPage(20);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0);
     doc.text("Kredsdetaljer", margin, y);
     y += 5;
+
+    if (hasData(kredsRows)) {
 
     const data = kredsRows.filter(r => Object.values(r).some(v => v)).map(r => [
       r.gruppe, r.ob, r.karakteristik, r.tvaersnit, r.maksOb, r.zs, r.ra, r.isolation,
