@@ -261,22 +261,33 @@ export default function VerificationPage() {
     return matchSearch;
   });
 
-  // El-installation full-page form
+  // El-installation full-page form (new or edit)
   if (showElForm) {
     return (
       <div>
-        <button onClick={() => setShowElForm(false)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <button onClick={() => { setShowElForm(false); setEditingForm(null); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
           <ChevronLeft size={16} /> Tilbage til oversigt
         </button>
         <div className="w-full">
-          <h1 className="text-xl font-heading font-bold text-foreground mb-1">Elinstallation – Verifikation</h1>
-          <p className="text-sm text-muted-foreground mb-6">Udfyld tjekliste og måleresultater for den udførte elinstallation</p>
+          <h1 className="text-xl font-heading font-bold text-foreground mb-1">
+            {editingForm ? "Rediger verifikationsskema" : "Elinstallation – Verifikation"}
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            {editingForm ? "Opdater tjekliste og måleresultater" : "Udfyld tjekliste og måleresultater for den udførte elinstallation"}
+          </p>
           <ElInstallationForm
             cases={(cases as any) || []}
-            onSubmit={(data) => createElForm.mutate(data)}
-            isPending={createElForm.isPending}
+            onSubmit={(data) => {
+              if (editingForm) {
+                updateElForm.mutate({ ...data, id: editingForm.id });
+              } else {
+                createElForm.mutate(data);
+              }
+            }}
+            isPending={editingForm ? updateElForm.isPending : createElForm.isPending}
             isAdmin={role === "admin"}
-            onCancel={() => setShowElForm(false)}
+            onCancel={() => { setShowElForm(false); setEditingForm(null); }}
+            initialData={editingForm}
           />
         </div>
       </div>
