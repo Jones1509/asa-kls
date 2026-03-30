@@ -50,7 +50,7 @@ export function AppLayout() {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
-        <AppSidebar role={userRole} profile={profile} onSignOut={signOut} />
+        <AppSidebar role={userRole} profile={profile ? { ...profile, avatar_url: profile.avatar_url } : null} onSignOut={signOut} />
       </div>
 
       {/* Mobile sidebar overlay */}
@@ -72,7 +72,7 @@ export function AppLayout() {
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               className="fixed inset-y-0 left-0 z-50 lg:hidden"
             >
-              <AppSidebar role={userRole} profile={profile} onNavigate={() => setSidebarOpen(false)} onSignOut={signOut} />
+              <AppSidebar role={userRole} profile={profile ? { ...profile, avatar_url: profile.avatar_url } : null} onNavigate={() => setSidebarOpen(false)} onSignOut={signOut} />
             </motion.div>
           </>
         )}
