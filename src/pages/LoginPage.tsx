@@ -105,19 +105,23 @@ export default function LoginPage() {
       {/* Soft glow behind card */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, hsl(209 63% 49% / 0.06), transparent 70%)" }} />
 
-      <div className="w-full max-w-[400px] relative z-10 px-2">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <img src={asaLogoIcon} alt="ASA Icon" className="h-36 w-auto mx-auto mb-3 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
-          <img src={asaLogoText} alt="ASA El-Service" className="h-5 w-auto mx-auto mb-4" />
-          <div className="font-heading font-semibold text-[11px] tracking-[0.3em] uppercase text-white/50">
-            Kvalitetsledelsessystem
-          </div>
+      <div className="w-full max-w-[440px] relative z-10 flex flex-col items-center">
+        {/* Triangle layout: narrow top → wide bottom */}
+        
+        {/* Apex: Logo icon */}
+        <img src={asaLogoIcon} alt="ASA Icon" className="h-32 w-auto mb-3 drop-shadow-[0_4px_32px_hsl(209_63%_49%/0.35)]" />
+        
+        {/* Level 2: Text logo */}
+        <img src={asaLogoText} alt="ASA KLS System" className="h-5 w-auto mb-3" />
+        
+        {/* Level 3: Subtitle */}
+        <div className="font-heading font-semibold text-[10px] tracking-[0.3em] uppercase text-white/40 mb-8">
+          Kvalitetsledelsessystem
         </div>
 
         {resetMode ? (
           /* Password reset view */
-          <div className="flex flex-col gap-5">
+          <div className="w-full max-w-[380px] flex flex-col items-center gap-5">
             <h1 className="font-heading font-extrabold text-3xl tracking-tight text-center mb-1 text-white">
               Nulstil adgangskode
             </h1>
@@ -143,7 +147,7 @@ export default function LoginPage() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleResetPassword} className="flex flex-col gap-5">
+              <form onSubmit={handleResetPassword} className="w-full flex flex-col gap-5">
                 <p className="text-center text-sm text-white/40">
                   Indtast din email-adresse og vi sender dig et link til at
                   nulstille din adgangskode.
@@ -198,22 +202,22 @@ export default function LoginPage() {
             )}
           </div>
         ) : (
-          /* Login view */
-          <>
-            {/* Bruger / Admin toggle */}
-            <div className="flex justify-center gap-2.5 mb-5">
+          /* Login view — triangle flow */
+          <div className="w-full flex flex-col items-center">
+            {/* Level 4: Toggle buttons (narrow) */}
+            <div className="flex justify-center gap-2.5 mb-4">
               <button
                 onClick={() => {
                   setIsAdminMode(false);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
                   !isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <User size={14} strokeWidth={2} />
+                <User size={13} strokeWidth={2} />
                 Medarbejder
               </button>
               <button
@@ -221,30 +225,32 @@ export default function LoginPage() {
                   setIsAdminMode(true);
                   setError("");
                 }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 border ${
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-300 border ${
                   isAdminMode
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_14px_hsl(209_63%_49%/0.4)]"
                     : "bg-transparent text-white/60 border-white/15 hover:border-white/30"
                 }`}
               >
-                <Shield size={14} strokeWidth={2} />
+                <Shield size={13} strokeWidth={2} />
                 Kontor
               </button>
             </div>
 
-            <p className="text-center text-[13px] mb-6 text-white/40">
+            {/* Level 5: Subtitle text */}
+            <p className="text-center text-[12px] mb-5 text-white/35">
               {isAdminMode ? "Log ind med din kontor-konto" : "Log ind med dine oplysninger"}
             </p>
 
-            <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
-              <div className="relative">
+            {/* Level 6: Form inputs (progressively wider) */}
+            <form onSubmit={handleLogin} className="w-full flex flex-col items-center gap-3">
+              <div className="relative w-[88%]">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="din@email.dk"
                   required
-                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
                 <Mail
                   size={16}
@@ -252,14 +258,14 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="relative">
+              <div className="relative w-[94%]">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 bg-white/[0.07] text-white border border-white/[0.1] placeholder:text-white/25 focus:border-primary/50 focus:bg-white/[0.1]"
                 />
                 <button
                   type="button"
@@ -271,11 +277,12 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">
+                <div className="w-full text-sm rounded-xl px-4 py-3 bg-destructive/15 text-destructive/80 border border-destructive/20">
                   {error}
                 </div>
               )}
 
+              {/* Level 7: Login button (widest) */}
               <button
                 type="submit"
                 disabled={loading}
@@ -292,18 +299,19 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-center text-[13px] mt-5">
+            {/* Base: Forgot password */}
+            <p className="text-center text-[12px] mt-4">
               <button
                 onClick={() => {
                   setResetMode(true);
                   setError("");
                 }}
-                className="text-white/30 bg-transparent border-none cursor-pointer hover:text-white/50 transition-colors text-sm"
+                className="text-white/25 bg-transparent border-none cursor-pointer hover:text-white/45 transition-colors text-[12px]"
               >
                 Glemt din adgangskode?
               </button>
             </p>
-          </>
+          </div>
         )}
       </div>
     </div>
