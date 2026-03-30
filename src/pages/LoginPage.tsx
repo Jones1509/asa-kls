@@ -237,7 +237,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="text-center text-[13px] mb-6 text-white/40">
-              {isAdminMode ? "Log ind med din administrator-konto" : "Log ind med dine oplysninger"}
+              {isAdminMode ? "Log ind med din kontor-konto" : "Log ind med dine oplysninger"}
             </p>
 
             <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
