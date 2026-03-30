@@ -86,8 +86,8 @@ export function generateVerificationPdf(form: any) {
   addField("Maaleresultater", form.measurements);
   addField("Bemaerkninger", form.comments);
 
-  // Checklist
-  if (isElForm && Object.keys(checklist).length > 0) {
+  // Always show checklist for el-forms — show ALL items
+  if (isElForm) {
     checkNewPage(15);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -96,9 +96,6 @@ export function generateVerificationPdf(form: any) {
     y += 7;
 
     for (const section of checklistSections) {
-      const sectionAnswers = section.items.filter(i => checklist[i.id] != null);
-      if (sectionAnswers.length === 0) continue;
-
       checkNewPage(10);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -108,7 +105,7 @@ export function generateVerificationPdf(form: any) {
 
       const tableData = section.items.map(item => {
         const a = checklist[item.id];
-        const answerText = a === "ja" ? "Ja" : a === "nej" ? "Nej" : a === "irrelevant" ? "Ikke relevant" : "–";
+        const answerText = a === "ja" ? "Ja" : a === "nej" ? "Nej" : a === "irrelevant" ? "Ikke relevant" : "Ikke udfyldt";
         return [item.question, answerText];
       });
 
@@ -129,6 +126,7 @@ export function generateVerificationPdf(form: any) {
             if (val === "Ja") data.cell.styles.textColor = [34, 139, 34];
             else if (val === "Nej") data.cell.styles.textColor = [200, 40, 40];
             else if (val === "Ikke relevant") data.cell.styles.textColor = [140, 140, 140];
+            else if (val === "Ikke udfyldt") data.cell.styles.textColor = [200, 200, 200];
           }
         },
       });
