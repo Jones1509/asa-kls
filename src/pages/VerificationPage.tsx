@@ -15,6 +15,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import ElInstallationForm, { type ElFormData } from "@/components/verification/ElInstallationForm";
+import VerificationDetailView from "@/components/verification/VerificationDetailView";
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
   Afventer: { color: "bg-warning/10 text-warning border border-warning/20", icon: Clock, label: "Afventer godkendelse" },
@@ -27,6 +28,7 @@ export default function VerificationPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [showElForm, setShowElForm] = useState(false);
+  const [editingForm, setEditingForm] = useState<any>(null);
   const [genericOpen, setGenericOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [viewForm, setViewForm] = useState<any>(null);
@@ -217,6 +219,31 @@ export default function VerificationPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updateElForm = useMutation({
+    mutationFn: async (data: ElFormData & { id: string }) => {
+      const image_urls = data.imageFiles.length > 0 ? await uploadImages(data.imageFiles) : undefined;
+      const updateData: any = {
+        case_id: data.case_id,
+        description: data.description || null,
+        installation_type: data.installation_type || null,
+        comments: data.comments || null,
+        form_date: data.form_date,
+        form_time: data.form_time || null,
+        items: data.items as any,
+      };
+      if (image_urls) updateData.image_urls = image_urls;
+      const { error } = await supabase.from("verification_forms").update(updateData).eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["verification_forms"] });
+      setEditingForm(null);
+      setShowElForm(false);
+      toast.success("Skema opdateret");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const pending = forms?.filter(f => f.status === "Afventer") || [];
   const approvedThisMonth = forms?.filter(f => {
     if (f.status !== "Godkendt") return false;
@@ -234,22 +261,33 @@ export default function VerificationPage() {
     return matchSearch;
   });
 
-  // El-installation full-page form
+  // El-installation full-page form (new or edit)
   if (showElForm) {
     return (
       <div>
-        <button onClick={() => setShowElForm(false)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <button onClick={() => { setShowElForm(false); setEditingForm(null); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
           <ChevronLeft size={16} /> Tilbage til oversigt
         </button>
         <div className="w-full">
-          <h1 className="text-xl font-heading font-bold text-foreground mb-1">Elinstallation – Verifikation</h1>
-          <p className="text-sm text-muted-foreground mb-6">Udfyld tjekliste og måleresultater for den udførte elinstallation</p>
+          <h1 className="text-xl font-heading font-bold text-foreground mb-1">
+            {editingForm ? "Rediger verifikationsskema" : "Elinstallation – Verifikation"}
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            {editingForm ? "Opdater tjekliste og måleresultater" : "Udfyld tjekliste og måleresultater for den udførte elinstallation"}
+          </p>
           <ElInstallationForm
             cases={(cases as any) || []}
-            onSubmit={(data) => createElForm.mutate(data)}
-            isPending={createElForm.isPending}
+            onSubmit={(data) => {
+              if (editingForm) {
+                updateElForm.mutate({ ...data, id: editingForm.id });
+              } else {
+                createElForm.mutate(data);
+              }
+            }}
+            isPending={editingForm ? updateElForm.isPending : createElForm.isPending}
             isAdmin={role === "admin"}
-            onCancel={() => setShowElForm(false)}
+            onCancel={() => { setShowElForm(false); setEditingForm(null); }}
+            initialData={editingForm}
           />
         </div>
       </div>
@@ -258,91 +296,25 @@ export default function VerificationPage() {
 
   // Detail view
   if (viewForm) {
-    const f = viewForm;
-    const cfg = statusConfig[f.status] || statusConfig.Afventer;
-    const StatusIcon = cfg.icon;
     return (
-      <div>
-        <button onClick={() => { setViewForm(null); setAdminComment(""); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ChevronLeft size={16} /> Tilbage til oversigt
-        </button>
-        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card max-w-2xl">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-heading font-bold text-card-foreground">{f.form_type}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                  {(f.profiles as any)?.full_name} · {formatCaseLabel(f.cases as any, "Sag –")} · {f.form_date}
-              </p>
-            </div>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${cfg.color}`}>
-              <StatusIcon size={12} /> {cfg.label}
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            {f.description && (
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Beskrivelse af udført arbejde</p>
-                <p className="text-sm text-card-foreground leading-relaxed">{f.description}</p>
-              </div>
-            )}
-            {f.installation_type && (
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Installationstype</p>
-                <p className="text-sm text-card-foreground">{f.installation_type}</p>
-              </div>
-            )}
-            {f.measurements && (
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Måleresultater</p>
-                <p className="text-sm text-card-foreground whitespace-pre-wrap">{f.measurements}</p>
-              </div>
-            )}
-            {f.comments && (
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Bemærkninger</p>
-                <p className="text-sm text-card-foreground">{f.comments}</p>
-              </div>
-            )}
-            {f.image_urls && (f.image_urls as string[]).length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Billeder</p>
-                <div className="flex flex-wrap gap-2">
-                  {(f.image_urls as string[]).map((url, j) => (
-                    <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block h-24 w-24 rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
-                      <img src={url} alt="" className="h-full w-full object-cover" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {f.admin_comment && (
-              <div className="rounded-xl bg-muted/30 border border-border p-4">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Kommentar fra admin</p>
-                <p className="text-sm text-card-foreground">{f.admin_comment}</p>
-              </div>
-            )}
-
-            {role === "admin" && f.status === "Afventer" && (
-              <div className="border-t border-border pt-4 space-y-3">
-                <div>
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kommentar (påkrævet ved afvisning)</Label>
-                  <Textarea value={adminComment} onChange={(e) => setAdminComment(e.target.value)} placeholder="Tilføj kommentar..." className="mt-1.5 rounded-xl" rows={3} />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => approveForm.mutate(f.id)} disabled={approveForm.isPending} className="rounded-xl gap-1.5">
-                    <CheckCircle2 size={14} /> Godkend
-                  </Button>
-                  <Button variant="outline" onClick={() => rejectForm.mutate(f.id)} disabled={rejectForm.isPending} className="rounded-xl gap-1.5 text-destructive hover:bg-destructive/10">
-                    <XCircle size={14} /> Afvis
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <VerificationDetailView
+        form={viewForm}
+        role={role}
+        adminComment={adminComment}
+        setAdminComment={setAdminComment}
+        onBack={() => { setViewForm(null); setAdminComment(""); }}
+        onApprove={(id) => approveForm.mutate(id)}
+        onReject={(id) => rejectForm.mutate(id)}
+        onEdit={(f) => {
+          if (f.form_type === "Elinstallation – Verifikation") {
+            setEditingForm(f);
+            setShowElForm(true);
+            setViewForm(null);
+          }
+        }}
+        approveLoading={approveForm.isPending}
+        rejectLoading={rejectForm.isPending}
+      />
     );
   }
 
