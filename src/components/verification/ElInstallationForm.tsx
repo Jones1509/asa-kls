@@ -147,11 +147,20 @@ export default function ElInstallationForm({ cases, onSubmit, isPending, isAdmin
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label>
-            <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="mt-1.5 rounded-xl h-11" required />
+            <DatePickerField
+              value={formDate}
+              onChange={setFormDate}
+              placeholder="Vælg dato..."
+              className="mt-1.5"
+              required
+            />
           </div>
           <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Tidspunkt</Label>
-            <Input type="time" value={formTime} onChange={e => setFormTime(e.target.value)} className="mt-1.5 rounded-xl h-11" />
+            <TimePicker
+              label="Tidspunkt"
+              value={formTime}
+              onChange={setFormTime}
+            />
           </div>
         </div>
         <div>
