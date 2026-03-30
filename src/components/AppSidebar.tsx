@@ -69,10 +69,10 @@ export function AppSidebar({ role, profile, onNavigate, onSignOut }: AppSidebarP
   return (
     <aside className="flex h-full w-[264px] flex-col bg-sidebar text-white">
       {/* Logo */}
-      <div className="flex flex-col px-3 py-4 flex-shrink-0 border-b border-white/10">
-        <div className="px-3">
-          <img src={asaLogo} alt="ASA El-Service" className="h-8 w-auto object-contain object-left" />
-          <p className="text-[7px] font-medium tracking-[0.15em] uppercase text-white/35 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Kvalitetsledelsessystem</p>
+      <div className="flex flex-col px-4 py-5 flex-shrink-0 border-b border-white/10">
+        <div className="px-2">
+          <img src={asaLogo} alt="ASA El-Service" className="h-10 w-auto object-contain object-left" />
+          <p className="text-[8px] font-medium tracking-[0.2em] uppercase text-white/40 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Kvalitetsledelsessystem</p>
         </div>
       </div>
 
