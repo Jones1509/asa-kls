@@ -237,7 +237,7 @@ export default function LoginPage() {
               {isAdminMode ? "Log ind med din administrator-konto" : "Log ind med dine oplysninger"}
             </p>
 
-            <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
               <div className="relative">
                 <input
                   type="email"
