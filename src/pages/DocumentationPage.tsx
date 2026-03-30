@@ -28,6 +28,8 @@ import { formatCaseLabel } from "@/lib/case-format";
 import { normalizeCaseOptions, type CustomerCaseOption } from "@/lib/case-options";
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
+import { generateVerificationPdf } from "@/components/verification/VerificationPdfExport";
+import { useNavigate } from "react-router-dom";
 
 type StatusTone = {
   label: string;
