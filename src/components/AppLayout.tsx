@@ -50,7 +50,7 @@ export function AppLayout() {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
-        <AppSidebar role={userRole} profile={profile} onSignOut={signOut} />
+        <AppSidebar role={userRole} profile={profile ? { ...profile, avatar_url: profile.avatar_url } : null} onSignOut={signOut} />
       </div>
 
       {/* Mobile sidebar overlay */}
