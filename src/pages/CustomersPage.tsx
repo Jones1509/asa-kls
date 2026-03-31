@@ -219,7 +219,7 @@ export default function CustomersPage() {
     const query = search.toLowerCase().trim();
 
     return [...(customers || [])]
-      .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
+      .sort((a: any, b: any) => getCustomerSortValue(b.customer_number) - getCustomerSortValue(a.customer_number))
       .flatMap((customer: any) => {
         const matchesType = typeFilter === "Alle" || customer.customer_type === typeFilter;
         if (!matchesType) return [];
