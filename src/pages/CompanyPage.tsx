@@ -330,7 +330,9 @@ export default function CompanyPage() {
             <div className="space-y-4">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Udløbsdato</Label>
-                <Input type="date" value={authExpiryInput} onChange={(e) => setAuthExpiryInput(e.target.value)} className="mt-1.5" />
+                <div className="mt-1.5">
+                  <DatePickerField value={authExpiryInput} onChange={(v) => setAuthExpiryInput(v)} placeholder="Vælg udløbsdato..." />
+                </div>
               </div>
               <UploadZone onFile={(f) => uploadAuth.mutate(f)} accept=".pdf,image/*" label="Upload autorisationsbevis" loading={uploadAuth.isPending} />
             </div>
