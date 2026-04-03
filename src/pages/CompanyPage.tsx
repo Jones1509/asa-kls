@@ -552,11 +552,15 @@ export default function CompanyPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Sidst kalibreret</Label>
-                <Input type="date" value={instrForm.last_calibrated} onChange={e => setInstrForm({ ...instrForm, last_calibrated: e.target.value })} className="mt-1.5" />
+                <div className="mt-1.5">
+                  <DatePickerField value={instrForm.last_calibrated} onChange={(v) => setInstrForm({ ...instrForm, last_calibrated: v })} placeholder="Vælg dato..." />
+                </div>
               </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Næste kalibrering</Label>
-                <Input type="date" value={instrForm.next_calibration} onChange={e => setInstrForm({ ...instrForm, next_calibration: e.target.value })} className="mt-1.5" />
+                <div className="mt-1.5">
+                  <DatePickerField value={instrForm.next_calibration} onChange={(v) => setInstrForm({ ...instrForm, next_calibration: v })} placeholder="Vælg dato..." />
+                </div>
               </div>
             </div>
             <div>
