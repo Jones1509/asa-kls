@@ -768,21 +768,15 @@ export default function CustomersPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Startdato</Label>
-                <Input
-                  type="date"
-                  value={caseForm.start_date || ""}
-                  onChange={(e) => setCaseForm({ ...caseForm, start_date: e.target.value })}
-                  className="mt-1.5 rounded-xl"
-                />
+                <div className="mt-1.5">
+                  <DatePickerField value={caseForm.start_date || ""} onChange={(v) => setCaseForm({ ...caseForm, start_date: v })} placeholder="Vælg startdato..." />
+                </div>
               </div>
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slutdato</Label>
-                <Input
-                  type="date"
-                  value={caseForm.end_date || ""}
-                  onChange={(e) => setCaseForm({ ...caseForm, end_date: e.target.value })}
-                  className="mt-1.5 rounded-xl"
-                />
+                <div className="mt-1.5">
+                  <DatePickerField value={caseForm.end_date || ""} onChange={(v) => setCaseForm({ ...caseForm, end_date: v })} placeholder="Vælg slutdato..." />
+                </div>
               </div>
             </div>
 
