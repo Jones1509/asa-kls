@@ -719,20 +719,20 @@ export default function CustomersPage() {
 
             <div>
               <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kunde</Label>
-              <select
-                value={caseForm.customer_id}
-                onChange={(e) => handleCaseCustomerChange(e.target.value)}
-                className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                required
-              >
-                <option value="">Vælg kunde...</option>
-                {(customers || [])
-                  .slice()
-                  .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
-                  .map((customer: any) => (
-                    <option key={customer.id} value={customer.id}>{getCustomerOptionLabel(customer)}</option>
-                  ))}
-              </select>
+              <Select value={caseForm.customer_id || "__none__"} onValueChange={(v) => handleCaseCustomerChange(v === "__none__" ? "" : v)}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Vælg kunde..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Vælg kunde...</SelectItem>
+                  {(customers || [])
+                    .slice()
+                    .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
+                    .map((customer: any) => (
+                      <SelectItem key={customer.id} value={customer.id}>{getCustomerOptionLabel(customer)}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
