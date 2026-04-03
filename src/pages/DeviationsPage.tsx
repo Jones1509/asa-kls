@@ -193,7 +193,9 @@ export default function DeviationsPage() {
           <form onSubmit={(e) => { e.preventDefault(); saveDev.mutate(); }} className="space-y-4">
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label>
-              <Input type="date" value={form.deviation_date} onChange={e => setForm({ ...form, deviation_date: e.target.value })} className="mt-1.5 rounded-xl h-11" required />
+              <div className="mt-1.5">
+                <DatePickerField value={form.deviation_date} onChange={(v) => setForm({ ...form, deviation_date: v })} placeholder="Vælg dato..." required />
+              </div>
             </div>
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hvad skete der?</Label>
