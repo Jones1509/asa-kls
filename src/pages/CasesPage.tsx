@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
 import { supabase } from "@/integrations/supabase/client";
@@ -188,21 +189,15 @@ function CaseFormFields({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Startdato</Label>
-          <Input
-            type="date"
-            value={f.start_date || ""}
-            onChange={(e) => setF({ ...f, start_date: e.target.value })}
-            className="mt-1.5 rounded-xl"
-          />
+          <div className="mt-1.5">
+            <DatePickerField value={f.start_date || ""} onChange={(v) => setF({ ...f, start_date: v })} placeholder="Vælg startdato..." />
+          </div>
         </div>
         <div>
           <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slutdato</Label>
-          <Input
-            type="date"
-            value={f.end_date || ""}
-            onChange={(e) => setF({ ...f, end_date: e.target.value })}
-            className="mt-1.5 rounded-xl"
-          />
+          <div className="mt-1.5">
+            <DatePickerField value={f.end_date || ""} onChange={(v) => setF({ ...f, end_date: v })} placeholder="Vælg slutdato..." />
+          </div>
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -191,7 +193,9 @@ export default function DeviationsPage() {
           <form onSubmit={(e) => { e.preventDefault(); saveDev.mutate(); }} className="space-y-4">
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dato</Label>
-              <Input type="date" value={form.deviation_date} onChange={e => setForm({ ...form, deviation_date: e.target.value })} className="mt-1.5 rounded-xl h-11" required />
+              <div className="mt-1.5">
+                <DatePickerField value={form.deviation_date} onChange={(v) => setForm({ ...form, deviation_date: v })} placeholder="Vælg dato..." required />
+              </div>
             </div>
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hvad skete der?</Label>
@@ -219,17 +223,27 @@ export default function DeviationsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Ansvarlig person</Label>
-                <select value={form.responsible_user_id} onChange={e => setForm({ ...form, responsible_user_id: e.target.value })} className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm">
-                  <option value="">Vælg person</option>
-                  {profiles?.map(p => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                </select>
+                <Select value={form.responsible_user_id || "__none__"} onValueChange={(v) => setForm({ ...form, responsible_user_id: v === "__none__" ? "" : v })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Vælg person" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Vælg person</SelectItem>
+                    {profiles?.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
-                <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm">
-                  <option value="Åben">Åben</option>
-                  <option value="Lukket">Lukket</option>
-                </select>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Åben">Åben</SelectItem>
+                    <SelectItem value="Lukket">Lukket</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-1">

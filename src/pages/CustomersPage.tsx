@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -702,34 +704,35 @@ export default function CustomersPage() {
               </div>
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
-                <select
-                  value={caseForm.status}
-                  onChange={(e) => setCaseForm({ ...caseForm, status: e.target.value as CaseStatus })}
-                  className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                >
-                  {caseStatusOptions.map((status) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
+                <Select value={caseForm.status} onValueChange={(v) => setCaseForm({ ...caseForm, status: v as CaseStatus })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {caseStatusOptions.map((status) => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div>
               <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kunde</Label>
-              <select
-                value={caseForm.customer_id}
-                onChange={(e) => handleCaseCustomerChange(e.target.value)}
-                className="mt-1.5 flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                required
-              >
-                <option value="">Vælg kunde...</option>
-                {(customers || [])
-                  .slice()
-                  .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
-                  .map((customer: any) => (
-                    <option key={customer.id} value={customer.id}>{getCustomerOptionLabel(customer)}</option>
-                  ))}
-              </select>
+              <Select value={caseForm.customer_id || "__none__"} onValueChange={(v) => handleCaseCustomerChange(v === "__none__" ? "" : v)}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Vælg kunde..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Vælg kunde...</SelectItem>
+                  {(customers || [])
+                    .slice()
+                    .sort((a: any, b: any) => getCustomerSortValue(a.customer_number) - getCustomerSortValue(b.customer_number))
+                    .map((customer: any) => (
+                      <SelectItem key={customer.id} value={customer.id}>{getCustomerOptionLabel(customer)}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -765,21 +768,15 @@ export default function CustomersPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Startdato</Label>
-                <Input
-                  type="date"
-                  value={caseForm.start_date || ""}
-                  onChange={(e) => setCaseForm({ ...caseForm, start_date: e.target.value })}
-                  className="mt-1.5 rounded-xl"
-                />
+                <div className="mt-1.5">
+                  <DatePickerField value={caseForm.start_date || ""} onChange={(v) => setCaseForm({ ...caseForm, start_date: v })} placeholder="Vælg startdato..." />
+                </div>
               </div>
               <div>
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Slutdato</Label>
-                <Input
-                  type="date"
-                  value={caseForm.end_date || ""}
-                  onChange={(e) => setCaseForm({ ...caseForm, end_date: e.target.value })}
-                  className="mt-1.5 rounded-xl"
-                />
+                <div className="mt-1.5">
+                  <DatePickerField value={caseForm.end_date || ""} onChange={(v) => setCaseForm({ ...caseForm, end_date: v })} placeholder="Vælg slutdato..." />
+                </div>
               </div>
             </div>
 
