@@ -215,7 +215,15 @@ export default function InvoicesPage() {
     mutationFn: async () => {
       if (!editId) return;
 
-      const updates: Record<string, any> = {
+      const updates: {
+        case_id: string;
+        customer: string;
+        description: string | null;
+        amount: number;
+        due_date: string | null;
+        status: string;
+        paid_date?: string;
+      } = {
         case_id: editForm.case_id,
         customer: editForm.customer,
         description: editForm.description || null,
