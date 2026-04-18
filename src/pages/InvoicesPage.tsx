@@ -215,7 +215,15 @@ export default function InvoicesPage() {
     mutationFn: async () => {
       if (!editId) return;
 
-      const updates: Record<string, any> = {
+      const updates: {
+        case_id: string;
+        customer: string;
+        description: string | null;
+        amount: number;
+        due_date: string | null;
+        status: string;
+        paid_date?: string;
+      } = {
         case_id: editForm.case_id,
         customer: editForm.customer,
         description: editForm.description || null,
@@ -254,7 +262,7 @@ export default function InvoicesPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const updates: Record<string, any> = { status };
+      const updates: { status: string; paid_date?: string } = { status };
       if (status === "Betalt") updates.paid_date = new Date().toISOString().split("T")[0];
 
       const { error } = await supabase.from("invoices").update(updates).eq("id", id);
