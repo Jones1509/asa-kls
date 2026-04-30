@@ -1,4 +1,0 @@
-project_id = "wrqduxxlgphrhosmxccs"
-
-[functions.reset-admin-temp]
-verify_jwt = false

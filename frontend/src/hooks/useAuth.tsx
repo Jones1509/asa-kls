@@ -1,8 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-
-type AppRole = "admin" | "employee";
+import { supabase, type Session, type User, type AppRole } from "@/lib/backend-stub";
 
 interface AuthContextType {
   session: Session | null;
@@ -10,12 +7,37 @@ interface AuthContextType {
   role: AppRole | null;
   profile: { full_name: string; email: string; role_label: string; avatar_url: string | null } | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Demo-rolleudledning: emails der indeholder "admin" eller "kontor"
+ * får admin-rolle, alle andre er medarbejdere.
+ * Når et rigtigt Supabase-projekt tilkobles, hentes rollen fra
+ * tabellen `user_roles` (samme logik som tidligere).
+ */
+function deriveDemoRole(email: string): AppRole {
+  const e = email.toLowerCase();
+  return e.includes("admin") || e.includes("kontor") ? "admin" : "employee";
+}
+
+function makeDemoProfile(user: User): AuthContextType["profile"] {
+  const fullName =
+    (user.user_metadata?.full_name as string) ||
+    user.email.split("@")[0] ||
+    "Demo Bruger";
+  const role = deriveDemoRole(user.email);
+  return {
+    full_name: fullName,
+    email: user.email,
+    role_label: role === "admin" ? "Kontor" : "Medarbejder",
+    avatar_url: null,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -24,34 +46,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthContextType["profile"]>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserData = async (userId: string) => {
-    const [roleRes, profileRes] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-      supabase.from("profiles").select("full_name, email, role_label, avatar_url").eq("user_id", userId).maybeSingle(),
-    ]);
-    if (roleRes.data) setRole(roleRes.data.role as AppRole);
-    if (profileRes.data) setProfile(profileRes.data);
+  const hydrateUser = (u: User | null) => {
+    if (!u) {
+      setRole(null);
+      setProfile(null);
+      return;
+    }
+    setRole(deriveDemoRole(u.email));
+    setProfile(makeDemoProfile(u));
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => fetchUserData(session.user.id), 0);
-      } else {
-        setRole(null);
-        setProfile(null);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      hydrateUser(newSession?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      }
+    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      setSession(existing);
+      setUser(existing?.user ?? null);
+      hydrateUser(existing?.user ?? null);
       setLoading(false);
     });
 

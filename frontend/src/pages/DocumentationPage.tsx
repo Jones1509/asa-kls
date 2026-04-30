@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel } from "@/lib/case-format";
 import { normalizeCaseOptions, type CustomerCaseOption } from "@/lib/case-options";

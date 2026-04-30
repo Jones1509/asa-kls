@@ -9,7 +9,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { Plus, ClipboardCheck, CheckCircle2, XCircle, Clock, Search, ImagePlus, X, ChevronLeft, Eye, Zap, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel } from "@/lib/case-format";
 import { normalizeCaseOptions } from "@/lib/case-options";

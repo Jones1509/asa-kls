@@ -4,7 +4,7 @@ import { EditScheduleDialog } from "@/components/schedule/EditScheduleDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, format, getISOWeek, isToday, startOfWeek, subWeeks } from "date-fns";
 import { da } from "date-fns/locale";

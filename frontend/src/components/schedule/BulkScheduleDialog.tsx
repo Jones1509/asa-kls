@@ -3,7 +3,7 @@ import { addDays, format, getISODay, parseISO } from "date-fns";
 import { CalendarDays, Search } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomerCaseSelect } from "@/components/CustomerCaseSelect";

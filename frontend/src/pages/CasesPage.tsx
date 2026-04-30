@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel, getCaseTitle } from "@/lib/case-format";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { Building2, ChevronDown, Edit, Hash, MapPin, Plus, Search, Trash2, UserPlus, Users, X } from "lucide-react";

@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Outlet, Navigate, Link } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
+import { BackendStubBanner } from "./BackendStubBanner";
 import { Menu, X, LogOut, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useQuery } from "@tanstack/react-query";
 
 export function AppLayout() {
@@ -80,6 +81,7 @@ export function AppLayout() {
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <BackendStubBanner />
         {/* Top bar */}
         <header className="flex h-14 items-center justify-between gap-3 border-b border-border/80 bg-card/60 backdrop-blur-xl px-4 lg:px-8 flex-shrink-0">
           <div className="flex items-center gap-3">

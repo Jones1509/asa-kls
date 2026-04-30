@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { MapPin, Mail, Phone, Shield, UserPlus, Briefcase, Search, Trash2, Clock, AlertTriangle, Pencil, Camera, Key, Eye, EyeOff, Upload, CheckCircle2, FileText, XCircle, Plus, GraduationCap, Download, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/backend-stub";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCaseLabel } from "@/lib/case-format";
 import { useState, useEffect } from "react";
