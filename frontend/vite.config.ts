@@ -10,6 +10,15 @@ export default defineConfig(() => ({
     hmr: {
       overlay: false,
     },
+    // Tillad preview-hosts (Emergent + Lovable + lokal udvikling).
+    // Brug `true` for at acceptere alle hosts – preview-URL'er ændrer sig
+    // mellem deploys/forks, så en hvidliste går hurtigt i stykker.
+    allowedHosts: true,
+  },
+  preview: {
+    host: "::",
+    port: 8080,
+    allowedHosts: true,
   },
   plugins: [react()],
   resolve: {
